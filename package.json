@@ -1,0 +1,63 @@
+{
+  "name": "@gnosispay/account-kit",
+  "version": "1.0.0",
+  "author": "Cristóvão Honorato <cristovao.honorato@gnosis.io>",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "package.json",
+    "LICENSE",
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist build typechain-types",
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",    
+    "test": "hardhat test",    
+    "lint": "eslint --max-warnings 0 .",
+    "format": "prettier ./src/**/*.ts ./test/**/*.ts ./*.ts -w",    
+    "prerelease": "yarn clean && yarn build",
+    "release": "yarn publish --access public"
+  }, 
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gnosispay/account-kit"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.7",    
+    "@nomiclabs/hardhat-ethers": "2.2.3",
+    "@typechain/ethers-v5": "^11.1.1",
+    "@typechain/hardhat": "^7.0.0",
+    "@types/chai": "^4.3.3",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.8.5",
+    "@types/yargs": "^17.0.13",
+    "@typescript-eslint/eslint-plugin": "^5.40.0",
+    "@typescript-eslint/parser": "^5.40.0",
+    "chai": "^4.3.7",
+    "dotenv": "^16.0.3",
+    "eslint": "^8.25.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",    
+    "eslint-plugin-prettier": "^4.2.1",
+    "hardhat": "^2.14.0",    
+    "prettier": "^2.8.8",
+    "rimraf": "^5.0.1",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.3.1",
+    "typescript": "^5.1.6",
+    "yargs": "^17.6.0"
+  },
+  "dependencies": {        
+    "@safe-global/safe-deployments": "^1.26.0",
+    "ethers": "^5.7.1"
+  }
+}
