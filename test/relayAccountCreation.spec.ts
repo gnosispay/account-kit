@@ -1,14 +1,15 @@
 import { expect } from "chai";
 import hre from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { createSafeDeploymentRequest } from "../src";
-import { Address, SponsoredCallRequest } from "../src/types";
-import { predictSafeAddress } from "../src/relayAccountCreation";
+import {
+  populateCreateAccount,
+  predictSafeAddress,
+} from "../src/relayAccountCreation";
 
-import { ISafe, ISafe__factory } from "../typechain-types";
+import { ISafe__factory } from "../typechain-types";
 
 import { fork, forkReset } from "./setup";
+import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
 
 describe("relayAccountCreation()", async () => {
   before(async () => {
@@ -22,22 +23,16 @@ describe("relayAccountCreation()", async () => {
   it("runs", async () => {
     const [owner, , , relayer] = await hre.ethers.getSigners();
 
-    const predictedAccountAddress = predictSafeAddress(
-      owner.address as Address
-    );
+    const predictedAccountAddress = predictSafeAddress(owner.address);
 
     // account not deployed
     expect(await hre.ethers.provider.getCode(predictedAccountAddress)).to.equal(
       "0x"
     );
 
-    const request = createSafeDeploymentRequest(owner.address, 1);
+    const { to, data } = populateCreateAccount(owner.address, 1);
 
-    await relayer.sendTransaction({
-      to: request.target,
-      value: 0,
-      data: request.data,
-    });
+    await relayer.sendTransaction({ to, data });
 
     // account deployed
     expect(
@@ -50,9 +45,8 @@ describe("relayAccountCreation()", async () => {
     );
     expect(await safe.isOwner(owner.address)).to.be.true;
     expect(await safe.isOwner(relayer.address)).to.be.false;
+
+    // const allowanceModule = getAllowanceModuleDeployment();
+    // console.log(allowanceModule);
   });
 });
-
-async function relay(request: SponsoredCallRequest, signer: SignerWithAddress) {
-  await signer.sendTransaction(request);
-}

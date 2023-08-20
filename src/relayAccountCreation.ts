@@ -6,14 +6,16 @@ import {
   keccak256,
   toUtf8Bytes,
 } from "ethers/lib/utils.js";
+import { TransactionRequest } from "@ethersproject/providers";
 
 import deployments, { proxyCreationBytecode } from "./deployments";
-import { Address, AddressZero, SponsoredCallRequest } from "./types";
 
-export function createSponsoredRequest(
+export const AddressZero = "0x0000000000000000000000000000000000000000";
+
+export function populateCreateAccount(
   ownerAddress: string,
   chainId: number
-): SponsoredCallRequest {
+): TransactionRequest {
   const proxyFactoryAddress =
     deployments.proxyFactory.networkAddresses[chainId];
   const mastercopyAddress = deployments.safe.networkAddresses[chainId];
@@ -22,7 +24,7 @@ export function createSponsoredRequest(
   return {
     chainId,
 
-    target: proxyFactoryAddress,
+    to: proxyFactoryAddress,
     /*
      * Safe Proxy Creation works by calling proxy factory, and including an
      * embedded setup call (the initializer)
@@ -35,7 +37,7 @@ export function createSponsoredRequest(
   };
 }
 
-export function predictSafeAddress(ownerAddress: Address): Address {
+export function predictSafeAddress(ownerAddress: string): string {
   const factoryAddress = deployments.proxyFactory.networkAddresses[100];
   const mastercopyAddress = deployments.safe.networkAddresses[100];
 
@@ -48,11 +50,7 @@ export function predictSafeAddress(ownerAddress: Address): Address {
     defaultAbiCoder.encode(["address"], [mastercopyAddress]),
   ]);
 
-  return getCreate2Address(
-    factoryAddress,
-    salt,
-    keccak256(deploymentData)
-  ) as Address;
+  return getCreate2Address(factoryAddress, salt, keccak256(deploymentData));
 }
 
 function getSaltNonce() {

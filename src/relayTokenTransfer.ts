@@ -1,23 +1,23 @@
 import { BigNumberish } from "ethers";
 import { Interface } from "ethers/lib/utils.js";
+import { TransactionRequest } from "@ethersproject/providers";
 
-import { Address, SponsoredCallRequest } from "./types";
 import deployments from "./deployments";
 import { predictSafeAddress } from "./relayAccountCreation";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
-export function createSponsoredRequest(
-  ownerAccount: Address,
-  { token, to, amount }: { token: Address; to: Address; amount: BigNumberish },
+export function populateTransferToken(
+  ownerAccount: string,
+  { token, to, amount }: { token: string; to: string; amount: BigNumberish },
   signature: string
-): SponsoredCallRequest {
+): TransactionRequest {
   const safeAddress = predictSafeAddress(ownerAccount);
   const safeInterface = new Interface(deployments.safe.abi);
 
   return {
     chainId: 100,
-    target: safeAddress,
+    to: safeAddress,
     data: safeInterface.encodeFunctionData("execTransaction", [
       token,
       0,
@@ -38,7 +38,7 @@ export function createSponsoredRequest(
  * provider._signTypedData(domain, types, values)
  */
 export function signTypedData_parameters(
-  ownerAccount: `0x${string}`,
+  ownerAccount: string,
   {
     token,
     to,
@@ -46,7 +46,7 @@ export function signTypedData_parameters(
   }: { token: `0x${string}`; to: `0x${string}`; amount: BigNumberish },
   nonce: BigNumberish
 ) {
-  const safeAddress = predictSafeAddress(ownerAccount) as Address;
+  const safeAddress = predictSafeAddress(ownerAccount);
 
   const domain = { verifyingContract: safeAddress, chainId: 100 };
   const primaryType = "SafeTx" as const;
@@ -80,7 +80,7 @@ export function signTypedData_parameters(
   return { account: ownerAccount, domain, primaryType, types, message };
 }
 
-function encodeERC20Transfer(to: Address, amount: BigNumberish) {
+function encodeERC20Transfer(to: string, amount: BigNumberish) {
   const iface = new Interface([
     "function transfer(address recipient, uint256 amount)",
   ]);

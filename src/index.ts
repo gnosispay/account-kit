@@ -1,6 +1,6 @@
-export { createSponsoredRequest as createSafeDeploymentRequest } from "./relayAccountCreation";
+export { populateCreateAccount } from "./relayAccountCreation";
 
 export {
-  createSponsoredRequest as createTokenTransferRequest,
-  signTypedData_parameters as signTokenTransferParameters,
+  populateTransferToken,
+  signTypedData_parameters as signTransferTokenParameters,
 } from "./relayTokenTransfer";
