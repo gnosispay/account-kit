@@ -1,6 +1,15 @@
-export { populateCreateAccount } from "./relayAccountCreation";
+export {
+  populateAccountCreationTransaction,
+  predictSafeAddress,
+} from "./populate/accountCreation";
 
 export {
-  populateTransferToken,
-  signTypedData_parameters as signTransferTokenParameters,
-} from "./relayTokenTransfer";
+  populateAccountSetupTransaction,
+  signAccountSetupParams,
+  predictModuleAddresses,
+} from "./populate/accountSetup";
+
+export {
+  populateTransferTokenTransaction,
+  signTransferTokenParams,
+} from "./populate/tokenTransfer";

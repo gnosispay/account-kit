@@ -1,17 +1,12 @@
 import { expect } from "chai";
 import hre from "hardhat";
 
-import {
-  populateCreateAccount,
-  predictSafeAddress,
-} from "../src/relayAccountCreation";
-
 import { ISafe__factory } from "../typechain-types";
 
 import { fork, forkReset } from "./setup";
-import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
+import { populateAccountCreationTransaction, predictSafeAddress } from "../src";
 
-describe("relayAccountCreation()", async () => {
+describe("accountCreation", async () => {
   before(async () => {
     await fork(17741542);
   });
@@ -20,8 +15,8 @@ describe("relayAccountCreation()", async () => {
     await forkReset();
   });
 
-  it("runs", async () => {
-    const [owner, , , relayer] = await hre.ethers.getSigners();
+  it("sets up a 1/1 safe", async () => {
+    const [owner, , , other] = await hre.ethers.getSigners();
 
     const predictedAccountAddress = predictSafeAddress(owner.address);
 
@@ -30,9 +25,9 @@ describe("relayAccountCreation()", async () => {
       "0x"
     );
 
-    const { to, data } = populateCreateAccount(owner.address, 1);
+    const { to, data } = populateAccountCreationTransaction(owner.address, 1);
 
-    await relayer.sendTransaction({ to, data });
+    await other.sendTransaction({ to, data });
 
     // account deployed
     expect(
@@ -44,9 +39,6 @@ describe("relayAccountCreation()", async () => {
       hre.ethers.provider
     );
     expect(await safe.isOwner(owner.address)).to.be.true;
-    expect(await safe.isOwner(relayer.address)).to.be.false;
-
-    // const allowanceModule = getAllowanceModuleDeployment();
-    // console.log(allowanceModule);
+    expect(await safe.isOwner(other.address)).to.be.false;
   });
 });

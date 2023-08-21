@@ -6,16 +6,16 @@ import {
   keccak256,
   toUtf8Bytes,
 } from "ethers/lib/utils.js";
-import { TransactionRequest } from "@ethersproject/providers";
 
-import deployments, { proxyCreationBytecode } from "./deployments";
+import deployments, { proxyCreationBytecode } from "../deployments";
+import { PopulatedTransaction } from "./PopulatedTransaction";
 
 export const AddressZero = "0x0000000000000000000000000000000000000000";
 
-export function populateCreateAccount(
+export function populateAccountCreationTransaction(
   ownerAddress: string,
   chainId: number
-): TransactionRequest {
+): PopulatedTransaction {
   const proxyFactoryAddress =
     deployments.proxyFactory.networkAddresses[chainId];
   const mastercopyAddress = deployments.safe.networkAddresses[chainId];
