@@ -8,22 +8,18 @@ import {
 } from "ethers/lib/utils.js";
 
 import deployments, { proxyCreationBytecode } from "../deployments";
-import { PopulatedTransaction } from "./PopulatedTransaction";
+import { TransactionData } from "../types";
 
 export const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateAccountCreationTransaction(
-  ownerAddress: string,
-  chainId: number
-): PopulatedTransaction {
-  const proxyFactoryAddress =
-    deployments.proxyFactory.networkAddresses[chainId];
-  const mastercopyAddress = deployments.safe.networkAddresses[chainId];
+  ownerAddress: string
+): TransactionData {
+  const proxyFactoryAddress = deployments.proxyFactory.defaultAddress;
+  const mastercopyAddress = deployments.safe.defaultAddress;
   const proxyFactoryInterface = new Interface(deployments.proxyFactory.abi);
 
   return {
-    chainId,
-
     to: proxyFactoryAddress,
     /*
      * Safe Proxy Creation works by calling proxy factory, and including an
@@ -34,6 +30,7 @@ export function populateAccountCreationTransaction(
       getInitializer(ownerAddress),
       getSaltNonce(),
     ]),
+    value: 0,
   };
 }
 

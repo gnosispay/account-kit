@@ -2,28 +2,40 @@ import assert from "assert";
 import { Interface } from "ethers/lib/utils.js";
 import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
 
+import {
+  AllowanceConfig,
+  SafeTransactionData,
+  TransactionData,
+} from "../types";
+
 import deployments from "../deployments";
-import multisendEncode, { OperationType } from "../multisendEncode";
+import multisendEncode from "../multisendEncode";
 import makeSignatureInput from "../makeSignatureInput";
 
-import { PopulatedTransaction } from "./PopulatedTransaction";
 import { predictSafeAddress } from "./accountCreation";
 import { predictDelayAddress } from "./delay-mod";
+
+import populateAddDelegate from "./allowance-mod/populateAddDelegate";
+import populateSetAllowance from "./allowance-mod/populateSetAllowance";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateAccountSetupTransaction(
   ownerAccount: string,
   chainId: number,
+  allowanceConfig: AllowanceConfig,
   signature: string
-): PopulatedTransaction {
+): TransactionData {
   const safeAddress = predictSafeAddress(ownerAccount);
   const safeInterface = new Interface(deployments.safe.abi);
 
-  const { to, data, value, operation } = payload(safeAddress, chainId);
+  const { to, data, value, operation } = safeTransactionRequest(
+    safeAddress,
+    chainId,
+    allowanceConfig
+  );
 
   return {
-    chainId,
     to: safeAddress,
     data: safeInterface.encodeFunctionData("execTransaction", [
       to,
@@ -37,56 +49,58 @@ export function populateAccountSetupTransaction(
       AddressZero, // gasRefund
       signature,
     ]),
+    value: 0,
   };
 }
 
 export function signAccountSetupParams(
   ownerAccount: string,
   chainId: number,
-  nonce: number
+  allowanceConfig: AllowanceConfig,
+  nonce: number | bigint
 ) {
   const safeAddress = predictSafeAddress(ownerAccount);
 
-  const { to, data, value, operation } = payload(safeAddress, chainId);
-
-  return makeSignatureInput(ownerAccount, chainId, {
-    to,
-    data,
-    value,
-    operation,
-    nonce,
-  });
-}
-
-export function predictModuleAddresses(ownerAccount: string, chainId: number) {
-  return _predictModuleAddresses(predictSafeAddress(ownerAccount), chainId);
-}
-
-function payload(safeAddress: string, chainId: number) {
-  const { allowanceAddress, delayAddress } = _predictModuleAddresses(
-    safeAddress,
-    chainId
+  return makeSignatureInput(
+    ownerAccount,
+    chainId,
+    safeTransactionRequest(safeAddress, chainId, allowanceConfig),
+    nonce
   );
+}
+
+export function predictModuleAddresses(ownerAccount: string) {
+  return _predictModuleAddresses(predictSafeAddress(ownerAccount));
+}
+
+function safeTransactionRequest(
+  safeAddress: string,
+  chainId: number,
+  allowanceConfig: AllowanceConfig
+): SafeTransactionData {
+  const { allowanceAddress, delayAddress } =
+    _predictModuleAddresses(safeAddress);
 
   return multisendEncode([
+    populateAddDelegate(allowanceConfig),
+    populateSetAllowance(allowanceConfig),
     {
       to: safeAddress,
       data: encodeEnableModule(allowanceAddress),
-      value: BigInt(0),
-      operation: OperationType.Call,
+      value: 0,
     },
     {
       to: safeAddress,
       data: encodeEnableModule(delayAddress),
-      value: BigInt(0),
-      operation: OperationType.Call,
+      value: 0,
     },
   ]);
 }
 
-function _predictModuleAddresses(safeAddress: string, chainId: number) {
+function _predictModuleAddresses(safeAddress: string) {
   const deployment = getAllowanceModuleDeployment();
-  const allowanceSingletonAddress = deployment?.networkAddresses[chainId];
+  // same as mainnet and gc
+  const allowanceSingletonAddress = deployment?.networkAddresses[1];
   assert(allowanceSingletonAddress);
 
   return {

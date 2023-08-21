@@ -1,6 +1,6 @@
-import { BigNumberish } from "ethers";
+import { SafeTransactionData } from "./types";
+
 import { predictSafeAddress } from "./populate/accountCreation";
-import { OperationType } from "./multisendEncode";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
@@ -11,19 +11,8 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 export default function (
   ownerAccount: string,
   chainId: number,
-  {
-    to,
-    data,
-    value,
-    operation,
-    nonce,
-  }: {
-    to: string;
-    data: string;
-    value: BigNumberish;
-    operation: OperationType;
-    nonce: BigNumberish;
-  }
+  { to, value, data, operation }: SafeTransactionData,
+  nonce: bigint | number
 ) {
   const safeAddress = predictSafeAddress(ownerAccount);
 
@@ -53,7 +42,7 @@ export default function (
     gasPrice: 0,
     gasToken: AddressZero,
     refundReceiver: AddressZero,
-    nonce: nonce,
+    nonce,
   };
 
   return { account: ownerAccount, domain, primaryType, types, message };

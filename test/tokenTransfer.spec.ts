@@ -52,7 +52,7 @@ describe("tokenTransfer", async () => {
       {
         token: DAI,
         to: AddressThree,
-        amount: balance,
+        amount: balance.toBigInt(),
       },
       0
     );
@@ -61,11 +61,10 @@ describe("tokenTransfer", async () => {
 
     const { to, data } = populateTransferTokenTransaction(
       owner.address,
-      31337,
       {
         token: DAI,
         to: AddressThree,
-        amount: balance,
+        amount: balance.toBigInt(),
       },
       signature
     );

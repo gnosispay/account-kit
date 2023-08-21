@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import { ISafe__factory } from "../typechain-types";
 
-import { fork, forkReset } from "./setup";
+import { DAI, fork, forkReset } from "./setup";
 import {
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
@@ -58,13 +58,22 @@ describe("accountSetup", async () => {
     const executionChainId = 31337;
 
     const { owner, safeAddress } = await loadFixture(createAccount);
+    const [, , , , , spender] = await hre.ethers.getSigners();
 
     const safe = ISafe__factory.connect(safeAddress, hre.ethers.provider);
     expect(await safe.isOwner(owner.address)).to.be.true;
 
+    const allowanceConfig = {
+      spender: spender.address,
+      token: DAI,
+      amount: 1000000,
+      period: 60 * 24, // 1 day
+    };
+
     const { domain, types, message } = signAccountSetupParams(
       owner.address,
       forkChainId,
+      allowanceConfig,
       0
     );
     const signature = await owner._signTypedData(
@@ -78,12 +87,12 @@ describe("accountSetup", async () => {
     const { to, data } = populateAccountSetupTransaction(
       owner.address,
       forkChainId,
+      allowanceConfig,
       signature
     );
 
     const { allowanceAddress, delayAddress } = predictModuleAddresses(
-      owner.address,
-      forkChainId
+      owner.address
     );
 
     expect(await safe.isModuleEnabled(allowanceAddress)).to.be.false;

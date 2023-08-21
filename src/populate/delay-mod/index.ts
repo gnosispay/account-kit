@@ -1,4 +1,6 @@
 import { ethers } from "ethers";
+
+import { TransactionData } from "../../types";
 import {
   BYTES32_ZERO,
   DELAY_INTERFACE,
@@ -6,12 +8,11 @@ import {
   MODULE_FACTORY_ADDRESS,
   MODULE_FACTORY_INTERFACE,
 } from "./constants";
-import { PopulatedTransaction } from "../PopulatedTransaction";
 
 export function populateDelayDeployTransaction(
   safeAddress: string,
   saltNonce: string = BYTES32_ZERO
-): PopulatedTransaction {
+): TransactionData {
   const factoryIface = MODULE_FACTORY_INTERFACE;
   const mastercopy = DELAY_MASTERCOPY_ADDRESS;
   const factory = MODULE_FACTORY_ADDRESS;

@@ -1,25 +1,22 @@
-import { BigNumberish } from "ethers";
 import { Interface } from "ethers/lib/utils.js";
+
+import { OperationType, TransactionData } from "../types";
 
 import deployments from "../deployments";
 import { predictSafeAddress } from "./accountCreation";
-import { PopulatedTransaction } from "./PopulatedTransaction";
 import makeSignatureInput from "../makeSignatureInput";
-import { OperationType } from "../multisendEncode";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateTransferTokenTransaction(
   ownerAccount: string,
-  chainId: number,
-  { token, to, amount }: { token: string; to: string; amount: BigNumberish },
+  { token, to, amount }: { token: string; to: string; amount: number | bigint },
   signature: string
-): PopulatedTransaction {
+): TransactionData {
   const safeAddress = predictSafeAddress(ownerAccount);
   const safeInterface = new Interface(deployments.safe.abi);
 
   return {
-    chainId,
     to: safeAddress,
     data: safeInterface.encodeFunctionData("execTransaction", [
       token,
@@ -33,6 +30,7 @@ export function populateTransferTokenTransaction(
       AddressZero,
       signature,
     ]),
+    value: 0,
   };
 }
 
@@ -43,19 +41,23 @@ export function populateTransferTokenTransaction(
 export function signTransferTokenParams(
   ownerAccount: string,
   chainId: number,
-  { token, to, amount }: { token: string; to: string; amount: BigNumberish },
-  nonce: BigNumberish
+  { token, to, amount }: { token: string; to: string; amount: number | bigint },
+  nonce: number | bigint
 ) {
-  return makeSignatureInput(ownerAccount, chainId, {
-    to: token,
-    data: encodeERC20Transfer(to, amount),
-    value: 0,
-    operation: OperationType.Call,
-    nonce,
-  });
+  return makeSignatureInput(
+    ownerAccount,
+    chainId,
+    {
+      to: token,
+      data: encodeERC20Transfer(to, amount),
+      value: 0,
+      operation: OperationType.Call,
+    },
+    nonce
+  );
 }
 
-function encodeERC20Transfer(to: string, amount: BigNumberish) {
+function encodeERC20Transfer(to: string, amount: number | bigint) {
   const iface = new Interface([
     "function transfer(address recipient, uint256 amount)",
   ]);

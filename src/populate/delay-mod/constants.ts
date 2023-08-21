@@ -1,6 +1,5 @@
 import { Interface } from "ethers/lib/utils";
 import { DELAY_ABI, FACTORY_ABI } from "./abis";
-import { ethers } from "ethers";
 
 export const BYTES32_ZERO =
   "0x0000000000000000000000000000000000000000000000000000000000000000";

@@ -41,3 +41,6 @@ export async function moveERC20(
 
   await receipt.wait();
 }
+
+export const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
+export const DAI_WHALE = "0x075e72a5edf65f0a5f44699c7654c1a76941ddc8";
