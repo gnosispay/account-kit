@@ -10,15 +10,12 @@ const VERSION = "v1.3.0";
 const deployments = {
   proxyFactory: getProxyFactoryDeployment({
     version: VERSION,
-    network: "100",
   }) as SingletonDeployment,
   safe: getSafeSingletonDeployment({
     version: VERSION,
-    network: "100",
   }) as SingletonDeployment,
   fallbackHandler: getFallbackHandlerDeployment({
     version: VERSION,
-    network: "100",
   }) as SingletonDeployment,
 };
 
