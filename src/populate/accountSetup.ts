@@ -22,7 +22,6 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateAccountSetupTransaction(
   ownerAccount: string,
-  chainId: number,
   allowanceConfig: AllowanceConfig,
   signature: string
 ): TransactionData {
@@ -31,7 +30,6 @@ export function populateAccountSetupTransaction(
 
   const { to, data, value, operation } = safeTransactionRequest(
     safeAddress,
-    chainId,
     allowanceConfig
   );
 
@@ -64,7 +62,7 @@ export function signAccountSetupParams(
   return makeSignatureInput(
     ownerAccount,
     chainId,
-    safeTransactionRequest(safeAddress, chainId, allowanceConfig),
+    safeTransactionRequest(safeAddress, allowanceConfig),
     nonce
   );
 }
@@ -75,7 +73,6 @@ export function predictModuleAddresses(ownerAccount: string) {
 
 function safeTransactionRequest(
   safeAddress: string,
-  chainId: number,
   allowanceConfig: AllowanceConfig
 ): SafeTransactionData {
   const { allowanceAddress, delayAddress } =

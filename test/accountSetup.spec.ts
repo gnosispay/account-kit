@@ -52,10 +52,7 @@ describe("accountSetup", async () => {
   });
 
   it("sets up the account after creation", async () => {
-    // we are forking mainnet
-    const forkChainId = 1;
-    // we are executing in hardhat
-    const executionChainId = 31337;
+    const hardhatChainId = 31337;
 
     const { owner, safeAddress } = await loadFixture(createAccount);
     const [, , , , , spender] = await hre.ethers.getSigners();
@@ -72,21 +69,14 @@ describe("accountSetup", async () => {
 
     const { domain, types, message } = signAccountSetupParams(
       owner.address,
-      forkChainId,
+      hardhatChainId,
       allowanceConfig,
       0
     );
-    const signature = await owner._signTypedData(
-      // we need to patch the chain id because we are actually running this
-      // in a hardhat fork, so chainId 31337
-      { ...domain, chainId: executionChainId },
-      types,
-      message
-    );
+    const signature = await owner._signTypedData(domain, types, message);
 
     const { to, data } = populateAccountSetupTransaction(
       owner.address,
-      forkChainId,
       allowanceConfig,
       signature
     );
