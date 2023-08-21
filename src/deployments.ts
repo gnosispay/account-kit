@@ -1,6 +1,7 @@
 import {
   SingletonDeployment,
   getFallbackHandlerDeployment,
+  getMultiSendDeployment,
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments/";
@@ -15,6 +16,9 @@ const deployments = {
     version: VERSION,
   }) as SingletonDeployment,
   fallbackHandler: getFallbackHandlerDeployment({
+    version: VERSION,
+  }) as SingletonDeployment,
+  multiSend: getMultiSendDeployment({
     version: VERSION,
   }) as SingletonDeployment,
 };
