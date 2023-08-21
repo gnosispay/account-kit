@@ -1,6 +1,6 @@
 import { Interface } from "ethers/lib/utils.js";
 
-import { OperationType, TransactionData } from "../types";
+import { OperationType, SafeTransactionData, TransactionData } from "../types";
 
 import deployments from "../deployments";
 import { predictSafeAddress } from "./accountCreation";
@@ -10,19 +10,21 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateTransferTokenTransaction(
   ownerAccount: string,
-  { token, to, amount }: { token: string; to: string; amount: number | bigint },
+  transfer: { token: string; to: string; amount: number | bigint },
   signature: string
 ): TransactionData {
   const safeAddress = predictSafeAddress(ownerAccount);
   const safeInterface = new Interface(deployments.safe.abi);
 
+  const { to, value, data, operation } = safeTransaction(transfer);
+
   return {
     to: safeAddress,
     data: safeInterface.encodeFunctionData("execTransaction", [
-      token,
-      0,
-      encodeERC20Transfer(to, amount),
-      0,
+      to,
+      value,
+      data,
+      operation,
       0,
       0,
       0,
@@ -47,19 +49,27 @@ export function signTransferTokenParams(
   return makeSignatureInput(
     ownerAccount,
     chainId,
-    {
-      to: token,
-      data: encodeERC20Transfer(to, amount),
-      value: 0,
-      operation: OperationType.Call,
-    },
+    safeTransaction({ token, to, amount }),
     nonce
   );
 }
 
-function encodeERC20Transfer(to: string, amount: number | bigint) {
+function safeTransaction({
+  token,
+  to,
+  amount,
+}: {
+  token: string;
+  to: string;
+  amount: number | bigint;
+}): SafeTransactionData {
   const iface = new Interface([
     "function transfer(address recipient, uint256 amount)",
   ]);
-  return iface.encodeFunctionData("transfer", [to, amount]);
+  return {
+    to: token,
+    data: iface.encodeFunctionData("transfer", [to, amount]),
+    value: 0,
+    operation: OperationType.Call,
+  };
 }
