@@ -5,11 +5,10 @@ import predictDelayAddress from "./predictAddress";
 
 export default function populateSetCooldown(
   safeAddress: string,
-  saltNonce: string = BYTES32_ZERO,
   config: DelayConfig
 ): TransactionData {
   const iface = DELAY_INTERFACE;
-  const delayAddress = predictDelayAddress(safeAddress, saltNonce);
+  const delayAddress = predictDelayAddress(safeAddress);
   return {
     to: delayAddress,
     data: iface.encodeFunctionData("setCooldown", [config.cooldown]),

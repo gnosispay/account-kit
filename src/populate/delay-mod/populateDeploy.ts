@@ -8,12 +8,13 @@ import {
 import { encodeSetUp } from "./predictAddress";
 
 export default function populateDelayDeploy(
-  safeAddress: string,
-  saltNonce: string = BYTES32_ZERO
+  safeAddress: string
 ): TransactionData {
   const factoryIface = MODULE_FACTORY_INTERFACE;
   const mastercopy = DELAY_MASTERCOPY_ADDRESS;
   const factory = MODULE_FACTORY_ADDRESS;
+
+  const saltNonce = BYTES32_ZERO;
 
   return {
     to: factory,

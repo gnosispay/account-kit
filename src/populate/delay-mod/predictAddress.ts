@@ -7,12 +7,10 @@ import {
   MODULE_FACTORY_ADDRESS,
 } from "./constants";
 
-export default function predictDelayAddress(
-  safeAddress: string,
-  saltNonce: string = BYTES32_ZERO
-): string {
+export default function predictDelayAddress(safeAddress: string): string {
   const mastercopy = DELAY_MASTERCOPY_ADDRESS;
   const factory = MODULE_FACTORY_ADDRESS;
+  const saltNonce = BYTES32_ZERO;
 
   const byteCode =
     "0x602d8060093d393df3363d3d373d3d3d363d73" +
