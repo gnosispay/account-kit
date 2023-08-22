@@ -7,13 +7,16 @@ import {
   toUtf8Bytes,
 } from "ethers/lib/utils.js";
 
-import deployments, { proxyCreationBytecode } from "../deployments";
 import { TransactionData } from "../types";
+import deployments, { proxyCreationBytecode } from "../deployments";
 
 export const AddressZero = "0x0000000000000000000000000000000000000000";
+export const BYTES32_ZERO =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export function populateAccountCreationTransaction(
-  ownerAddress: string
+  ownerAddress: string,
+  seed: string = BYTES32_ZERO
 ): TransactionData {
   const proxyFactoryAddress = deployments.proxyFactory.defaultAddress;
   const mastercopyAddress = deployments.safe.defaultAddress;
@@ -28,18 +31,21 @@ export function populateAccountCreationTransaction(
     data: proxyFactoryInterface.encodeFunctionData("createProxyWithNonce", [
       mastercopyAddress,
       getInitializer(ownerAddress),
-      getSaltNonce(),
+      getSaltNonce(seed),
     ]),
     value: 0,
   };
 }
 
-export function predictSafeAddress(ownerAddress: string): string {
+export function predictSafeAddress(
+  ownerAddress: string,
+  seed: string = BYTES32_ZERO
+): string {
   const factoryAddress = deployments.proxyFactory.networkAddresses[100];
   const mastercopyAddress = deployments.safe.networkAddresses[100];
 
   const salt = keccak256(
-    concat([keccak256(getInitializer(ownerAddress)), getSaltNonce()])
+    concat([keccak256(getInitializer(ownerAddress)), getSaltNonce(seed)])
   );
 
   const deploymentData = concat([
@@ -48,13 +54,6 @@ export function predictSafeAddress(ownerAddress: string): string {
   ]);
 
   return getCreate2Address(factoryAddress, salt, keccak256(deploymentData));
-}
-
-function getSaltNonce() {
-  if (!process.env.NEXT_PUBLIC_SAFE_SALT_SEED) {
-    throw new Error("NEXT_PUBLIC_SAFE_SALT_SEED not set");
-  }
-  return keccak256(toUtf8Bytes(process.env.NEXT_PUBLIC_SAFE_SALT_SEED));
 }
 
 function getInitializer(ownerAddress: string) {
@@ -91,4 +90,11 @@ function getInitializer(ownerAddress: string) {
   ]);
 
   return initializer;
+}
+
+/*
+ * NOTE seed was formerly process.env.NEXT_PUBLIC_SAFE_SALT_SEED
+ */
+function getSaltNonce(seed: string) {
+  return keccak256(toUtf8Bytes(seed));
 }

@@ -18,24 +18,25 @@ describe("accountCreation", async () => {
   it("sets up a 1/1 safe", async () => {
     const [owner, , , other] = await hre.ethers.getSigners();
 
-    const predictedAccountAddress = predictSafeAddress(owner.address);
+    const predictedSafeAddress = predictSafeAddress(owner.address);
 
     // account not deployed
-    expect(await hre.ethers.provider.getCode(predictedAccountAddress)).to.equal(
+    expect(await hre.ethers.provider.getCode(predictedSafeAddress)).to.equal(
       "0x"
     );
 
-    const { to, data } = populateAccountCreationTransaction(owner.address, 1);
-
-    await other.sendTransaction({ to, data });
+    const accountCreationTransaction = populateAccountCreationTransaction(
+      owner.address
+    );
+    await other.sendTransaction(accountCreationTransaction);
 
     // account deployed
     expect(
-      await hre.ethers.provider.getCode(predictedAccountAddress)
+      await hre.ethers.provider.getCode(predictedSafeAddress)
     ).to.not.equal("0x");
 
     const safe = ISafe__factory.connect(
-      predictedAccountAddress,
+      predictedSafeAddress,
       hre.ethers.provider
     );
     expect(await safe.isOwner(owner.address)).to.be.true;

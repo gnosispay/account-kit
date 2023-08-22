@@ -1,7 +1,5 @@
 import { SafeTransactionData } from "./types";
 
-import { predictSafeAddress } from "./populate/accountCreation";
-
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 /*
@@ -9,13 +7,11 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
  */
 
 export default function signSafeTransactionParams(
-  ownerAccount: string,
+  safeAddress: string,
   chainId: number,
   { to, value, data, operation }: SafeTransactionData,
   nonce: bigint | number
 ) {
-  const safeAddress = predictSafeAddress(ownerAccount);
-
   const domain = { verifyingContract: safeAddress, chainId };
   const primaryType = "SafeTx" as const;
   const types = {
@@ -45,5 +41,5 @@ export default function signSafeTransactionParams(
     nonce,
   };
 
-  return { account: ownerAccount, domain, primaryType, types, message };
+  return { domain, primaryType, types, message };
 }

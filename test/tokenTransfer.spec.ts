@@ -29,9 +29,9 @@ describe("tokenTransfer", async () => {
 
     const predictedAccountAddress = predictSafeAddress(owner.address);
 
-    const { to, data } = populateAccountCreationTransaction(owner.address, 1);
-
-    await relayer.sendTransaction({ to, data });
+    await relayer.sendTransaction(
+      populateAccountCreationTransaction(owner.address)
+    );
 
     await moveERC20(DAI_WHALE, predictedAccountAddress, DAI);
 
@@ -47,7 +47,7 @@ describe("tokenTransfer", async () => {
     const balance = await dai.balanceOf(safeAddress);
 
     const { domain, types, message } = signTransferTokenParams(
-      owner.address,
+      safeAddress,
       31337,
       {
         token: DAI,
@@ -59,8 +59,8 @@ describe("tokenTransfer", async () => {
 
     const signature = await owner._signTypedData(domain, types, message);
 
-    const { to, data } = populateTransferTokenTransaction(
-      owner.address,
+    const trasnferTokenTransaction = populateTransferTokenTransaction(
+      safeAddress,
       {
         token: DAI,
         to: AddressThree,
@@ -72,7 +72,7 @@ describe("tokenTransfer", async () => {
     expect(await dai.balanceOf(safeAddress)).to.be.equal(balance);
     expect(await dai.balanceOf(AddressThree)).to.equal(0);
 
-    await notTheOwner.sendTransaction({ to, data });
+    await notTheOwner.sendTransaction(trasnferTokenTransaction);
 
     expect(await dai.balanceOf(safeAddress)).to.equal(0);
     expect(await dai.balanceOf(AddressThree)).to.be.equal(balance);

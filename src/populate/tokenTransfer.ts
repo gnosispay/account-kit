@@ -1,19 +1,16 @@
 import { Interface } from "ethers/lib/utils.js";
 
 import { OperationType, SafeTransactionData, TransactionData } from "../types";
-
 import deployments from "../deployments";
-import { predictSafeAddress } from "./accountCreation";
 import signSafeTransactionParams from "../signature";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateTransferTokenTransaction(
-  ownerAccount: string,
+  safeAddress: string,
   transfer: { token: string; to: string; amount: number | bigint },
   signature: string
 ): TransactionData {
-  const safeAddress = predictSafeAddress(ownerAccount);
   const safeInterface = new Interface(deployments.safe.abi);
 
   const { to, value, data, operation } = safeTransaction(transfer);

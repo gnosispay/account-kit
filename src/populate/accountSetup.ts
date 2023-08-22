@@ -12,18 +12,16 @@ import deployments from "../deployments";
 import multisendEncode from "../multisendEncode";
 import signSafeTransactionParams from "../signature";
 
-import { predictSafeAddress } from "./accountCreation";
 import { predictDelayAddress } from "./delay-mod";
 import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export function populateAccountSetupTransaction(
-  ownerAccount: string,
+  safeAddress: string,
   allowanceConfig: AllowanceConfig,
   signature: string
 ): TransactionData {
-  const safeAddress = predictSafeAddress(ownerAccount);
   const safeInterface = new Interface(deployments.safe.abi);
 
   const { to, data, value, operation } = safeTransactionRequest(
@@ -50,58 +48,52 @@ export function populateAccountSetupTransaction(
 }
 
 export function signAccountSetupParams(
-  ownerAccount: string,
+  safeAddress: string,
   chainId: number,
   allowanceConfig: AllowanceConfig,
   nonce: number | bigint
 ) {
-  const safeAddress = predictSafeAddress(ownerAccount);
-
   return signSafeTransactionParams(
-    ownerAccount,
+    safeAddress,
     chainId,
     safeTransactionRequest(safeAddress, allowanceConfig),
     nonce
   );
 }
 
-export function predictModuleAddresses(ownerAccount: string) {
-  return _predictModuleAddresses(predictSafeAddress(ownerAccount));
-}
-
-function safeTransactionRequest(
-  safeAddress: string,
-  allowanceConfig: AllowanceConfig
-): SafeTransactionData {
-  const { allowanceAddress, delayAddress } =
-    _predictModuleAddresses(safeAddress);
-
-  return multisendEncode([
-    populateAddDelegate(allowanceConfig),
-    populateSetAllowance(allowanceConfig),
-    {
-      to: safeAddress,
-      data: encodeEnableModule(allowanceAddress),
-      value: 0,
-    },
-    {
-      to: safeAddress,
-      data: encodeEnableModule(delayAddress),
-      value: 0,
-    },
-  ]);
-}
-
-function _predictModuleAddresses(safeAddress: string) {
+export function predictModuleAddresses(safeAddress: string) {
   const deployment = getAllowanceModuleDeployment();
   // same as mainnet and gc
   const allowanceSingletonAddress = deployment?.networkAddresses[1];
   assert(allowanceSingletonAddress);
 
   return {
-    allowanceAddress: allowanceSingletonAddress,
-    delayAddress: predictDelayAddress(safeAddress),
+    allowanceModAddress: allowanceSingletonAddress,
+    delayModAddress: predictDelayAddress(safeAddress),
   };
+}
+
+function safeTransactionRequest(
+  safeAddress: string,
+  allowanceConfig: AllowanceConfig
+): SafeTransactionData {
+  const { allowanceModAddress, delayModAddress } =
+    predictModuleAddresses(safeAddress);
+
+  return multisendEncode([
+    populateAddDelegate(allowanceConfig),
+    populateSetAllowance(allowanceConfig),
+    {
+      to: safeAddress,
+      data: encodeEnableModule(allowanceModAddress),
+      value: 0,
+    },
+    {
+      to: safeAddress,
+      data: encodeEnableModule(delayModAddress),
+      value: 0,
+    },
+  ]);
 }
 
 function encodeEnableModule(moduleAddress: string) {

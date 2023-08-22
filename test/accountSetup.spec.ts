@@ -32,29 +32,28 @@ describe("accountSetup", async () => {
 
     const predictedAccountAddress = predictSafeAddress(owner.address);
 
-    const { to, data } = populateAccountCreationTransaction(owner.address, 1);
+    const { to, data } = populateAccountCreationTransaction(owner.address);
 
     await relayer.sendTransaction({ to, data });
 
     return { owner, safeAddress: predictedAccountAddress };
   }
 
-  it("deploys and enables two mods via multisend", async () => {
+  it("deploys a delay mod", async () => {
     const { owner, safeAddress } = await loadFixture(createAccount);
 
-    const proxyAddress = predictDelayAddress(safeAddress);
-    const { to, data } = populateDelayDeploy(safeAddress);
+    const { delayModAddress } = predictModuleAddresses(safeAddress);
 
-    expect(await hre.ethers.provider.getCode(proxyAddress)).to.equal("0x");
+    expect(await hre.ethers.provider.getCode(delayModAddress)).to.equal("0x");
 
-    await owner.sendTransaction({ to, data });
+    await owner.sendTransaction(populateDelayDeploy(safeAddress));
 
-    expect(await hre.ethers.provider.getCode(proxyAddress)).to.not.equal("0x");
+    expect(await hre.ethers.provider.getCode(delayModAddress)).to.not.equal(
+      "0x"
+    );
   });
 
-  it("sets up the account after creation", async () => {
-    const hardhatChainId = 31337;
-
+  it("enables two mods after running set up", async () => {
     const { owner, safeAddress } = await loadFixture(createAccount);
     const [, , , , , spender] = await hre.ethers.getSigners();
 
@@ -69,29 +68,28 @@ describe("accountSetup", async () => {
     };
 
     const { domain, types, message } = signAccountSetupParams(
-      owner.address,
-      hardhatChainId,
+      safeAddress,
+      31337, // chainId hardhat
       allowanceConfig,
       0
     );
     const signature = await owner._signTypedData(domain, types, message);
 
-    const { to, data } = populateAccountSetupTransaction(
-      owner.address,
+    const accountSetupTransaction = populateAccountSetupTransaction(
+      safeAddress,
       allowanceConfig,
       signature
     );
 
-    const { allowanceAddress, delayAddress } = predictModuleAddresses(
-      owner.address
-    );
+    const { allowanceModAddress, delayModAddress } =
+      predictModuleAddresses(safeAddress);
 
-    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.false;
-    expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
+    expect(await safe.isModuleEnabled(allowanceModAddress)).to.be.false;
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.false;
 
-    await owner.sendTransaction({ to, data });
+    await owner.sendTransaction(accountSetupTransaction);
 
-    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.true;
-    expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
+    expect(await safe.isModuleEnabled(allowanceModAddress)).to.be.true;
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.true;
   });
 });
