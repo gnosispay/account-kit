@@ -14,9 +14,7 @@ import signSafeTransactionParams from "../signature";
 
 import { predictSafeAddress } from "./accountCreation";
 import { predictDelayAddress } from "./delay-mod";
-
-import populateAddDelegate from "./allowance-mod/populateAddDelegate";
-import populateSetAllowance from "./allowance-mod/populateSetAllowance";
+import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 

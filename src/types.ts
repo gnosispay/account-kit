@@ -22,3 +22,7 @@ export type AllowanceConfig = {
   amount: number | bigint; // the allowed amount
   period: number; // the period in minutes over which the allowance is reset
 };
+
+export type DelayConfig = {
+  cooldown: number; // Cooldown in seconds that should be required before the transaction can be executed
+};

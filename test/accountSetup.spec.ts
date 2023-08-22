@@ -12,8 +12,9 @@ import {
   predictSafeAddress,
   signAccountSetupParams,
 } from "../src";
+
 import {
-  populateDelayDeployTransaction,
+  populateDelayDeploy,
   predictDelayAddress,
 } from "../src/populate/delay-mod";
 
@@ -42,7 +43,7 @@ describe("accountSetup", async () => {
     const { owner, safeAddress } = await loadFixture(createAccount);
 
     const proxyAddress = predictDelayAddress(safeAddress);
-    const { to, data } = populateDelayDeployTransaction(safeAddress);
+    const { to, data } = populateDelayDeploy(safeAddress);
 
     expect(await hre.ethers.provider.getCode(proxyAddress)).to.equal("0x");
 
