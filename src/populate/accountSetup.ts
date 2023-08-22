@@ -10,7 +10,7 @@ import {
 
 import deployments from "../deployments";
 import multisendEncode from "../multisendEncode";
-import makeSignatureInput from "../makeSignatureInput";
+import signSafeTransactionParams from "../signature";
 
 import { predictSafeAddress } from "./accountCreation";
 import { predictDelayAddress } from "./delay-mod";
@@ -59,7 +59,7 @@ export function signAccountSetupParams(
 ) {
   const safeAddress = predictSafeAddress(ownerAccount);
 
-  return makeSignatureInput(
+  return signSafeTransactionParams(
     ownerAccount,
     chainId,
     safeTransactionRequest(safeAddress, allowanceConfig),

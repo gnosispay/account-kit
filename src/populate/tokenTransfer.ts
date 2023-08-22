@@ -4,7 +4,7 @@ import { OperationType, SafeTransactionData, TransactionData } from "../types";
 
 import deployments from "../deployments";
 import { predictSafeAddress } from "./accountCreation";
-import makeSignatureInput from "../makeSignatureInput";
+import signSafeTransactionParams from "../signature";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
@@ -46,7 +46,7 @@ export function signTransferTokenParams(
   { token, to, amount }: { token: string; to: string; amount: number | bigint },
   nonce: number | bigint
 ) {
-  return makeSignatureInput(
+  return signSafeTransactionParams(
     ownerAccount,
     chainId,
     safeTransaction({ token, to, amount }),
