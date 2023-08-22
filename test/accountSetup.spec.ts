@@ -13,10 +13,7 @@ import {
   signAccountSetupParams,
 } from "../src";
 
-import {
-  populateDelayDeploy,
-  predictDelayAddress,
-} from "../src/populate/delay-mod";
+import { populateDelayDeploy } from "../src/populate/delay-mod";
 
 describe("accountSetup", async () => {
   before(async () => {
@@ -67,10 +64,15 @@ describe("accountSetup", async () => {
       period: 60 * 24, // 1 day
     };
 
+    const delayConfig = {
+      cooldown: 60 * 20, // 20 minutes
+    };
+
     const { domain, types, message } = signAccountSetupParams(
       safeAddress,
       31337, // chainId hardhat
       allowanceConfig,
+      delayConfig,
       0
     );
     const signature = await owner._signTypedData(domain, types, message);
@@ -78,6 +80,7 @@ describe("accountSetup", async () => {
     const accountSetupTransaction = populateAccountSetupTransaction(
       safeAddress,
       allowanceConfig,
+      delayConfig,
       signature
     );
 

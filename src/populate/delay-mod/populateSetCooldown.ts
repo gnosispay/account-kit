@@ -1,6 +1,6 @@
 import { DelayConfig, TransactionData } from "../../types";
 
-import { BYTES32_ZERO, DELAY_INTERFACE } from "./constants";
+import { DELAY_INTERFACE } from "./constants";
 import predictDelayAddress from "./predictAddress";
 
 export default function populateSetCooldown(
@@ -11,7 +11,7 @@ export default function populateSetCooldown(
   const delayAddress = predictDelayAddress(safeAddress);
   return {
     to: delayAddress,
-    data: iface.encodeFunctionData("setCooldown", [config.cooldown]),
+    data: iface.encodeFunctionData("setTxCooldown", [config.cooldown]),
     value: 0,
   };
 }
