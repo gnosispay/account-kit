@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist build typechain-types",
-    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
+    "build": "hardhat compile && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
     "test": "hardhat test",
     "lint": "eslint --max-warnings 0 .",
     "format": "prettier ./src/**/*.ts ./test/**/*.ts ./*.ts -w",

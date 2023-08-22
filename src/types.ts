@@ -20,9 +20,9 @@ export type AllowanceConfig = {
   spender: string; // the gnosis signer aka allowance delegate
   token: string; // the address of the ERC20 token we're allowing
   amount: number | bigint; // the allowed amount
-  period: number; // the period in minutes over which the allowance is reset
+  period: number; // in minutes: the period over which the allowance is reset
 };
 
 export type DelayConfig = {
-  cooldown: number; // Cooldown in seconds that should be required before the transaction can be executed
+  cooldown: number; // in seconds: the time that should be required before the transaction can be executed
 };
