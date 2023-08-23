@@ -1,8 +1,7 @@
 import { Interface } from "ethers/lib/utils.js";
 
 import {
-  AllowanceConfig,
-  DelayConfig,
+  AccountSetupConfig,
   SafeTransactionData,
   TransactionData,
 } from "../../types";
@@ -17,16 +16,14 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export default function populateAccountSetupTransaction(
   safeAddress: string,
-  allowanceConfig: AllowanceConfig,
-  delayConfig: DelayConfig,
+  config: AccountSetupConfig,
   signature: string
 ): TransactionData {
   const safeInterface = new Interface(deployments.safe.abi);
 
   const { to, data, value, operation } = populateInnerTransaction(
     safeAddress,
-    allowanceConfig,
-    delayConfig
+    config
   );
 
   return {
@@ -49,22 +46,21 @@ export default function populateAccountSetupTransaction(
 
 export function populateInnerTransaction(
   safeAddress: string,
-  allowanceConfig: AllowanceConfig,
-  delayConfig: DelayConfig
+  config: AccountSetupConfig
 ): SafeTransactionData {
   const { allowanceModAddress, delayModAddress } =
     predictModuleAddresses(safeAddress);
 
   return multisendEncode([
-    populateAddDelegate(allowanceConfig),
-    populateSetAllowance(allowanceConfig),
+    populateAddDelegate(config),
+    populateSetAllowance(config),
     {
       to: safeAddress,
       data: encodeEnableModule(allowanceModAddress),
       value: 0,
     },
     populateDelayDeploy(safeAddress),
-    populateSetCooldown(safeAddress, delayConfig),
+    populateSetCooldown(safeAddress, config),
     {
       to: safeAddress,
       data: encodeEnableModule(delayModAddress),

@@ -1,13 +1,13 @@
 import { Interface } from "ethers/lib/utils";
 
-import { AllowanceConfig, TransactionData } from "../../../types";
+import { AccountSetupConfig, TransactionData } from "../../../types";
 import {
   ALLOWANCE_SINGLETON_ABI,
   ALLOWANCE_SINGLETON_ADDRESS,
 } from "./contants";
 
 export default function populateAddDelegate(
-  config: AllowanceConfig
+  config: AccountSetupConfig
 ): TransactionData {
   const iface = new Interface(ALLOWANCE_SINGLETON_ABI);
   return {

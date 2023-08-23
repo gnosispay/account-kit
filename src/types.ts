@@ -16,13 +16,12 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
-export type AllowanceConfig = {
-  spender: string; // the gnosis signer aka allowance delegate
-  token: string; // the address of the ERC20 token we're allowing
-  amount: number | bigint; // the allowed amount
-  period: number; // in minutes: the period over which the allowance is reset
-};
-
-export type DelayConfig = {
-  cooldown: number; // in seconds: the time that should be required before the transaction can be executed
+export type AccountSetupConfig = {
+  //** for allowance mod **/
+  spender: string; // the gnosis signer, which will be enabled via allowance
+  token: string; // the address of the token used for payments
+  amount: bigint | number; // the allowance amount granted to spender
+  period: number; // optional period after which an allowance will be replenished (IN MINUTES)
+  //** for delay mod **/
+  cooldown: number; // execution delay for owner before he execute transactions (IN SECONDS)
 };

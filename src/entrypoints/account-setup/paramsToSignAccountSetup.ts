@@ -1,21 +1,18 @@
 import { paramsToSignSafeTransaction } from "../../sign";
-import { AllowanceConfig, DelayConfig } from "../../types";
+import { AccountSetupConfig } from "../../types";
 
 import { populateInnerTransaction } from "./populateAccountSetupTransaction";
-
-const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export default function paramsToSignAccountSetup(
   safeAddress: string,
   chainId: number,
-  allowanceConfig: AllowanceConfig,
-  delayConfig: DelayConfig,
-  nonce: number | bigint
+  config: AccountSetupConfig,
+  nonce: number | bigint = 0
 ) {
   return paramsToSignSafeTransaction(
     safeAddress,
     chainId,
-    populateInnerTransaction(safeAddress, allowanceConfig, delayConfig),
+    populateInnerTransaction(safeAddress, config),
     nonce
   );
 }

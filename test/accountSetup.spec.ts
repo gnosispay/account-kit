@@ -64,7 +64,7 @@ describe("accountSetup", async () => {
     amount = 1000000,
     period = 60 * 24, // in minutes, 1 day
     // for delay
-    cooldown = 60 * 20, // in seconds, 20 minutes
+    cooldown = 20, // in minutes, 20 minutes
   }: {
     spender: string;
     token?: string;
@@ -72,16 +72,13 @@ describe("accountSetup", async () => {
     period?: number;
     cooldown?: number;
   }) {
-    const allowanceConfig = {
+    return {
       spender,
       token,
       amount,
       period,
+      cooldown,
     };
-
-    const delayConfig = { cooldown };
-
-    return { allowanceConfig, delayConfig };
   }
 
   it("setup enables two mods", async () => {
@@ -89,23 +86,18 @@ describe("accountSetup", async () => {
       createAccount
     );
 
-    const { allowanceConfig, delayConfig } = modConfig({
-      spender: alice.address,
-    });
+    const config = modConfig({ spender: alice.address });
 
     const { domain, types, message } = paramsToSignAccountSetup(
       safeAddress,
       31337, // chainId hardhat
-      allowanceConfig,
-      delayConfig,
-      0
+      config
     );
     const signature = await owner._signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safeAddress,
-      allowanceConfig,
-      delayConfig,
+      config,
       signature
     );
 
@@ -130,7 +122,7 @@ describe("accountSetup", async () => {
     const PERIOD = 7654;
     const AMOUNT = 123;
 
-    const { allowanceConfig, delayConfig } = modConfig({
+    const config = modConfig({
       spender: alice.address,
       period: PERIOD,
       token: DAI,
@@ -140,16 +132,13 @@ describe("accountSetup", async () => {
     const { domain, types, message } = paramsToSignAccountSetup(
       safe.address,
       31337, // chainId hardhat
-      allowanceConfig,
-      delayConfig,
-      0
+      config
     );
     const signature = await owner._signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safe.address,
-      allowanceConfig,
-      delayConfig,
+      config,
       signature
     );
 
@@ -173,7 +162,7 @@ describe("accountSetup", async () => {
 
     const COOLDOWN = 9999;
 
-    const { allowanceConfig, delayConfig } = modConfig({
+    const config = modConfig({
       spender: alice.address,
       cooldown: COOLDOWN,
     });
@@ -181,16 +170,13 @@ describe("accountSetup", async () => {
     const { domain, types, message } = paramsToSignAccountSetup(
       safe.address,
       31337, // chainId hardhat
-      allowanceConfig,
-      delayConfig,
-      0
+      config
     );
     const signature = await owner._signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safe.address,
-      allowanceConfig,
-      delayConfig,
+      config,
       signature
     );
 
