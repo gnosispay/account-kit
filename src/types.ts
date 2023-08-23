@@ -16,6 +16,12 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
+// export interface Transfer {
+//   token: string;
+//   to: string;
+//   amount: bigint | number;
+// }
+
 export type AccountSetupConfig = {
   //** for allowance mod **/
   spender: string; // the gnosis signer, which will be enabled via allowance

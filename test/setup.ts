@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import hre from "hardhat";
 import { IERC20__factory } from "../typechain-types";
+import { AccountSetupConfig } from "../src/types";
 
 export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.
@@ -40,6 +41,30 @@ export async function moveERC20(
   const receipt = await token.transfer(to, await token.balanceOf(from));
 
   await receipt.wait();
+}
+
+export function createAccountSetupConfig({
+  // for allowance
+  spender,
+  token = DAI,
+  amount = 1000000,
+  period = 60 * 24, // in minutes, 1 day
+  // for delay
+  cooldown = 20, // in minutes, 20 minutes
+}: {
+  spender: string;
+  token?: string;
+  amount?: number | bigint;
+  period?: number;
+  cooldown?: number;
+}): AccountSetupConfig {
+  return {
+    spender,
+    token,
+    amount,
+    period,
+    cooldown,
+  };
 }
 
 export const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";

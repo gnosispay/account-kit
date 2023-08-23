@@ -9,8 +9,10 @@ interface IAllowanceMod {
   // event RemoveDelegate(address indexed safe, address delegate)
   // event ResetAllowance(address indexed safe, address delegate, address token)
   // event SetAllowance(address indexed safe, address delegate, address token, uint96 allowanceAmount, uint16 resetTime)
-  // function ALLOWANCE_TRANSFER_TYPEHASH() view returns (bytes32)
-  // function DOMAIN_SEPARATOR_TYPEHASH() view returns (bytes32)
+  function ALLOWANCE_TRANSFER_TYPEHASH() external view returns (bytes32);
+
+  function DOMAIN_SEPARATOR_TYPEHASH() external view returns (bytes32);
+
   // function NAME() view returns (string)
   // function VERSION() view returns (string)
   // function allowances(address, address, address) view returns (uint96 amount, uint96 spent, uint16 resetTimeMin, uint32 lastResetMin, uint16 nonce)
@@ -29,7 +31,16 @@ interface IAllowanceMod {
   // function deleteAllowance(address delegate, address token)
   // function executeAllowanceTransfer(address safe, address token, address to, uint96 amount, address paymentToken, uint96 payment, address delegate, bytes signature)
   // function getChainId() pure returns (uint256)
-  // function generateTransferHash(address safe, address token, address to, uint96 amount, address paymentToken, uint96 payment, uint16 nonce) view returns (bytes32)
+  function generateTransferHash(
+    address safe,
+    address token,
+    address to,
+    uint96 amount,
+    address paymentToken,
+    uint96 payment,
+    uint16 nonce
+  ) external view returns (bytes32);
+
   // function getTokens(address safe, address delegate) view returns (address[])
   function getTokenAllowance(
     address safe,

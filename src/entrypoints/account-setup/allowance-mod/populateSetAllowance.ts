@@ -1,17 +1,16 @@
 import { Interface } from "ethers/lib/utils";
 
 import { AccountSetupConfig, TransactionData } from "../../../types";
-import {
-  ALLOWANCE_SINGLETON_ABI,
-  ALLOWANCE_SINGLETON_ADDRESS,
-} from "./contants";
+import deployments from "../../../deployments";
 
 export default function populateSetAllowance(
   config: AccountSetupConfig
 ): TransactionData {
-  const iface = new Interface(ALLOWANCE_SINGLETON_ABI);
+  const { abi, defaultAddress: address } = deployments.allowanceSingleton;
+
+  const iface = new Interface(abi);
   return {
-    to: ALLOWANCE_SINGLETON_ADDRESS,
+    to: address,
     data: iface.encodeFunctionData("setAllowance", [
       config.spender,
       config.token,

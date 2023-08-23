@@ -8,7 +8,7 @@ import {
   ISafe__factory,
 } from "../typechain-types";
 
-import { DAI, fork, forkReset } from "./setup";
+import { DAI, createAccountSetupConfig, fork, forkReset } from "./setup";
 import {
   paramsToSignAccountSetup,
   populateAccountCreationTransaction,
@@ -27,8 +27,7 @@ describe("accountSetup", async () => {
   });
 
   async function createAccount() {
-    const [owner, , , alice, bob, charlie, johndoe] =
-      await hre.ethers.getSigners();
+    const [owner, , , alice, bob, charlie] = await hre.ethers.getSigners();
 
     const safeAddress = predictSafeAddress(owner.address);
     const transaction = populateAccountCreationTransaction(owner.address);
@@ -36,14 +35,13 @@ describe("accountSetup", async () => {
     const { delayModAddress, allowanceModAddress } =
       predictModuleAddresses(safeAddress);
 
-    await johndoe.sendTransaction(transaction);
+    await charlie.sendTransaction(transaction);
 
     return {
       owner,
       alice,
       bob,
       charlie,
-      johndoe,
       safeAddress: safeAddress,
       safe: ISafe__factory.connect(safeAddress, hre.ethers.provider),
       delayMod: IDelayMod__factory.connect(
@@ -57,36 +55,12 @@ describe("accountSetup", async () => {
     };
   }
 
-  function modConfig({
-    // for allowance
-    spender,
-    token = DAI,
-    amount = 1000000,
-    period = 60 * 24, // in minutes, 1 day
-    // for delay
-    cooldown = 20, // in minutes, 20 minutes
-  }: {
-    spender: string;
-    token?: string;
-    amount?: number | bigint;
-    period?: number;
-    cooldown?: number;
-  }) {
-    return {
-      spender,
-      token,
-      amount,
-      period,
-      cooldown,
-    };
-  }
-
   it("setup enables two mods", async () => {
     const { owner, alice, safe, safeAddress } = await loadFixture(
       createAccount
     );
 
-    const config = modConfig({ spender: alice.address });
+    const config = createAccountSetupConfig({ spender: alice.address });
 
     const { domain, types, message } = paramsToSignAccountSetup(
       safeAddress,
@@ -122,7 +96,7 @@ describe("accountSetup", async () => {
     const PERIOD = 7654;
     const AMOUNT = 123;
 
-    const config = modConfig({
+    const config = createAccountSetupConfig({
       spender: alice.address,
       period: PERIOD,
       token: DAI,
@@ -162,7 +136,7 @@ describe("accountSetup", async () => {
 
     const COOLDOWN = 9999;
 
-    const config = modConfig({
+    const config = createAccountSetupConfig({
       spender: alice.address,
       cooldown: COOLDOWN,
     });

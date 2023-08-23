@@ -13,3 +13,9 @@ export {
   populateTokenTransferTransaction,
   paramsToSignTokenTransfer,
 } from "./entrypoints/token-transfer";
+
+export {
+  populateAllowanceTransferTransaction,
+  paramsToSignAllowanceTransfer,
+  workaroundPatchV,
+} from "./entrypoints/allowance-transfer";

@@ -6,13 +6,13 @@ import { populateInnerTransaction } from "./populateTokenTransferTransaction";
  * provider._signTypedData(domain, types, values)
  */
 export default function paramsToSignTokenTransfer(
-  ownerAccount: string,
+  safeAddress: string,
   chainId: number,
   { token, to, amount }: { token: string; to: string; amount: number | bigint },
   nonce: number | bigint
 ) {
   return paramsToSignSafeTransaction(
-    ownerAccount,
+    safeAddress,
     chainId,
     populateInnerTransaction({ token, to, amount }),
     nonce
