@@ -6,10 +6,10 @@ import { IERC20__factory } from "../typechain-types";
 
 import { fork, forkReset, moveERC20 } from "./setup";
 import {
+  paramsToSignTokenTransfer,
   populateAccountCreationTransaction,
-  populateTransferTokenTransaction,
+  populateTokenTransferTransaction,
   predictSafeAddress,
-  signTransferTokenParams,
 } from "../src";
 
 describe("tokenTransfer", async () => {
@@ -46,7 +46,7 @@ describe("tokenTransfer", async () => {
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = await dai.balanceOf(safeAddress);
 
-    const { domain, types, message } = signTransferTokenParams(
+    const { domain, types, message } = paramsToSignTokenTransfer(
       safeAddress,
       31337,
       {
@@ -59,7 +59,7 @@ describe("tokenTransfer", async () => {
 
     const signature = await owner._signTypedData(domain, types, message);
 
-    const trasnferTokenTransaction = populateTransferTokenTransaction(
+    const trasnferTokenTransaction = populateTokenTransferTransaction(
       safeAddress,
       {
         token: DAI,

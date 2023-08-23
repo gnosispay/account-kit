@@ -6,7 +6,7 @@ const AddressZero = "0x0000000000000000000000000000000000000000";
  * produces the parameters to be passed to signer_signTypedData()
  */
 
-export default function signSafeTransactionParams(
+export function paramsToSignSafeTransaction(
   safeAddress: string,
   chainId: number,
   { to, value, data, operation }: SafeTransactionData,

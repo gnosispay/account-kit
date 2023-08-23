@@ -1,4 +1,4 @@
-import { DelayConfig, TransactionData } from "../../types";
+import { DelayConfig, TransactionData } from "../../../types";
 
 import { DELAY_INTERFACE } from "./constants";
 import predictDelayAddress from "./predictAddress";

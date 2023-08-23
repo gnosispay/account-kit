@@ -10,14 +10,12 @@ import {
 
 import { DAI, fork, forkReset } from "./setup";
 import {
+  paramsToSignAccountSetup,
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
   predictModuleAddresses,
   predictSafeAddress,
-  signAccountSetupParams,
 } from "../src";
-
-import { populateDelayDeploy } from "../src/populate/delay-mod";
 
 describe("accountSetup", async () => {
   before(async () => {
@@ -95,7 +93,7 @@ describe("accountSetup", async () => {
       spender: alice.address,
     });
 
-    const { domain, types, message } = signAccountSetupParams(
+    const { domain, types, message } = paramsToSignAccountSetup(
       safeAddress,
       31337, // chainId hardhat
       allowanceConfig,
@@ -139,7 +137,7 @@ describe("accountSetup", async () => {
       amount: AMOUNT,
     });
 
-    const { domain, types, message } = signAccountSetupParams(
+    const { domain, types, message } = paramsToSignAccountSetup(
       safe.address,
       31337, // chainId hardhat
       allowanceConfig,
@@ -180,7 +178,7 @@ describe("accountSetup", async () => {
       cooldown: COOLDOWN,
     });
 
-    const { domain, types, message } = signAccountSetupParams(
+    const { domain, types, message } = paramsToSignAccountSetup(
       safe.address,
       31337, // chainId hardhat
       allowanceConfig,

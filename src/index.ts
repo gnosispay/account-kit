@@ -1,15 +1,15 @@
 export {
   populateAccountCreationTransaction,
   predictSafeAddress,
-} from "./populate/accountCreation";
+} from "./entrypoints/account-creation";
 
 export {
   populateAccountSetupTransaction,
-  signAccountSetupParams,
+  paramsToSignAccountSetup,
   predictModuleAddresses,
-} from "./populate/accountSetup";
+} from "./entrypoints/account-setup/";
 
 export {
-  populateTransferTokenTransaction,
-  signTransferTokenParams,
-} from "./populate/tokenTransfer";
+  populateTokenTransferTransaction,
+  paramsToSignTokenTransfer,
+} from "./entrypoints/token-transfer";

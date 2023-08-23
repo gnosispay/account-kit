@@ -1,6 +1,6 @@
 import { Interface } from "ethers/lib/utils";
 
-import { AllowanceConfig, TransactionData } from "../../types";
+import { AllowanceConfig, TransactionData } from "../../../types";
 import {
   ALLOWANCE_SINGLETON_ABI,
   ALLOWANCE_SINGLETON_ADDRESS,

@@ -1,4 +1,4 @@
-import { TransactionData } from "../../types";
+import { TransactionData } from "../../../types";
 import {
   BYTES32_ZERO,
   DELAY_MASTERCOPY_ADDRESS,

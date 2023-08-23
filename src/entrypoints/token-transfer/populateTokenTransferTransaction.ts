@@ -1,19 +1,22 @@
 import { Interface } from "ethers/lib/utils.js";
 
-import { OperationType, SafeTransactionData, TransactionData } from "../types";
-import deployments from "../deployments";
-import signSafeTransactionParams from "../signature";
+import {
+  OperationType,
+  SafeTransactionData,
+  TransactionData,
+} from "../../types";
+import deployments from "../../deployments";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
-export function populateTransferTokenTransaction(
+export default function populateTransferTokenTransaction(
   safeAddress: string,
   transfer: { token: string; to: string; amount: number | bigint },
   signature: string
 ): TransactionData {
   const safeInterface = new Interface(deployments.safe.abi);
 
-  const { to, value, data, operation } = safeTransaction(transfer);
+  const { to, value, data, operation } = populateInnerTransaction(transfer);
 
   return {
     to: safeAddress,
@@ -33,25 +36,7 @@ export function populateTransferTokenTransaction(
   };
 }
 
-/*
- * This function constructs the parameters to be passed to
- * provider._signTypedData(domain, types, values)
- */
-export function signTransferTokenParams(
-  ownerAccount: string,
-  chainId: number,
-  { token, to, amount }: { token: string; to: string; amount: number | bigint },
-  nonce: number | bigint
-) {
-  return signSafeTransactionParams(
-    ownerAccount,
-    chainId,
-    safeTransaction({ token, to, amount }),
-    nonce
-  );
-}
-
-function safeTransaction({
+export function populateInnerTransaction({
   token,
   to,
   amount,

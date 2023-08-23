@@ -5,7 +5,9 @@ import { pack } from "@ethersproject/solidity";
 import { OperationType, TransactionData, SafeTransactionData } from "./types";
 import deployments from "./deployments";
 
-export default function (transactions: TransactionData[]): SafeTransactionData {
+export default function encode(
+  transactions: TransactionData[]
+): SafeTransactionData {
   const remove0x = (s: string) => s.slice(2);
   const transactionsEncoded =
     "0x" + transactions.map(packOneTransaction).map(remove0x).join("");

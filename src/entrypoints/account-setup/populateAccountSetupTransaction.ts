@@ -1,28 +1,21 @@
-import assert from "assert";
 import { Interface } from "ethers/lib/utils.js";
-import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
 
 import {
   AllowanceConfig,
   DelayConfig,
   SafeTransactionData,
   TransactionData,
-} from "../types";
+} from "../../types";
+import deployments from "../../deployments";
+import multisendEncode from "../../multisend";
 
-import deployments from "../deployments";
-import multisendEncode from "../multisendEncode";
-import signSafeTransactionParams from "../signature";
-
-import {
-  populateDelayDeploy,
-  populateSetCooldown,
-  predictDelayAddress,
-} from "./delay-mod";
+import { populateDelayDeploy, populateSetCooldown } from "./delay-mod";
 import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
+import predictModuleAddresses from "./predictModuleAddresses";
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
-export function populateAccountSetupTransaction(
+export default function populateAccountSetupTransaction(
   safeAddress: string,
   allowanceConfig: AllowanceConfig,
   delayConfig: DelayConfig,
@@ -30,7 +23,7 @@ export function populateAccountSetupTransaction(
 ): TransactionData {
   const safeInterface = new Interface(deployments.safe.abi);
 
-  const { to, data, value, operation } = safeTransactionRequest(
+  const { to, data, value, operation } = populateInnerTransaction(
     safeAddress,
     allowanceConfig,
     delayConfig
@@ -54,34 +47,7 @@ export function populateAccountSetupTransaction(
   };
 }
 
-export function signAccountSetupParams(
-  safeAddress: string,
-  chainId: number,
-  allowanceConfig: AllowanceConfig,
-  delayConfig: DelayConfig,
-  nonce: number | bigint
-) {
-  return signSafeTransactionParams(
-    safeAddress,
-    chainId,
-    safeTransactionRequest(safeAddress, allowanceConfig, delayConfig),
-    nonce
-  );
-}
-
-export function predictModuleAddresses(safeAddress: string) {
-  const deployment = getAllowanceModuleDeployment();
-  // same as mainnet and gc
-  const allowanceSingletonAddress = deployment?.networkAddresses[1];
-  assert(allowanceSingletonAddress);
-
-  return {
-    allowanceModAddress: allowanceSingletonAddress,
-    delayModAddress: predictDelayAddress(safeAddress),
-  };
-}
-
-function safeTransactionRequest(
+export function populateInnerTransaction(
   safeAddress: string,
   allowanceConfig: AllowanceConfig,
   delayConfig: DelayConfig
