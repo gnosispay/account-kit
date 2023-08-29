@@ -23,8 +23,8 @@
     "test": "hardhat test",
     "prerelease": "yarn clean && yarn build",
     "release": "yarn publish --access public",
-    "prepare": "yarn run clean && yarn run build",    
-    "lint": "eslint 'src/**/*.ts' 'test/**/*.ts' --max-warnings 0 --fix",    
+    "prepare": "yarn run clean && yarn run build",
+    "lint": "eslint 'src/**/*.ts' 'test/**/*.ts' --max-warnings 0 --fix",
     "format": "prettier ./src/**/*.ts ./test/**/*.ts ./*.ts -w"
   },
   "repository": {
@@ -64,6 +64,7 @@
     "typescript": "5.1.6"
   },
   "dependencies": {
+    "@gnosis.pm/zodiac": "^3.3.7",
     "@safe-global/safe-deployments": "^1.26.0",
     "@safe-global/safe-modules-deployments": "^1.1.0",
     "ethers": "^6.7.1"

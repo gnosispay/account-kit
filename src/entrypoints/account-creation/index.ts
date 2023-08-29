@@ -14,8 +14,8 @@ export function populateAccountCreationTransaction(
   ownerAddress: string,
   seed: string = ZeroHash
 ): TransactionData {
-  const proxyFactoryAddress = deployments.proxyFactory.defaultAddress;
-  const mastercopyAddress = deployments.safe.defaultAddress;
+  const proxyFactoryAddress = deployments.proxyFactory.address;
+  const mastercopyAddress = deployments.safe.address;
   const proxyFactoryInterface = new Interface(deployments.proxyFactory.abi);
 
   return {
@@ -44,8 +44,7 @@ export function initializer(ownerAddress: string) {
    */
 
   const safeInterface = new Interface(deployments.safe.abi);
-  const fallbackHandlerAddress =
-    deployments.fallbackHandler.networkAddresses[100];
+  const fallbackHandlerAddress = deployments.fallbackHandler.address;
 
   const initializer = safeInterface.encodeFunctionData("setup", [
     // owners

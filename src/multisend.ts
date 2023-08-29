@@ -17,7 +17,7 @@ export default function encode(
 
   return {
     operation: OperationType.DelegateCall,
-    to: deployments.multiSend.defaultAddress,
+    to: deployments.multiSend.address,
     value: 0,
     data,
   };

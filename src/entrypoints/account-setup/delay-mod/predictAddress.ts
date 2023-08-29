@@ -1,20 +1,16 @@
 import {
   AbiCoder,
+  Interface,
   ZeroHash,
   getCreate2Address,
   keccak256,
   solidityPackedKeccak256,
 } from "ethers";
-
-import {
-  DELAY_INTERFACE,
-  DELAY_MASTERCOPY_ADDRESS,
-  MODULE_FACTORY_ADDRESS,
-} from "./constants";
+import deployments from "../../../deployments";
 
 export default function predictDelayAddress(safeAddress: string): string {
-  const mastercopy = DELAY_MASTERCOPY_ADDRESS;
-  const factory = MODULE_FACTORY_ADDRESS;
+  const mastercopy = deployments.delayMastercopy.address;
+  const factory = deployments.zodiacFactory.address;
   const saltNonce = ZeroHash;
 
   const byteCode =
@@ -31,10 +27,13 @@ export default function predictDelayAddress(safeAddress: string): string {
 }
 
 export function encodeSetUp(safeAddress: string) {
-  const abi = AbiCoder.defaultAbiCoder();
-  const initializer = abi.encode(
+  const initializer = AbiCoder.defaultAbiCoder().encode(
     ["address", "address", "address", "uint256", "uint256"],
     [safeAddress, safeAddress, safeAddress, 0, 0]
   );
-  return DELAY_INTERFACE.encodeFunctionData("setUp", [initializer]);
+
+  return Interface.from(deployments.delayMastercopy.abi).encodeFunctionData(
+    "setUp",
+    [initializer]
+  );
 }

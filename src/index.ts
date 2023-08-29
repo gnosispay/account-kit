@@ -17,5 +17,5 @@ export {
 export {
   populateAllowanceTransferTransaction,
   paramsToSignAllowanceTransfer,
-  workaroundPatchV,
+  signaturePatchAllowanceTransfer,
 } from "./entrypoints/allowance-transfer";

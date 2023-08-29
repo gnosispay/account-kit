@@ -113,7 +113,7 @@ export default function (
 }
 
 // https://github.com/safe-global/safe-modules/issues/70
-export function workaroundPatchV(signature: string) {
+export function signaturePatch(signature: string) {
   const v = parseInt(signature.slice(130, 132), 16);
   return `${signature.slice(0, 130)}${Number(v + 4).toString(16)}`;
 }

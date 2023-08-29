@@ -18,7 +18,7 @@ import {
   populateAccountSetupTransaction,
   populateAllowanceTransferTransaction,
   predictSafeAddress,
-  workaroundPatchV,
+  signaturePatchAllowanceTransfer,
 } from "../src";
 import deployments from "../src/deployments";
 import {
@@ -98,7 +98,9 @@ describe("allowance-tranfer", async () => {
       nonce
     );
 
-    const signature = workaroundPatchV(await spender.signMessage(message));
+    const signature = signaturePatchAllowanceTransfer(
+      await spender.signMessage(message)
+    );
 
     const transaction = populateAllowanceTransferTransaction(
       await safe.getAddress(),
@@ -130,7 +132,9 @@ describe("allowance-tranfer", async () => {
       nonce
     );
 
-    const signature = workaroundPatchV(await spender.signMessage(message));
+    const signature = signaturePatchAllowanceTransfer(
+      await spender.signMessage(message)
+    );
 
     const transaction = populateAllowanceTransferTransaction(
       await safe.getAddress(),

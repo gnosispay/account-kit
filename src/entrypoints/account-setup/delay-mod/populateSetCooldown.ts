@@ -1,12 +1,13 @@
-import { DELAY_INTERFACE } from "./constants";
+import { Interface } from "ethers";
 import predictDelayAddress from "./predictAddress";
+import deployments from "../../../deployments";
 import { AccountSetupConfig, TransactionData } from "../../../types";
 
 export default function populateSetCooldown(
   safeAddress: string,
   config: AccountSetupConfig
 ): TransactionData {
-  const iface = DELAY_INTERFACE;
+  const iface = Interface.from(deployments.delayMastercopy.abi);
   const delayAddress = predictDelayAddress(safeAddress);
   return {
     to: delayAddress,

@@ -1,10 +1,10 @@
 import paramsToSignAllowanceTransfer, {
-  workaroundPatchV,
+  signaturePatch,
 } from "./paramsToSignAllowanceTransfer";
 import populateAllowanceTransferTransaction from "./populateAllowanceTransferTransaction";
 
 export {
   populateAllowanceTransferTransaction,
   paramsToSignAllowanceTransfer,
-  workaroundPatchV,
+  signaturePatch as signaturePatchAllowanceTransfer,
 };

@@ -13,8 +13,8 @@ export default function predictSafeAddress(
   ownerAddress: string,
   seed: string = ZeroHash
 ): string {
-  const factoryAddress = deployments.proxyFactory.networkAddresses[100];
-  const mastercopyAddress = deployments.safe.networkAddresses[100];
+  const factoryAddress = deployments.proxyFactory.address;
+  const mastercopyAddress = deployments.safe.address;
 
   const salt = keccak256(
     concat([keccak256(initializer(ownerAddress)), saltNonce(seed)])
