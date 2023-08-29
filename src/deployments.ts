@@ -1,8 +1,4 @@
-import {
-  ContractAbis,
-  ContractAddresses,
-  KnownContracts,
-} from "@gnosis.pm/zodiac";
+import { ContractAddresses, KnownContracts } from "@gnosis.pm/zodiac";
 import {
   SingletonDeployment,
   getFallbackHandlerDeployment,
@@ -13,6 +9,12 @@ import {
 
 import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
 import assert from "assert";
+import { Interface } from "ethers";
+import {
+  IDelayModule__factory,
+  IModuleProxyFactory__factory,
+  IMulticall__factory,
+} from "../typechain-types";
 
 const VERSION = "v1.3.0";
 
@@ -32,19 +34,23 @@ export default {
       version: VERSION,
     })
   ),
-  multiSend: toEntry(
+  allowanceSingleton: allowanceDeployment(),
+  moduleProxyFactory: {
+    address: ContractAddresses[1][KnownContracts.FACTORY],
+    iface: IModuleProxyFactory__factory.createInterface(),
+  },
+  delayMastercopy: {
+    address: ContractAddresses[1][KnownContracts.DELAY],
+    iface: IDelayModule__factory.createInterface(),
+  },
+  multisend: toEntry(
     getMultiSendDeployment({
       version: VERSION,
     })
   ),
-  allowanceSingleton: allowanceDeployment(),
-  zodiacFactory: {
-    address: ContractAddresses[1][KnownContracts.FACTORY],
-    abi: ContractAbis[KnownContracts.FACTORY],
-  },
-  delayMastercopy: {
-    address: ContractAddresses[1][KnownContracts.DELAY],
-    abi: ContractAbis[KnownContracts.DELAY],
+  multicall: {
+    address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+    iface: IMulticall__factory.createInterface(),
   },
 };
 
@@ -55,7 +61,7 @@ export const proxyCreationBytecode =
 function toEntry(result: SingletonDeployment | undefined) {
   assert(result);
 
-  return { abi: result.abi, address: result.defaultAddress };
+  return { iface: Interface.from(result.abi), address: result.defaultAddress };
 }
 
 function allowanceDeployment() {
@@ -67,5 +73,5 @@ function allowanceDeployment() {
   const abi = deployment?.abi;
   assert(abi);
 
-  return { defaultAddress: address, abi, version: deployment.version };
+  return { address, iface: Interface.from(abi) };
 }

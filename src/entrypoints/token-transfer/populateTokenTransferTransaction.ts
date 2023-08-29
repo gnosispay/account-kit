@@ -12,7 +12,7 @@ export default function populateTransferTokenTransaction(
   transfer: { token: string; to: string; amount: number | bigint },
   signature: string
 ): TransactionData {
-  const safeInterface = new Interface(deployments.safe.abi);
+  const safeInterface = deployments.safe.iface;
 
   const { to, value, data, operation } = populateInnerTransaction(transfer);
 

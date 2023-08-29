@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity >=0.7.0 <0.9.0;
 
-interface IDelayMod {
+interface IDelayModule {
   // event AvatarSet(address indexed previousAvatar, address indexed newAvatar);
   // event ChangedGuard(address guard)
   // event DelaySetup(address indexed initiator, address indexed owner, address indexed avatar, address target)
@@ -34,7 +34,8 @@ interface IDelayMod {
 
   // function setTxExpiration(uint256 expiration)
   // function setTxNonce(uint256 _nonce)
-  // function setUp(bytes initParams)
+  function setUp(bytes memory initParams) external;
+
   // function skipExpired()
   // function target() view returns (address)
   // function transferOwnership(address newOwner)

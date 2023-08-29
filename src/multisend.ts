@@ -1,4 +1,3 @@
-import { Interface } from "@ethersproject/abi";
 import { hexDataLength } from "@ethersproject/bytes";
 import { pack } from "@ethersproject/solidity";
 
@@ -12,14 +11,13 @@ export default function encode(
   const transactionsEncoded =
     "0x" + transactions.map(packOneTransaction).map(remove0x).join("");
 
-  const iface = new Interface(deployments.multiSend.abi);
-  const data = iface.encodeFunctionData("multiSend", [transactionsEncoded]);
+  const { address, iface } = deployments.multisend;
 
   return {
     operation: OperationType.DelegateCall,
-    to: deployments.multiSend.address,
+    to: address,
+    data: iface.encodeFunctionData("multiSend", [transactionsEncoded]),
     value: 0,
-    data,
   };
 }
 

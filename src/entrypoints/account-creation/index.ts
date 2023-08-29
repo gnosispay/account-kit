@@ -1,10 +1,4 @@
-import {
-  Interface,
-  ZeroAddress,
-  ZeroHash,
-  keccak256,
-  toUtf8Bytes,
-} from "ethers";
+import { ZeroAddress, ZeroHash, keccak256, toUtf8Bytes } from "ethers";
 import deployments from "../../deployments";
 import { TransactionData } from "../../types";
 
@@ -14,17 +8,16 @@ export function populateAccountCreationTransaction(
   ownerAddress: string,
   seed: string = ZeroHash
 ): TransactionData {
-  const proxyFactoryAddress = deployments.proxyFactory.address;
+  const { iface, address: factory } = deployments.proxyFactory;
   const mastercopyAddress = deployments.safe.address;
-  const proxyFactoryInterface = new Interface(deployments.proxyFactory.abi);
 
   return {
-    to: proxyFactoryAddress,
+    to: factory,
     /*
      * Safe Proxy Creation works by calling proxy factory, and including an
      * embedded setup call (the initializer)
      */
-    data: proxyFactoryInterface.encodeFunctionData("createProxyWithNonce", [
+    data: iface.encodeFunctionData("createProxyWithNonce", [
       mastercopyAddress,
       initializer(ownerAddress),
       saltNonce(seed),
@@ -43,10 +36,10 @@ export function initializer(ownerAddress: string) {
    * at the SafeProxyFactory
    */
 
-  const safeInterface = new Interface(deployments.safe.abi);
+  const { iface } = deployments.safe;
   const fallbackHandlerAddress = deployments.fallbackHandler.address;
 
-  const initializer = safeInterface.encodeFunctionData("setup", [
+  const initializer = iface.encodeFunctionData("setup", [
     // owners
     [ownerAddress],
     // threshold

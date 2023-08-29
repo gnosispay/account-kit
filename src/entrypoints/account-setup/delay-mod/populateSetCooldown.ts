@@ -1,4 +1,3 @@
-import { Interface } from "ethers";
 import predictDelayAddress from "./predictAddress";
 import deployments from "../../../deployments";
 import { AccountSetupConfig, TransactionData } from "../../../types";
@@ -7,7 +6,7 @@ export default function populateSetCooldown(
   safeAddress: string,
   config: AccountSetupConfig
 ): TransactionData {
-  const iface = Interface.from(deployments.delayMastercopy.abi);
+  const { iface } = deployments.delayMastercopy;
   const delayAddress = predictDelayAddress(safeAddress);
   return {
     to: delayAddress,

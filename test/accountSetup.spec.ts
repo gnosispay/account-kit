@@ -11,8 +11,8 @@ import {
   predictSafeAddress,
 } from "../src";
 import {
-  IAllowanceMod__factory,
-  IDelayMod__factory,
+  IAllowanceModule__factory,
+  IDelayModule__factory,
   ISafe__factory,
 } from "../typechain-types";
 
@@ -43,11 +43,11 @@ describe("accountSetup", async () => {
       charlie,
       safeAddress: safeAddress,
       safe: ISafe__factory.connect(safeAddress, hre.ethers.provider),
-      delayMod: IDelayMod__factory.connect(
+      delayMod: IDelayModule__factory.connect(
         delayModAddress,
         hre.ethers.provider
       ),
-      allowanceMod: IAllowanceMod__factory.connect(
+      allowanceMod: IAllowanceModule__factory.connect(
         allowanceModAddress,
         hre.ethers.provider
       ),

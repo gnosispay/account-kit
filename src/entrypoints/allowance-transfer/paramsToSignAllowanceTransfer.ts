@@ -57,7 +57,7 @@ export default function (
   nonce: number
 ) {
   const abi = AbiCoder.defaultAbiCoder();
-  const verifyingContract = deployments.allowanceSingleton.defaultAddress;
+  const verifyingContract = deployments.allowanceSingleton.address;
 
   const DOMAIN_SEPARATOR_TYPEHASH = keccak256(
     toUtf8Bytes("EIP712Domain(uint256 chainId,address verifyingContract)")

@@ -16,7 +16,7 @@ export default function populateAccountSetupTransaction(
   config: AccountSetupConfig,
   signature: string
 ): TransactionData {
-  const safeInterface = new Interface(deployments.safe.abi);
+  const safeInterface = deployments.safe.iface;
 
   const { to, data, value, operation } = populateInnerTransaction(
     safeAddress,

@@ -1,4 +1,4 @@
-import { Interface, ZeroAddress } from "ethers";
+import { ZeroAddress } from "ethers";
 import deployments from "../../deployments";
 import { TransactionData } from "../../types";
 
@@ -12,12 +12,10 @@ export default function populateAllowanceTransferTransaction(
   }: { spender: string; token: string; to: string; amount: number | bigint },
   signature: string
 ): TransactionData {
-  const allowanceAddress = deployments.allowanceSingleton.defaultAddress;
-  const allowanceInterface = new Interface(deployments.allowanceSingleton.abi);
-
+  const { iface, address } = deployments.allowanceSingleton;
   return {
-    to: allowanceAddress,
-    data: allowanceInterface.encodeFunctionData("executeAllowanceTransfer", [
+    to: address,
+    data: iface.encodeFunctionData("executeAllowanceTransfer", [
       safeAddress,
       token,
       to,

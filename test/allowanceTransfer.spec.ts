@@ -22,7 +22,7 @@ import {
 } from "../src";
 import deployments from "../src/deployments";
 import {
-  IAllowanceMod__factory,
+  IAllowanceModule__factory,
   IERC20__factory,
   ISafe__factory,
 } from "../typechain-types";
@@ -74,8 +74,8 @@ describe("allowance-tranfer", async () => {
       spender: alice,
       charlie,
       safe,
-      allowanceMod: IAllowanceMod__factory.connect(
-        deployments.allowanceSingleton.defaultAddress,
+      allowanceMod: IAllowanceModule__factory.connect(
+        deployments.allowanceSingleton.address,
         hre.ethers.provider
       ),
     };

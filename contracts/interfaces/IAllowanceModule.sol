@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity >=0.7.0 <0.9.0;
 
-interface IAllowanceMod {
+interface IAllowanceModule {
   // event AddDelegate(address indexed safe, address delegate)
   // event DeleteAllowance(address indexed safe, address delegate, address token)
   // event ExecuteAllowanceTransfer(address indexed safe, address delegate, address token, address to, uint96 value, uint16 nonce)
