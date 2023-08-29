@@ -1,5 +1,5 @@
-import assert from "assert";
 import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
+import assert from "assert";
 
 import { predictDelayAddress } from "./delay-mod";
 

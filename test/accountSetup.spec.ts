@@ -1,12 +1,6 @@
-import hre from "hardhat";
-import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-
-import {
-  IAllowanceMod__factory,
-  IDelayMod__factory,
-  ISafe__factory,
-} from "../typechain-types";
+import { expect } from "chai";
+import hre from "hardhat";
 
 import { DAI, createAccountSetupConfig, fork, forkReset } from "./setup";
 import {
@@ -16,6 +10,11 @@ import {
   predictModuleAddresses,
   predictSafeAddress,
 } from "../src";
+import {
+  IAllowanceMod__factory,
+  IDelayMod__factory,
+  ISafe__factory,
+} from "../typechain-types";
 
 describe("accountSetup", async () => {
   before(async () => {
@@ -56,9 +55,8 @@ describe("accountSetup", async () => {
   }
 
   it("setup enables two mods", async () => {
-    const { owner, alice, safe, safeAddress } = await loadFixture(
-      createAccount
-    );
+    const { owner, alice, safe, safeAddress } =
+      await loadFixture(createAccount);
 
     const config = createAccountSetupConfig({ spender: alice.address });
 
@@ -67,7 +65,7 @@ describe("accountSetup", async () => {
       31337, // chainId hardhat
       config
     );
-    const signature = await owner._signTypedData(domain, types, message);
+    const signature = await owner.signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safeAddress,
@@ -88,9 +86,11 @@ describe("accountSetup", async () => {
   });
 
   it("setup correctly configures allowance", async () => {
-    const { owner, alice, bob, safe, allowanceMod } = await loadFixture(
-      createAccount
-    );
+    const { owner, alice, bob, safe, allowanceMod } =
+      await loadFixture(createAccount);
+
+    const safeAddress = await safe.getAddress();
+    const allowanceAddress = await allowanceMod.getAddress();
 
     const spender = alice;
     const PERIOD = 7654;
@@ -104,14 +104,14 @@ describe("accountSetup", async () => {
     });
 
     const { domain, types, message } = paramsToSignAccountSetup(
-      safe.address,
+      safeAddress,
       31337, // chainId hardhat
       config
     );
-    const signature = await owner._signTypedData(domain, types, message);
+    const signature = await owner.signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
-      safe.address,
+      safeAddress,
       config,
       signature
     );
@@ -119,21 +119,22 @@ describe("accountSetup", async () => {
     await bob.sendTransaction(transaction);
 
     const [amount, spent, period, , nonce] =
-      await allowanceMod.getTokenAllowance(safe.address, spender.address, DAI);
+      await allowanceMod.getTokenAllowance(safeAddress, spender.address, DAI);
 
     expect(amount).to.equal(AMOUNT);
     expect(spent).to.equal(0);
     expect(period).to.equal(PERIOD);
     expect(nonce).to.equal(1); // allowance token 1 means new
 
-    expect(await safe.isModuleEnabled(allowanceMod.address)).to.be.true;
+    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.true;
   });
 
   it("setup correctly configures delay", async () => {
-    const { owner, alice, bob, safe, delayMod } = await loadFixture(
-      createAccount
-    );
+    const { owner, alice, bob, safe, delayMod } =
+      await loadFixture(createAccount);
 
+    const safeAddress = await safe.getAddress();
+    const delayAddress = await delayMod.getAddress();
     const COOLDOWN = 9999;
 
     const config = createAccountSetupConfig({
@@ -142,21 +143,21 @@ describe("accountSetup", async () => {
     });
 
     const { domain, types, message } = paramsToSignAccountSetup(
-      safe.address,
+      safeAddress,
       31337, // chainId hardhat
       config
     );
-    const signature = await owner._signTypedData(domain, types, message);
+    const signature = await owner.signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
-      safe.address,
+      safeAddress,
       config,
       signature
     );
 
     await bob.sendTransaction(transaction);
 
-    expect(await safe.isModuleEnabled(delayMod.address)).to.be.true;
+    expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
     expect(await delayMod.txCooldown()).to.equal(9999);
     expect(await delayMod.queueNonce()).to.equal(await delayMod.txNonce());
   });

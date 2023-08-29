@@ -1,17 +1,18 @@
-import { Interface, keccak256, toUtf8Bytes } from "ethers/lib/utils.js";
-
-import { TransactionData } from "../../types";
+import {
+  Interface,
+  ZeroAddress,
+  ZeroHash,
+  keccak256,
+  toUtf8Bytes,
+} from "ethers";
 import deployments from "../../deployments";
-
-export const AddressZero = "0x0000000000000000000000000000000000000000";
-export const BYTES32_ZERO =
-  "0x0000000000000000000000000000000000000000000000000000000000000000";
+import { TransactionData } from "../../types";
 
 export { default as predictSafeAddress } from "./predictSafeAddress";
 
 export function populateAccountCreationTransaction(
   ownerAddress: string,
-  seed: string = BYTES32_ZERO
+  seed: string = ZeroHash
 ): TransactionData {
   const proxyFactoryAddress = deployments.proxyFactory.defaultAddress;
   const mastercopyAddress = deployments.safe.defaultAddress;
@@ -52,17 +53,17 @@ export function initializer(ownerAddress: string) {
     // threshold
     1,
     // to - for setupModules
-    AddressZero,
+    ZeroAddress,
     // data - for setupModules
     "0x",
     // fallbackHandler
     fallbackHandlerAddress,
     // paymentToken
-    AddressZero,
+    ZeroAddress,
     // payment
     0,
     // paymentReceiver
-    AddressZero,
+    ZeroAddress,
   ]);
 
   return initializer;

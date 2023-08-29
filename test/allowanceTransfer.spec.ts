@@ -1,11 +1,6 @@
-import hre from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-
-import {
-  IAllowanceMod__factory,
-  IERC20__factory,
-  ISafe__factory,
-} from "../typechain-types";
+import { expect } from "chai";
+import hre from "hardhat";
 
 import {
   DAI,
@@ -26,7 +21,11 @@ import {
   workaroundPatchV,
 } from "../src";
 import deployments from "../src/deployments";
-import { expect } from "chai";
+import {
+  IAllowanceMod__factory,
+  IERC20__factory,
+  ISafe__factory,
+} from "../typechain-types";
 
 describe("allowance-tranfer", async () => {
   before(async () => {
@@ -58,7 +57,7 @@ describe("allowance-tranfer", async () => {
       31337, // chainId hardhat
       config
     );
-    const signature = await owner._signTypedData(domain, types, message);
+    const signature = await owner.signTypedData(domain, types, message);
 
     const setupTransaction = populateAccountSetupTransaction(
       safeAddress,
@@ -93,7 +92,7 @@ describe("allowance-tranfer", async () => {
     const nonce = 1;
 
     const { message } = paramsToSignAllowanceTransfer(
-      safe.address,
+      await safe.getAddress(),
       31337,
       { token, to, amount },
       nonce
@@ -102,7 +101,7 @@ describe("allowance-tranfer", async () => {
     const signature = workaroundPatchV(await spender.signMessage(message));
 
     const transaction = populateAllowanceTransferTransaction(
-      safe.address,
+      await safe.getAddress(),
       { spender: spender.address, token, to, amount },
       signature
     );
@@ -124,8 +123,8 @@ describe("allowance-tranfer", async () => {
     const amount = 2000;
     const nonce = 1;
 
-    const { message, ...rest } = paramsToSignAllowanceTransfer(
-      safe.address,
+    const { message } = paramsToSignAllowanceTransfer(
+      await safe.getAddress(),
       31337,
       { token, to, amount },
       nonce
@@ -134,7 +133,7 @@ describe("allowance-tranfer", async () => {
     const signature = workaroundPatchV(await spender.signMessage(message));
 
     const transaction = populateAllowanceTransferTransaction(
-      safe.address,
+      await safe.getAddress(),
       { spender: spender.address, token, to, amount },
       signature
     );

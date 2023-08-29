@@ -1,19 +1,7 @@
-import "@typechain/hardhat";
-import "@nomiclabs/hardhat-ethers";
-import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-toolbox";
 
 import dotenv from "dotenv";
 import type { HttpNetworkUserConfig } from "hardhat/types";
-import yargs from "yargs";
-
-const { network } = yargs
-  .option("network", {
-    type: "string",
-    default: "hardhat",
-  })
-  .help(false)
-  .version(false)
-  .parseSync();
 
 // Load environment variables.
 dotenv.config();
@@ -29,15 +17,6 @@ if (PK) {
   sharedNetworkConfig.accounts = {
     mnemonic: MNEMONIC || DEFAULT_MNEMONIC,
   };
-}
-
-if (
-  ["mainnet", "goerli", "sepolia", "ropsten"].includes(network) &&
-  INFURA_KEY === undefined
-) {
-  throw new Error(
-    `Could not find Infura key in env, unable to connect to network ${network}`
-  );
 }
 
 export default {

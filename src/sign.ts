@@ -1,6 +1,5 @@
+import { ZeroAddress } from "ethers";
 import { SafeTransactionData } from "./types";
-
-const AddressZero = "0x0000000000000000000000000000000000000000";
 
 /*
  * produces the parameters to be passed to signer_signTypedData()
@@ -36,8 +35,8 @@ export function paramsToSignSafeTransaction(
     safeTxGas: 0,
     baseGas: 0,
     gasPrice: 0,
-    gasToken: AddressZero,
-    refundReceiver: AddressZero,
+    gasToken: ZeroAddress,
+    refundReceiver: ZeroAddress,
     nonce,
   };
 

@@ -1,5 +1,5 @@
-import { paramsToSignSafeTransaction } from "../../sign";
 import { populateInnerTransaction } from "./populateTokenTransferTransaction";
+import { paramsToSignSafeTransaction } from "../../sign";
 
 /*
  * This function constructs the parameters to be passed to

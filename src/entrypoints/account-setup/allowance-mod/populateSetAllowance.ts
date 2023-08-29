@@ -1,7 +1,7 @@
-import { Interface } from "ethers/lib/utils";
+import { Interface } from "ethers";
 
-import { AccountSetupConfig, TransactionData } from "../../../types";
 import deployments from "../../../deployments";
+import { AccountSetupConfig, TransactionData } from "../../../types";
 
 export default function populateSetAllowance(
   config: AccountSetupConfig

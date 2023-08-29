@@ -1,8 +1,5 @@
-import { Interface } from "ethers/lib/utils";
+import { Interface } from "ethers";
 import { DELAY_ABI, FACTORY_ABI } from "./abis";
-
-export const BYTES32_ZERO =
-  "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export const MODULE_FACTORY_ADDRESS =
   "0x000000000000aDdB49795b0f9bA5BC298cDda236";

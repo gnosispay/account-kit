@@ -1,7 +1,6 @@
+import { populateInnerTransaction } from "./populateAccountSetupTransaction";
 import { paramsToSignSafeTransaction } from "../../sign";
 import { AccountSetupConfig } from "../../types";
-
-import { populateInnerTransaction } from "./populateAccountSetupTransaction";
 
 export default function paramsToSignAccountSetup(
   safeAddress: string,

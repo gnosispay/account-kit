@@ -1,10 +1,9 @@
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { ISafe__factory } from "../typechain-types";
-
 import { fork, forkReset } from "./setup";
 import { populateAccountCreationTransaction, predictSafeAddress } from "../src";
+import { ISafe__factory } from "../typechain-types";
 
 describe("accountCreation", async () => {
   before(async () => {

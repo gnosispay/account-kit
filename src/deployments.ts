@@ -1,4 +1,3 @@
-import assert from "assert";
 import {
   SingletonDeployment,
   getFallbackHandlerDeployment,
@@ -8,6 +7,7 @@ import {
 } from "@safe-global/safe-deployments/";
 
 import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
+import assert from "assert";
 
 const VERSION = "v1.3.0";
 

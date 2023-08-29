@@ -1,8 +1,6 @@
-import hre from "hardhat";
-import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-
-import { IERC20__factory } from "../typechain-types";
+import { expect } from "chai";
+import hre from "hardhat";
 
 import { fork, forkReset, moveERC20 } from "./setup";
 import {
@@ -11,6 +9,7 @@ import {
   populateTokenTransferTransaction,
   predictSafeAddress,
 } from "../src";
+import { IERC20__factory } from "../typechain-types";
 
 describe("tokenTransfer", async () => {
   before(async () => {
@@ -52,19 +51,19 @@ describe("tokenTransfer", async () => {
       {
         token: DAI,
         to: AddressThree,
-        amount: balance.toBigInt(),
+        amount: balance,
       },
       0
     );
 
-    const signature = await owner._signTypedData(domain, types, message);
+    const signature = await owner.signTypedData(domain, types, message);
 
     const trasnferTokenTransaction = populateTokenTransferTransaction(
       safeAddress,
       {
         token: DAI,
         to: AddressThree,
-        amount: balance.toBigInt(),
+        amount: balance,
       },
       signature
     );

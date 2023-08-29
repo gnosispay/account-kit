@@ -1,7 +1,6 @@
-import { AccountSetupConfig, TransactionData } from "../../../types";
-
 import { DELAY_INTERFACE } from "./constants";
 import predictDelayAddress from "./predictAddress";
+import { AccountSetupConfig, TransactionData } from "../../../types";
 
 export default function populateSetCooldown(
   safeAddress: string,

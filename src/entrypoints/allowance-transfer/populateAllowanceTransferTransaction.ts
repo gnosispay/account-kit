@@ -1,8 +1,6 @@
-import { Interface } from "ethers/lib/utils.js";
-import { TransactionData } from "../../types";
+import { Interface, ZeroAddress } from "ethers";
 import deployments from "../../deployments";
-
-const AddressZero = "0x0000000000000000000000000000000000000000";
+import { TransactionData } from "../../types";
 
 export default function populateAllowanceTransferTransaction(
   safeAddress: string,
@@ -24,7 +22,7 @@ export default function populateAllowanceTransferTransaction(
       token,
       to,
       amount,
-      AddressZero, // paymentToken
+      ZeroAddress, // paymentToken
       0, // payment
       spender,
       signature,

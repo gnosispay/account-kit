@@ -1,13 +1,12 @@
 import {
-  arrayify,
-  defaultAbiCoder,
+  AbiCoder,
+  ZeroAddress,
+  getBytes,
   keccak256,
-  solidityPack,
+  solidityPacked,
   toUtf8Bytes,
-} from "ethers/lib/utils";
+} from "ethers";
 import deployments from "../../deployments";
-
-const AddressZero = "0x0000000000000000000000000000000000000000";
 
 /*
  * Until the outcome of this issue https://github.com/safe-global/safe-modules/issues/70
@@ -57,6 +56,7 @@ export default function (
   { token, to, amount }: { token: string; to: string; amount: number | bigint },
   nonce: number
 ) {
+  const abi = AbiCoder.defaultAbiCoder();
   const verifyingContract = deployments.allowanceSingleton.defaultAddress;
 
   const DOMAIN_SEPARATOR_TYPEHASH = keccak256(
@@ -69,14 +69,14 @@ export default function (
   );
 
   const domainSeparator = keccak256(
-    defaultAbiCoder.encode(
+    abi.encode(
       ["bytes32", "uint256", "address"],
       [DOMAIN_SEPARATOR_TYPEHASH, chainId, verifyingContract]
     )
   );
 
   const transferHash = keccak256(
-    defaultAbiCoder.encode(
+    abi.encode(
       [
         "bytes32",
         "address",
@@ -93,7 +93,7 @@ export default function (
         token,
         to,
         amount,
-        AddressZero, //paymentToken
+        ZeroAddress, //paymentToken
         0, // payment,
         nonce,
       ]
@@ -101,9 +101,9 @@ export default function (
   );
 
   return {
-    message: arrayify(
+    message: getBytes(
       keccak256(
-        solidityPack(
+        solidityPacked(
           ["bytes1", "bytes1", "bytes32", "bytes32"],
           ["0x19", "0x01", domainSeparator, transferHash]
         )

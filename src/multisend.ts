@@ -2,8 +2,8 @@ import { Interface } from "@ethersproject/abi";
 import { hexDataLength } from "@ethersproject/bytes";
 import { pack } from "@ethersproject/solidity";
 
-import { OperationType, TransactionData, SafeTransactionData } from "./types";
 import deployments from "./deployments";
+import { OperationType, TransactionData, SafeTransactionData } from "./types";
 
 export default function encode(
   transactions: TransactionData[]

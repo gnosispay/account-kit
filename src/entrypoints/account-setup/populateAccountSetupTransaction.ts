@@ -1,18 +1,15 @@
-import { Interface } from "ethers/lib/utils.js";
+import { Interface, ZeroAddress } from "ethers";
+import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
+import { populateDelayDeploy, populateSetCooldown } from "./delay-mod";
+import predictModuleAddresses from "./predictModuleAddresses";
+import deployments from "../../deployments";
+import multisendEncode from "../../multisend";
 
 import {
   AccountSetupConfig,
   SafeTransactionData,
   TransactionData,
 } from "../../types";
-import deployments from "../../deployments";
-import multisendEncode from "../../multisend";
-
-import { populateDelayDeploy, populateSetCooldown } from "./delay-mod";
-import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
-import predictModuleAddresses from "./predictModuleAddresses";
-
-const AddressZero = "0x0000000000000000000000000000000000000000";
 
 export default function populateAccountSetupTransaction(
   safeAddress: string,
@@ -36,8 +33,8 @@ export default function populateAccountSetupTransaction(
       0, // safeTxGas
       0, // baseGas
       0, // gasPrice
-      AddressZero, // gasToken
-      AddressZero, // gasRefund
+      ZeroAddress, // gasToken
+      ZeroAddress, // gasRefund
       signature,
     ]),
     value: 0,

@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import hre from "hardhat";
-import { IERC20__factory } from "../typechain-types";
 import { AccountSetupConfig } from "../src/types";
+import { IERC20__factory } from "../typechain-types";
 
 export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.

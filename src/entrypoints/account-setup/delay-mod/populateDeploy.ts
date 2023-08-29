@@ -1,11 +1,11 @@
-import { TransactionData } from "../../../types";
+import { ZeroHash } from "ethers";
 import {
-  BYTES32_ZERO,
   DELAY_MASTERCOPY_ADDRESS,
   MODULE_FACTORY_ADDRESS,
   MODULE_FACTORY_INTERFACE,
 } from "./constants";
 import { encodeSetUp } from "./predictAddress";
+import { TransactionData } from "../../../types";
 
 export default function populateDelayDeploy(
   safeAddress: string
@@ -14,7 +14,7 @@ export default function populateDelayDeploy(
   const mastercopy = DELAY_MASTERCOPY_ADDRESS;
   const factory = MODULE_FACTORY_ADDRESS;
 
-  const saltNonce = BYTES32_ZERO;
+  const saltNonce = ZeroHash;
 
   return {
     to: factory,

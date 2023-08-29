@@ -1,19 +1,17 @@
 import {
+  AbiCoder,
+  ZeroHash,
   concat,
-  defaultAbiCoder,
   getCreate2Address,
   keccak256,
-} from "ethers/lib/utils";
+} from "ethers";
 
-import deployments, { proxyCreationBytecode } from "../../deployments";
 import { initializer, saltNonce } from ".";
-
-export const BYTES32_ZERO =
-  "0x0000000000000000000000000000000000000000000000000000000000000000";
+import deployments, { proxyCreationBytecode } from "../../deployments";
 
 export default function predictSafeAddress(
   ownerAddress: string,
-  seed: string = BYTES32_ZERO
+  seed: string = ZeroHash
 ): string {
   const factoryAddress = deployments.proxyFactory.networkAddresses[100];
   const mastercopyAddress = deployments.safe.networkAddresses[100];
@@ -22,9 +20,11 @@ export default function predictSafeAddress(
     concat([keccak256(initializer(ownerAddress)), saltNonce(seed)])
   );
 
+  const abi = AbiCoder.defaultAbiCoder();
+
   const deploymentData = concat([
     proxyCreationBytecode,
-    defaultAbiCoder.encode(["address"], [mastercopyAddress]),
+    abi.encode(["address"], [mastercopyAddress]),
   ]);
 
   return getCreate2Address(factoryAddress, salt, keccak256(deploymentData));
