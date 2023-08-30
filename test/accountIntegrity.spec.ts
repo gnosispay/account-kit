@@ -4,6 +4,22 @@ import { ZeroAddress } from "ethers";
 import hre from "hardhat";
 
 import {
+  evaluateAccountIntegrityQuery,
+  populateAccountCreationTransaction,
+  populateAccountIntegrityQuery,
+  populateAccountSetupTransaction,
+  populateAllowanceTransferTransaction,
+  predictSafeAddress,
+} from "../src";
+import deployments from "../src/deployments";
+import {
+  predictDelayAddress,
+  signAccountSetup,
+} from "../src/entrypoints/account-setup";
+import { AccountIntegrityStatus } from "../src/types";
+import { IDelayModule__factory, ISafe__factory } from "../typechain-types";
+
+import {
   DAI,
   DAI_WHALE,
   createAccountSetupConfig,
@@ -12,21 +28,7 @@ import {
   moveERC20,
 } from "./test-helpers/setup";
 import execSafeTransaction from "./test-helpers/execSafeTransaction";
-import {
-  evaluateAccountIntegrityQuery,
-  paramsToSignAccountSetup,
-  paramsToSignAllowanceTransfer,
-  populateAccountCreationTransaction,
-  populateAccountIntegrityQuery,
-  populateAccountSetupTransaction,
-  populateAllowanceTransferTransaction,
-  predictSafeAddress,
-  signaturePatchAllowanceTransfer,
-} from "../src";
-import deployments from "../src/deployments";
-import { predictDelayAddress } from "../src/entrypoints/account-setup";
-import { AccountIntegrityStatus } from "../src/types";
-import { IDelayModule__factory, ISafe__factory } from "../typechain-types";
+import { signAllowanceTransfer } from "../src/entrypoints/allowance-transfer";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
@@ -57,12 +59,13 @@ describe("account-integrity", () => {
       amount: 123,
     });
 
-    const { domain, types, message } = paramsToSignAccountSetup(
+    const signature = await signAccountSetup(
       safeAddress,
       31337, // chainId hardhat
-      config
+      config,
+      0,
+      (domain, types, message) => owner.signTypedData(domain, types, message)
     );
-    const signature = await owner.signTypedData(domain, types, message);
 
     await relayer.sendTransaction(
       populateAccountSetupTransaction(safeAddress, config, signature)
@@ -112,17 +115,7 @@ describe("account-integrity", () => {
     const token = DAI;
     const to = ZeroAddress;
     const amount = 23;
-
-    const { message } = paramsToSignAllowanceTransfer(
-      safeAddress,
-      31337,
-      { token, to, amount },
-      1
-    );
-
-    const signature = signaturePatchAllowanceTransfer(
-      await alice.signMessage(message)
-    );
+    const nonce = 1;
 
     const query = populateAccountIntegrityQuery(safeAddress, config);
 
@@ -143,6 +136,13 @@ describe("account-integrity", () => {
     expect(result.amount).to.equal(config.amount);
 
     // spend allowance
+    const signature = await signAllowanceTransfer(
+      safeAddress,
+      31337,
+      { token, to, amount },
+      nonce,
+      (message) => alice.signMessage(message)
+    );
     const justSpent = 23;
     await relayer.sendTransaction(
       populateAllowanceTransferTransaction(

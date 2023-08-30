@@ -1,10 +1,5 @@
-import paramsToSignAllowanceTransfer, {
-  signaturePatch,
-} from "./paramsToSignAllowanceTransfer";
-import populateAllowanceTransferTransaction from "./populateAllowanceTransferTransaction";
+import populateAllowanceTransferTransaction, {
+  signAllowanceTransfer,
+} from "./populateAllowanceTransferTransaction";
 
-export {
-  populateAllowanceTransferTransaction,
-  paramsToSignAllowanceTransfer,
-  signaturePatch as signaturePatchAllowanceTransfer,
-};
+export { populateAllowanceTransferTransaction, signAllowanceTransfer };

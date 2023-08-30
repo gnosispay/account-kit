@@ -1,9 +1,10 @@
-import paramsToSignAccountSetup from "./paramsToSignAccountSetup";
-import populateAccountSetupTransaction from "./populateAccountSetupTransaction";
+import populateAccountSetupTransaction, {
+  signAccountSetup,
+} from "./populateAccountSetupTransaction";
 import predictDelayAddress from "./predictDelayAddress";
 
 export {
   populateAccountSetupTransaction,
-  paramsToSignAccountSetup,
+  signAccountSetup,
   predictDelayAddress,
 };

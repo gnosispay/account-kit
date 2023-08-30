@@ -1,4 +1,5 @@
-import paramsToSignTokenTransfer from "./paramsToSignTokenTransfer";
-import populateTokenTransferTransaction from "./populateTokenTransferTransaction";
+import populateTokenTransferTransaction, {
+  signTokenTransfer,
+} from "./populateTokenTransferTransaction";
 
-export { populateTokenTransferTransaction, paramsToSignTokenTransfer };
+export { populateTokenTransferTransaction, signTokenTransfer };

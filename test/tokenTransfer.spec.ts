@@ -4,12 +4,12 @@ import hre from "hardhat";
 
 import { fork, forkReset, moveERC20 } from "./test-helpers/setup";
 import {
-  paramsToSignTokenTransfer,
   populateAccountCreationTransaction,
   populateTokenTransferTransaction,
   predictSafeAddress,
 } from "../src";
 import { IERC20__factory } from "../typechain-types";
+import { signTokenTransfer } from "../src/entrypoints/token-transfer";
 
 describe("token-transfer", async () => {
   before(async () => {
@@ -45,7 +45,7 @@ describe("token-transfer", async () => {
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = await dai.balanceOf(safeAddress);
 
-    const { domain, types, message } = paramsToSignTokenTransfer(
+    const signature = await signTokenTransfer(
       safeAddress,
       31337,
       {
@@ -53,10 +53,9 @@ describe("token-transfer", async () => {
         to: AddressThree,
         amount: balance,
       },
-      0
+      0,
+      (domain, types, message) => owner.signTypedData(domain, types, message)
     );
-
-    const signature = await owner.signTypedData(domain, types, message);
 
     const trasnferTokenTransaction = populateTokenTransferTransaction(
       safeAddress,

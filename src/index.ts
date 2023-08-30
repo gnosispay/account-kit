@@ -10,17 +10,16 @@ export {
 
 export {
   populateAccountSetupTransaction,
-  paramsToSignAccountSetup,
+  signAccountSetup,
   predictDelayAddress,
 } from "./entrypoints/account-setup/";
 
 export {
   populateTokenTransferTransaction,
-  paramsToSignTokenTransfer,
+  // signTokenTransfer,
 } from "./entrypoints/token-transfer";
 
 export {
   populateAllowanceTransferTransaction,
-  paramsToSignAllowanceTransfer,
-  signaturePatchAllowanceTransfer,
+  signAllowanceTransfer,
 } from "./entrypoints/allowance-transfer";

@@ -3,11 +3,11 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import {
-  paramsToSignAccountSetup,
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
   predictDelayAddress,
   predictSafeAddress,
+  signAccountSetup,
 } from "../src";
 import deployments from "../src/deployments";
 import {
@@ -71,12 +71,14 @@ describe("account-setup", async () => {
       owner: owner.address,
       spender: alice.address,
     });
-    const { domain, types, message } = paramsToSignAccountSetup(
+
+    const signature = await signAccountSetup(
       safeAddress,
-      31337, // chainId hardhat
-      config
+      31337,
+      config,
+      0,
+      (...args) => owner.signTypedData(...args)
     );
-    const signature = await owner.signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safeAddress,
@@ -112,12 +114,13 @@ describe("account-setup", async () => {
       amount: AMOUNT,
     });
 
-    const { domain, types, message } = paramsToSignAccountSetup(
+    const signature = await signAccountSetup(
       safeAddress,
-      31337, // chainId hardhat
-      config
+      31337,
+      config,
+      0,
+      (...args) => owner.signTypedData(...args)
     );
-    const signature = await owner.signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safeAddress,
@@ -156,12 +159,13 @@ describe("account-setup", async () => {
       cooldown: COOLDOWN,
     });
 
-    const { domain, types, message } = paramsToSignAccountSetup(
+    const signature = await signAccountSetup(
       safeAddress,
-      31337, // chainId hardhat
-      config
+      31337,
+      config,
+      0,
+      (...args) => owner.signTypedData(...args)
     );
-    const signature = await owner.signTypedData(domain, types, message);
 
     const transaction = populateAccountSetupTransaction(
       safeAddress,

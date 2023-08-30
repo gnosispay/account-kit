@@ -6,6 +6,7 @@ import {
   SafeTransactionData,
   TransactionData,
 } from "../../types";
+import { typedDataForSafeTransaction } from "../../eip712";
 
 export default function populateTransferTokenTransaction(
   safeAddress: string,
@@ -14,7 +15,7 @@ export default function populateTransferTokenTransaction(
 ): TransactionData {
   const safeInterface = deployments.safeMastercopy.iface;
 
-  const { to, value, data, operation } = populateInnerTransaction(transfer);
+  const { to, value, data, operation } = populateSafeTransaction(transfer);
 
   return {
     to: safeAddress,
@@ -34,7 +35,24 @@ export default function populateTransferTokenTransaction(
   };
 }
 
-export function populateInnerTransaction({
+export function signTokenTransfer(
+  safeAddress: string,
+  chainId: number,
+  { token, to, amount }: { token: string; to: string; amount: number | bigint },
+  nonce: number,
+  sign: (domain: any, types: any, message: any) => Promise<string>
+) {
+  const { domain, types, message } = typedDataForSafeTransaction(
+    safeAddress,
+    chainId,
+    populateSafeTransaction({ token, to, amount }),
+    nonce
+  );
+
+  return sign(domain, types, message);
+}
+
+function populateSafeTransaction({
   token,
   to,
   amount,

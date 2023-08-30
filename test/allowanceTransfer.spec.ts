@@ -12,13 +12,11 @@ import {
 } from "./test-helpers/setup";
 
 import {
-  paramsToSignAccountSetup,
-  paramsToSignAllowanceTransfer,
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
   populateAllowanceTransferTransaction,
   predictSafeAddress,
-  signaturePatchAllowanceTransfer,
+  signAccountSetup,
 } from "../src";
 import deployments from "../src/deployments";
 import {
@@ -26,6 +24,7 @@ import {
   IERC20__factory,
   ISafe__factory,
 } from "../typechain-types";
+import { signAllowanceTransfer } from "../src/entrypoints/allowance-transfer";
 
 describe("allowance-tranfer", async () => {
   before(async () => {
@@ -53,12 +52,13 @@ describe("allowance-tranfer", async () => {
       token: DAI,
     });
 
-    const { domain, types, message } = paramsToSignAccountSetup(
+    const signature = await signAccountSetup(
       safeAddress,
       31337, // chainId hardhat
-      config
+      config,
+      0,
+      (domain, types, message) => owner.signTypedData(domain, types, message)
     );
-    const signature = await owner.signTypedData(domain, types, message);
 
     const setupTransaction = populateAccountSetupTransaction(
       safeAddress,
@@ -86,25 +86,23 @@ describe("allowance-tranfer", async () => {
     const { safe, spender, charlie } = await loadFixture(createAccount);
 
     const dai = IERC20__factory.connect(DAI, hre.ethers.provider);
+    const safeAddress = await safe.getAddress();
 
     const token = DAI;
     const to = "0x0000000000000000000000000000000000000003";
     const amount = 10;
     const nonce = 1;
 
-    const { message } = paramsToSignAllowanceTransfer(
-      await safe.getAddress(),
+    const signature = await signAllowanceTransfer(
+      safeAddress,
       31337,
       { token, to, amount },
-      nonce
-    );
-
-    const signature = signaturePatchAllowanceTransfer(
-      await spender.signMessage(message)
+      nonce,
+      (message) => spender.signMessage(message)
     );
 
     const transaction = populateAllowanceTransferTransaction(
-      await safe.getAddress(),
+      safeAddress,
       { spender: spender.address, token, to, amount },
       signature
     );
@@ -119,6 +117,7 @@ describe("allowance-tranfer", async () => {
   it("transfer overusing allowance fails", async () => {
     const { safe, spender, charlie } = await loadFixture(createAccount);
 
+    const safeAddress = await safe.getAddress();
     const dai = IERC20__factory.connect(DAI, hre.ethers.provider);
 
     const token = DAI;
@@ -126,19 +125,16 @@ describe("allowance-tranfer", async () => {
     const amount = 2000;
     const nonce = 1;
 
-    const { message } = paramsToSignAllowanceTransfer(
-      await safe.getAddress(),
+    const signature = await signAllowanceTransfer(
+      safeAddress,
       31337,
       { token, to, amount },
-      nonce
-    );
-
-    const signature = signaturePatchAllowanceTransfer(
-      await spender.signMessage(message)
+      nonce,
+      (message) => spender.signMessage(message)
     );
 
     const transaction = populateAllowanceTransferTransaction(
-      await safe.getAddress(),
+      safeAddress,
       { spender: spender.address, token, to, amount },
       signature
     );

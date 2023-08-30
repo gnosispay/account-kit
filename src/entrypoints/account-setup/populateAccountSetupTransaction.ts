@@ -1,4 +1,4 @@
-import { Interface, ZeroAddress, ZeroHash } from "ethers";
+import { ZeroAddress, ZeroHash } from "ethers";
 
 import deployments from "../../deployments";
 import multisendEncode from "../../multisend";
@@ -9,6 +9,7 @@ import {
   SafeTransactionData,
   TransactionData,
 } from "../../types";
+import { typedDataForSafeTransaction } from "../../eip712";
 
 export default function populateAccountSetupTransaction(
   safeAddress: string,
@@ -17,7 +18,7 @@ export default function populateAccountSetupTransaction(
 ): TransactionData {
   const { iface } = deployments.safeMastercopy;
 
-  const { to, data, value, operation } = populateInnerTransaction(
+  const { to, data, value, operation } = populateSafeTransaction(
     safeAddress,
     config
   );
@@ -40,7 +41,24 @@ export default function populateAccountSetupTransaction(
   };
 }
 
-export function populateInnerTransaction(
+export async function signAccountSetup(
+  safeAddress: string,
+  chainId: number,
+  config: AccountSetupConfig,
+  nonce: number | bigint,
+  sign: (domain: any, types: any, message: any) => Promise<string>
+) {
+  const { domain, types, message } = typedDataForSafeTransaction(
+    safeAddress,
+    chainId,
+    populateSafeTransaction(safeAddress, config),
+    nonce
+  );
+
+  return sign(domain, types, message);
+}
+
+function populateSafeTransaction(
   safeAddress: string,
   config: AccountSetupConfig
 ): SafeTransactionData {
@@ -101,9 +119,4 @@ export function populateInnerTransaction(
       data: safeIface.encodeFunctionData("enableModule", [delayAddress]),
     },
   ]);
-}
-
-function encodeEnableModule(moduleAddress: string) {
-  const iface = new Interface(["function enableModule(address module)"]);
-  return iface.encodeFunctionData("enableModule", [moduleAddress]);
 }
