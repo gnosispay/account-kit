@@ -19,7 +19,7 @@ export default function populateAccountSetupTransaction(
   config: AccountSetupConfig,
   signature: string
 ): TransactionData {
-  const safeInterface = deployments.safe.iface;
+  const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = populateInnerTransaction(
     safeAddress,
@@ -28,7 +28,7 @@ export default function populateAccountSetupTransaction(
 
   return {
     to: safeAddress,
-    data: safeInterface.encodeFunctionData("execTransaction", [
+    data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,

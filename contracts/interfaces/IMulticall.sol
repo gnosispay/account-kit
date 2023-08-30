@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.0;
 
-/// @title Multicall3
-/// @notice Aggregate results from multiple function calls
-/// @dev Multicall & Multicall2 backwards-compatible
 interface IMulticall {
   struct Call {
     address target;
@@ -88,6 +85,20 @@ interface IMulticall {
     Call3[] calldata calls
   ) external payable returns (Result[] memory returnData);
 
+  /// @notice Aggregate calls with a msg value
+  /// @notice Reverts if msg.value is less than the sum of the call values
+  /// @param calls An array of Call3Value structs
+  /// @return returnData An array of Result structs
+  function aggregate3Value(
+    Call3Value[] calldata calls
+  ) external payable returns (Result[] memory returnData);
+
+  /// @notice Returns the block hash for the given block number
+  /// @param blockNumber The block number
+  function getBlockHash(
+    uint256 blockNumber
+  ) external view returns (bytes32 blockHash);
+
   /// @notice Returns the block number
   function getBlockNumber() external view returns (uint256 blockNumber);
 
@@ -105,4 +116,17 @@ interface IMulticall {
 
   /// @notice Returns the block timestamp
   function getCurrentBlockTimestamp() external view returns (uint256 timestamp);
+
+  /// @notice Returns the (ETH) balance of a given address
+  function getEthBalance(address addr) external view returns (uint256 balance);
+
+  /// @notice Returns the block hash of the last block
+  function getLastBlockHash() external view returns (bytes32 blockHash);
+
+  /// @notice Gets the base fee of the given block
+  /// @notice Can revert if the BASEFEE opcode is not implemented by the given chain
+  function getBasefee() external view returns (uint256 basefee);
+
+  /// @notice Returns the chain id
+  function getChainId() external view returns (uint256 chainid);
 }

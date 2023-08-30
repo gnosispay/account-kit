@@ -12,7 +12,7 @@ export default function populateTransferTokenTransaction(
   transfer: { token: string; to: string; amount: number | bigint },
   signature: string
 ): TransactionData {
-  const safeInterface = deployments.safe.iface;
+  const safeInterface = deployments.safeMastercopy.iface;
 
   const { to, value, data, operation } = populateInnerTransaction(transfer);
 

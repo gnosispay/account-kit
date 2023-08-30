@@ -5,6 +5,6 @@
     "outDir": "dist/esm",
     "module": "es6"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
   //  "exclude": ["sdk/**/__tests__/**/*"]
 }

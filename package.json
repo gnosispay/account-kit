@@ -21,11 +21,10 @@
     "clean": "rm -rf dist build typechain-types",
     "build": "hardhat compile && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
     "test": "hardhat test",
-    "prerelease": "yarn clean && yarn build",
-    "release": "yarn publish --access public",
-    "prepare": "yarn run clean && yarn run build",
-    "lint": "eslint 'src/**/*.ts' 'test/**/*.ts' --max-warnings 0 --fix",
-    "format": "prettier ./src/**/*.ts ./test/**/*.ts ./*.ts -w"
+    "lint": "eslint 'scripts/**/*.ts' 'src/**/*.ts' 'test/**/*.ts' --max-warnings 0 --fix",
+    "format": "prettier ./scripts/**/*.ts ./src/**/*.ts ./test/**/*.ts ./*.ts -w",
+    "interfaces": "ts-node ./scripts/generateInterfaces.ts",
+    "prepare": "yarn run clean && yarn interfaces && yarn run build"
   },
   "repository": {
     "type": "git",
@@ -46,6 +45,7 @@
     "@types/node": "^20.5.6",
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",
+    "abi-to-sol": "^0.8.0",
     "chai": "^4.3.7",
     "dotenv": "^16.0.3",
     "eslint": "^8.6.0",

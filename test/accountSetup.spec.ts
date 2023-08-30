@@ -9,13 +9,13 @@ import {
   populateAccountSetupTransaction,
   predictSafeAddress,
 } from "../src";
+import deployments from "../src/deployments";
+import { predictDelayAddress } from "../src/entrypoints/account-setup/delay-mod";
 import {
   IAllowanceModule__factory,
   IDelayModule__factory,
   ISafe__factory,
 } from "../typechain-types";
-import { predictDelayAddress } from "../src/entrypoints/account-setup/delay-mod";
-import deployments from "../src/deployments";
 
 describe("accountSetup", async () => {
   before(async () => {

@@ -8,8 +8,8 @@ export function populateAccountCreationTransaction(
   ownerAddress: string,
   seed: string = ZeroHash
 ): TransactionData {
-  const { iface, address: factory } = deployments.proxyFactory;
-  const mastercopyAddress = deployments.safe.address;
+  const { iface, address: factory } = deployments.safeProxyFactory;
+  const mastercopy = deployments.safeMastercopy.address;
 
   return {
     to: factory,
@@ -18,7 +18,7 @@ export function populateAccountCreationTransaction(
      * embedded setup call (the initializer)
      */
     data: iface.encodeFunctionData("createProxyWithNonce", [
-      mastercopyAddress,
+      mastercopy,
       initializer(ownerAddress),
       saltNonce(seed),
     ]),
@@ -36,7 +36,7 @@ export function initializer(ownerAddress: string) {
    * at the SafeProxyFactory
    */
 
-  const { iface } = deployments.safe;
+  const { iface } = deployments.safeMastercopy;
   const fallbackHandlerAddress = deployments.fallbackHandler.address;
 
   const initializer = iface.encodeFunctionData("setup", [

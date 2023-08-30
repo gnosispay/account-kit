@@ -5,6 +5,6 @@
     "outDir": "dist/cjs",
     "module": "commonjs"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["scripts/**/*.ts", "src/**/*.ts"]
   // "exclude": ["sdk/**/__tests__/**/*"]
 }
