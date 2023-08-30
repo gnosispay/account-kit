@@ -106,8 +106,6 @@ describe("account-integrity", () => {
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
 
-    const nonce = 1;
-
     const query = populateAccountIntegrityQuery(safeAddress, config);
 
     let resultData = await provider.send("eth_call", [

@@ -18,7 +18,7 @@ export default async function populateAllowanceTransfer(
   const { iface, address } = deployments.allowanceSingleton;
 
   const hash = transferHash(target, transfer);
-  const signature = signaturePatch(await sign(hash));
+  const signature = await sign(hash);
 
   return {
     to: address,
@@ -30,7 +30,7 @@ export default async function populateAllowanceTransfer(
       ZeroAddress, // paymentToken
       0, // payment
       transfer.spender,
-      signature,
+      signaturePatch(signature),
     ]),
     value: 0,
   };
@@ -98,7 +98,7 @@ function transferHash(
 }
 
 // https://github.com/safe-global/safe-modules/issues/70
-export function signaturePatch(signature: string) {
+function signaturePatch(signature: string) {
   const v = parseInt(signature.slice(130, 132), 16);
   return `${signature.slice(0, 130)}${Number(v + 4).toString(16)}`;
 }

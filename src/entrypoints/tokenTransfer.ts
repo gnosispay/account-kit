@@ -12,7 +12,6 @@ import {
 export default async function populateTokenTransfer(
   target: TargetConfig,
   transfer: { token: string; to: string; amount: bigint | number },
-
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const safeInterface = deployments.safeMastercopy.iface;
