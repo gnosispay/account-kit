@@ -19,7 +19,4 @@ export {
   // signTokenTransfer,
 } from "./entrypoints/token-transfer";
 
-export {
-  populateAllowanceTransferTransaction,
-  signAllowanceTransfer,
-} from "./entrypoints/allowance-transfer";
+export { populateAllowanceTransfer } from "./entrypoints/allowance-transfer";

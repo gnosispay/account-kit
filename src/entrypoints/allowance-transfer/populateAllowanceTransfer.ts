@@ -8,46 +8,34 @@ import {
 } from "ethers";
 
 import deployments from "../../deployments";
-import { TransactionData } from "../../types";
+import { AllowanceTransfer, TransactionData } from "../../types";
 
-export default function populateAllowanceTransferTransaction(
+export default async function populateAllowanceTransfer(
   safeAddress: string,
-  {
-    spender,
-    token,
-    to,
-    amount,
-  }: { spender: string; token: string; to: string; amount: number | bigint },
-  signature: string
-): TransactionData {
+  chainId: number,
+  transfer: AllowanceTransfer,
+  nonce: number,
+  sign: (message: string | Uint8Array) => Promise<string>
+): Promise<TransactionData> {
   const { iface, address } = deployments.allowanceSingleton;
+
+  const hash = transferHash(safeAddress, chainId, transfer, nonce);
+  const signature = signaturePatch(await sign(hash));
+
   return {
     to: address,
     data: iface.encodeFunctionData("executeAllowanceTransfer", [
       safeAddress,
-      token,
-      to,
-      amount,
+      transfer.token,
+      transfer.to,
+      transfer.amount,
       ZeroAddress, // paymentToken
       0, // payment
-      spender,
+      transfer.spender,
       signature,
     ]),
     value: 0,
   };
-}
-
-export async function signAllowanceTransfer(
-  safeAddress: string,
-  chainId: number,
-  { token, to, amount }: { token: string; to: string; amount: number | bigint },
-  nonce: number,
-  sign: (message: string | Uint8Array) => Promise<string>
-): Promise<string> {
-  const hash = transferHash(safeAddress, chainId, { token, to, amount }, nonce);
-  const signature = await sign(hash);
-
-  return signaturePatch(signature);
 }
 
 /*
@@ -57,7 +45,7 @@ export async function signAllowanceTransfer(
 function transferHash(
   safeAddress: string,
   chainId: number,
-  { token, to, amount }: { token: string; to: string; amount: number | bigint },
+  { token, to, amount }: AllowanceTransfer,
   nonce: number
 ) {
   const abi = AbiCoder.defaultAbiCoder();

@@ -8,7 +8,7 @@ import {
   populateAccountCreationTransaction,
   populateAccountIntegrityQuery,
   populateAccountSetupTransaction,
-  populateAllowanceTransferTransaction,
+  populateAllowanceTransfer,
   predictSafeAddress,
 } from "../src";
 import deployments from "../src/deployments";
@@ -28,7 +28,6 @@ import {
   moveERC20,
 } from "./test-helpers/setup";
 import execSafeTransaction from "./test-helpers/execSafeTransaction";
-import { signAllowanceTransfer } from "../src/entrypoints/allowance-transfer";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
@@ -135,27 +134,20 @@ describe("account-integrity", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.amount).to.equal(config.amount);
 
-    // spend allowance
-    const signature = await signAllowanceTransfer(
+    const justSpent = 23;
+    const transaction = await populateAllowanceTransfer(
       safeAddress,
       31337,
-      { token, to, amount },
+      {
+        spender: alice.address,
+        token: DAI,
+        to: ZeroAddress,
+        amount: justSpent,
+      },
       nonce,
       (message) => alice.signMessage(message)
     );
-    const justSpent = 23;
-    await relayer.sendTransaction(
-      populateAllowanceTransferTransaction(
-        safeAddress,
-        {
-          spender: alice.address,
-          token: DAI,
-          to: ZeroAddress,
-          amount: justSpent,
-        },
-        signature
-      )
-    );
+    await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
     resultData = await provider.send("eth_call", [

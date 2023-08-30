@@ -1,5 +1,3 @@
-import populateAllowanceTransferTransaction, {
-  signAllowanceTransfer,
-} from "./populateAllowanceTransferTransaction";
+import populateAllowanceTransfer from "./populateAllowanceTransfer";
 
-export { populateAllowanceTransferTransaction, signAllowanceTransfer };
+export { populateAllowanceTransfer };

@@ -14,7 +14,7 @@ import {
 import {
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
-  populateAllowanceTransferTransaction,
+  populateAllowanceTransfer,
   predictSafeAddress,
   signAccountSetup,
 } from "../src";
@@ -24,7 +24,6 @@ import {
   IERC20__factory,
   ISafe__factory,
 } from "../typechain-types";
-import { signAllowanceTransfer } from "../src/entrypoints/allowance-transfer";
 
 describe("allowance-tranfer", async () => {
   before(async () => {
@@ -93,18 +92,12 @@ describe("allowance-tranfer", async () => {
     const amount = 10;
     const nonce = 1;
 
-    const signature = await signAllowanceTransfer(
+    const transaction = await populateAllowanceTransfer(
       safeAddress,
       31337,
-      { token, to, amount },
+      { spender: spender.address, token, to, amount },
       nonce,
       (message) => spender.signMessage(message)
-    );
-
-    const transaction = populateAllowanceTransferTransaction(
-      safeAddress,
-      { spender: spender.address, token, to, amount },
-      signature
     );
 
     expect(await dai.balanceOf(to)).to.be.equal(0);
@@ -125,18 +118,12 @@ describe("allowance-tranfer", async () => {
     const amount = 2000;
     const nonce = 1;
 
-    const signature = await signAllowanceTransfer(
+    const transaction = await populateAllowanceTransfer(
       safeAddress,
       31337,
-      { token, to, amount },
+      { spender: spender.address, token, to, amount },
       nonce,
       (message) => spender.signMessage(message)
-    );
-
-    const transaction = populateAllowanceTransferTransaction(
-      safeAddress,
-      { spender: spender.address, token, to, amount },
-      signature
     );
 
     expect(await dai.balanceOf(to)).to.be.equal(0);

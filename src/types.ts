@@ -37,3 +37,10 @@ export enum AccountIntegrityStatus {
   DelayQueueNotEmpty,
   UnexpectedError,
 }
+
+export type AllowanceTransfer = {
+  spender: string;
+  token: string;
+  to: string;
+  amount: bigint | number;
+};
