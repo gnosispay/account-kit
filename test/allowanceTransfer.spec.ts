@@ -9,7 +9,7 @@ import {
   fork,
   forkReset,
   moveERC20,
-} from "./setup";
+} from "./test-helpers/setup";
 
 import {
   paramsToSignAccountSetup,

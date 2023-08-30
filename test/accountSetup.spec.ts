@@ -2,7 +2,12 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { DAI, createAccountSetupConfig, fork, forkReset } from "./setup";
+import {
+  DAI,
+  createAccountSetupConfig,
+  fork,
+  forkReset,
+} from "./test-helpers/setup";
 import {
   paramsToSignAccountSetup,
   populateAccountCreationTransaction,

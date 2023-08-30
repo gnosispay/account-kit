@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { fork, forkReset, moveERC20 } from "./setup";
+import { fork, forkReset, moveERC20 } from "./test-helpers/setup";
 import {
   paramsToSignTokenTransfer,
   populateAccountCreationTransaction,

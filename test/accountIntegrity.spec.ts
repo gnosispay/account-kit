@@ -10,7 +10,7 @@ import {
   fork,
   forkReset,
   moveERC20,
-} from "./setup";
+} from "./test-helpers/setup";
 import execSafeTransaction from "./test-helpers/execSafeTransaction";
 import {
   evaluateAccountIntegrityQuery,

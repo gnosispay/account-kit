@@ -1,11 +1,11 @@
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { fork, forkReset } from "./setup";
+import { fork, forkReset } from "./test-helpers/setup";
 import { populateAccountCreationTransaction, predictSafeAddress } from "../src";
 import { ISafe__factory } from "../typechain-types";
 
-describe("accountCreation", async () => {
+describe("account-creation", async () => {
   before(async () => {
     await fork(17741542);
   });
