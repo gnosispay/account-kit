@@ -7,7 +7,6 @@ import {
   paramsToSignAccountSetup,
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
-  predictModuleAddresses,
   predictSafeAddress,
 } from "../src";
 import {
@@ -15,6 +14,8 @@ import {
   IDelayModule__factory,
   ISafe__factory,
 } from "../typechain-types";
+import { predictDelayAddress } from "../src/entrypoints/account-setup/delay-mod";
+import deployments from "../src/deployments";
 
 describe("accountSetup", async () => {
   before(async () => {
@@ -31,8 +32,8 @@ describe("accountSetup", async () => {
     const safeAddress = predictSafeAddress(owner.address);
     const transaction = populateAccountCreationTransaction(owner.address);
 
-    const { delayModAddress, allowanceModAddress } =
-      predictModuleAddresses(safeAddress);
+    const allowanceAddress = deployments.allowanceSingleton.address;
+    const delayAddress = predictDelayAddress(safeAddress);
 
     await charlie.sendTransaction(transaction);
 
@@ -41,25 +42,26 @@ describe("accountSetup", async () => {
       alice,
       bob,
       charlie,
-      safeAddress: safeAddress,
       safe: ISafe__factory.connect(safeAddress, hre.ethers.provider),
-      delayMod: IDelayModule__factory.connect(
-        delayModAddress,
+      allowanceModule: IAllowanceModule__factory.connect(
+        allowanceAddress,
         hre.ethers.provider
       ),
-      allowanceMod: IAllowanceModule__factory.connect(
-        allowanceModAddress,
+      delayModule: IDelayModule__factory.connect(
+        delayAddress,
         hre.ethers.provider
       ),
+      safeAddress: safeAddress,
+      allowanceAddress,
+      delayAddress,
     };
   }
 
   it("setup enables two mods", async () => {
-    const { owner, alice, safe, safeAddress } =
+    const { owner, alice, safe, safeAddress, allowanceAddress, delayAddress } =
       await loadFixture(createAccount);
 
     const config = createAccountSetupConfig({ spender: alice.address });
-
     const { domain, types, message } = paramsToSignAccountSetup(
       safeAddress,
       31337, // chainId hardhat
@@ -73,24 +75,21 @@ describe("accountSetup", async () => {
       signature
     );
 
-    const { allowanceModAddress, delayModAddress } =
-      predictModuleAddresses(safeAddress);
-
-    expect(await safe.isModuleEnabled(allowanceModAddress)).to.be.false;
-    expect(await safe.isModuleEnabled(delayModAddress)).to.be.false;
+    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.false;
+    expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
 
     await alice.sendTransaction(transaction);
 
-    expect(await safe.isModuleEnabled(allowanceModAddress)).to.be.true;
-    expect(await safe.isModuleEnabled(delayModAddress)).to.be.true;
+    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.true;
+    expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
   });
 
   it("setup correctly configures allowance", async () => {
-    const { owner, alice, bob, safe, allowanceMod } =
+    const { owner, alice, bob, safe, allowanceModule } =
       await loadFixture(createAccount);
 
     const safeAddress = await safe.getAddress();
-    const allowanceAddress = await allowanceMod.getAddress();
+    const allowanceAddress = await allowanceModule.getAddress();
 
     const spender = alice;
     const PERIOD = 7654;
@@ -119,7 +118,11 @@ describe("accountSetup", async () => {
     await bob.sendTransaction(transaction);
 
     const [amount, spent, period, , nonce] =
-      await allowanceMod.getTokenAllowance(safeAddress, spender.address, DAI);
+      await allowanceModule.getTokenAllowance(
+        safeAddress,
+        spender.address,
+        DAI
+      );
 
     expect(amount).to.equal(AMOUNT);
     expect(spent).to.equal(0);
@@ -130,11 +133,11 @@ describe("accountSetup", async () => {
   });
 
   it("setup correctly configures delay", async () => {
-    const { owner, alice, bob, safe, delayMod } =
+    const { owner, alice, bob, safe, delayModule } =
       await loadFixture(createAccount);
 
     const safeAddress = await safe.getAddress();
-    const delayAddress = await delayMod.getAddress();
+    const delayAddress = await delayModule.getAddress();
     const COOLDOWN = 9999;
 
     const config = createAccountSetupConfig({
@@ -158,7 +161,9 @@ describe("accountSetup", async () => {
     await bob.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
-    expect(await delayMod.txCooldown()).to.equal(9999);
-    expect(await delayMod.queueNonce()).to.equal(await delayMod.txNonce());
+    expect(await delayModule.txCooldown()).to.equal(9999);
+    expect(await delayModule.queueNonce()).to.equal(
+      await delayModule.txNonce()
+    );
   });
 });

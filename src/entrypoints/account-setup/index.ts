@@ -1,9 +1,9 @@
 import paramsToSignAccountSetup from "./paramsToSignAccountSetup";
 import populateAccountSetupTransaction from "./populateAccountSetupTransaction";
-import predictModuleAddresses from "./predictModuleAddresses";
+import { predictDelayAddress } from "./delay-mod";
 
 export {
   populateAccountSetupTransaction,
   paramsToSignAccountSetup,
-  predictModuleAddresses,
+  predictDelayAddress,
 };

@@ -1,7 +1,10 @@
 import { Interface, ZeroAddress } from "ethers";
 import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
-import { populateDelayDeploy, populateSetCooldown } from "./delay-mod";
-import predictModuleAddresses from "./predictModuleAddresses";
+import {
+  populateDelayDeploy,
+  populateSetCooldown,
+  predictDelayAddress,
+} from "./delay-mod";
 import deployments from "../../deployments";
 import multisendEncode from "../../multisend";
 
@@ -45,22 +48,22 @@ export function populateInnerTransaction(
   safeAddress: string,
   config: AccountSetupConfig
 ): SafeTransactionData {
-  const { allowanceModAddress, delayModAddress } =
-    predictModuleAddresses(safeAddress);
+  const allowanceAddress = deployments.allowanceSingleton.address;
+  const delayAddress = predictDelayAddress(safeAddress);
 
   return multisendEncode([
     populateAddDelegate(config),
     populateSetAllowance(config),
     {
       to: safeAddress,
-      data: encodeEnableModule(allowanceModAddress),
+      data: encodeEnableModule(allowanceAddress),
       value: 0,
     },
     populateDelayDeploy(safeAddress),
     populateSetCooldown(safeAddress, config),
     {
       to: safeAddress,
-      data: encodeEnableModule(delayModAddress),
+      data: encodeEnableModule(delayAddress),
       value: 0,
     },
   ]);

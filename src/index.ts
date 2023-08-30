@@ -6,7 +6,6 @@ export {
 export {
   populateAccountSetupTransaction,
   paramsToSignAccountSetup,
-  predictModuleAddresses,
 } from "./entrypoints/account-setup/";
 
 export {
