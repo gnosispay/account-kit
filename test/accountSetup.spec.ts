@@ -3,24 +3,25 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import {
-  DAI,
-  createAccountSetupConfig,
-  fork,
-  forkReset,
-} from "./test-helpers/setup";
-import {
   paramsToSignAccountSetup,
   populateAccountCreationTransaction,
   populateAccountSetupTransaction,
+  predictDelayAddress,
   predictSafeAddress,
 } from "../src";
 import deployments from "../src/deployments";
-import { predictDelayAddress } from "../src/entrypoints/account-setup/delay-mod";
 import {
   IAllowanceModule__factory,
   IDelayModule__factory,
   ISafe__factory,
 } from "../typechain-types";
+
+import {
+  DAI,
+  createAccountSetupConfig,
+  fork,
+  forkReset,
+} from "./test-helpers/setup";
 
 describe("account-setup", async () => {
   before(async () => {

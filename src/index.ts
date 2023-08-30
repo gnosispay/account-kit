@@ -11,6 +11,7 @@ export {
 export {
   populateAccountSetupTransaction,
   paramsToSignAccountSetup,
+  predictDelayAddress,
 } from "./entrypoints/account-setup/";
 
 export {

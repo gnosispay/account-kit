@@ -1,13 +1,8 @@
-import { Interface, ZeroAddress } from "ethers";
-import { populateAddDelegate, populateSetAllowance } from "./allowance-mod";
-import {
-  populateDelayDeploy,
-  populateSetCooldown,
-  predictDelayAddress,
-} from "./delay-mod";
-import { IDelayModule__factory } from "../../../typechain-types";
+import { Interface, ZeroAddress, ZeroHash } from "ethers";
+
 import deployments from "../../deployments";
 import multisendEncode from "../../multisend";
+import predictDelayAddress, { encodeSetUp } from "./predictDelayAddress";
 
 import {
   AccountSetupConfig,
@@ -49,28 +44,61 @@ export function populateInnerTransaction(
   safeAddress: string,
   config: AccountSetupConfig
 ): SafeTransactionData {
+  const factory = deployments.moduleProxyFactory;
+  const safeIface = deployments.safeMastercopy.iface;
+
+  const allowanceIface = deployments.allowanceSingleton.iface;
   const allowanceAddress = deployments.allowanceSingleton.address;
+
+  const delayIface = deployments.delayMastercopy.iface;
   const delayAddress = predictDelayAddress(safeAddress);
-  const delay = IDelayModule__factory.connect(delayAddress);
+  const delayMastercopy = deployments.delayMastercopy.address;
 
   return multisendEncode([
-    populateAddDelegate(config),
-    populateSetAllowance(config),
-    populateDelayDeploy(safeAddress),
-    populateSetCooldown(safeAddress, config),
+    // configure spender on the allowance mod
+    {
+      to: allowanceAddress,
+      data: allowanceIface.encodeFunctionData("addDelegate", [config.spender]),
+    },
+    // create an allowance entry for safe -> spender -> token
+    {
+      to: allowanceAddress,
+      data: allowanceIface.encodeFunctionData("setAllowance", [
+        config.spender,
+        config.token,
+        config.amount,
+        config.period,
+        0,
+      ]),
+    },
+    // deploy the delay mod
+    {
+      to: factory.address,
+      data: factory.iface.encodeFunctionData("deployModule", [
+        delayMastercopy,
+        encodeSetUp(safeAddress),
+        ZeroHash,
+      ]),
+    },
+    // configure cooldown on delay
     {
       to: delayAddress,
-      data: delay.interface.encodeFunctionData("enableModule", [config.owner]),
+      data: delayIface.encodeFunctionData("setTxCooldown", [config.cooldown]),
     },
+    // enable owner on the delay as module
+    {
+      to: delayAddress,
+      data: delayIface.encodeFunctionData("enableModule", [config.owner]),
+    },
+    // enable allowance as module on safe
     {
       to: safeAddress,
-      data: encodeEnableModule(allowanceAddress),
-      value: 0,
+      data: safeIface.encodeFunctionData("enableModule", [allowanceAddress]),
     },
+    // enable delay as module on safe
     {
       to: safeAddress,
-      data: encodeEnableModule(delayAddress),
-      value: 0,
+      data: safeIface.encodeFunctionData("enableModule", [delayAddress]),
     },
   ]);
 }
