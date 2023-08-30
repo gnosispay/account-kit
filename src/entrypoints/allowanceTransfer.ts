@@ -7,8 +7,8 @@ import {
   toUtf8Bytes,
 } from "ethers";
 
-import deployments from "../../deployments";
-import { AllowanceTransfer, TransactionData } from "../../types";
+import deployments from "../deployments";
+import { AllowanceTransfer, TransactionData } from "../types";
 
 export default async function populateAllowanceTransfer(
   safeAddress: string,

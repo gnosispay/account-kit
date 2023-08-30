@@ -5,7 +5,7 @@ import {
   keccak256,
   solidityPackedKeccak256,
 } from "ethers";
-import deployments from "../../deployments";
+import deployments from "../deployments";
 
 export default function predictDelayAddress(safeAddress: string): string {
   const factory = deployments.moduleProxyFactory.address;

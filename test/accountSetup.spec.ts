@@ -9,7 +9,7 @@ import {
   forkReset,
 } from "./test-helpers/setup";
 import {
-  populateAccountCreationTransaction,
+  populateAccountCreation,
   populateAccountSetup,
   predictDelayAddress,
   predictSafeAddress,
@@ -35,7 +35,7 @@ describe("account-setup", async () => {
     const [owner, , , alice, bob, charlie] = await hre.ethers.getSigners();
 
     const safeAddress = predictSafeAddress(owner.address);
-    const transaction = populateAccountCreationTransaction(owner.address);
+    const transaction = populateAccountCreation(owner.address);
 
     const allowanceAddress = deployments.allowanceSingleton.address;
     const delayAddress = predictDelayAddress(safeAddress);

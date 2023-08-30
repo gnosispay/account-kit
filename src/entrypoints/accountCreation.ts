@@ -1,10 +1,8 @@
 import { ZeroAddress, ZeroHash, keccak256, toUtf8Bytes } from "ethers";
-import deployments from "../../deployments";
-import { TransactionData } from "../../types";
+import deployments from "../deployments";
+import { TransactionData } from "../types";
 
-export { default as predictSafeAddress } from "./predictSafeAddress";
-
-export function populateAccountCreationTransaction(
+export default function populateAccountCreation(
   ownerAddress: string,
   seed: string = ZeroHash
 ): TransactionData {

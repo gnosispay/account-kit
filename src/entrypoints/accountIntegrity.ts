@@ -1,10 +1,11 @@
-import deployments from "../../deployments";
-import { AccountIntegrityStatus, AccountSetupConfig } from "../../types";
-import { predictDelayAddress } from "../account-setup";
+import deployments from "../deployments";
+import predictDelayAddress from "./predictDelayAddress";
+
+import { AccountIntegrityStatus, AccountSetupConfig } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
-export function populateAccountIntegrityQuery(
+export default function populateAccountIntegrityQuery(
   safeAddress: string,
   { spender, token }: AccountSetupConfig
 ): string {

@@ -1,15 +1,15 @@
 import { ZeroAddress, ZeroHash } from "ethers";
 
 import predictDelayAddress, { encodeSetUp } from "./predictDelayAddress";
-import deployments from "../../deployments";
-import { typedDataForSafeTransaction } from "../../eip712";
-import multisendEncode from "../../multisend";
+import deployments from "../deployments";
+import { typedDataForSafeTransaction } from "../eip712";
+import multisendEncode from "../multisend";
 
 import {
   AccountSetupConfig,
   SafeTransactionData,
   TransactionData,
-} from "../../types";
+} from "../types";
 
 export default async function populateAccountSetup(
   safeAddress: string,

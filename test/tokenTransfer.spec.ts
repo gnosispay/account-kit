@@ -4,7 +4,7 @@ import hre from "hardhat";
 
 import { fork, forkReset, moveERC20 } from "./test-helpers/setup";
 import {
-  populateAccountCreationTransaction,
+  populateAccountCreation,
   populateTokenTransfer,
   predictSafeAddress,
 } from "../src";
@@ -27,9 +27,7 @@ describe("token-transfer", async () => {
 
     const predictedAccountAddress = predictSafeAddress(owner.address);
 
-    await relayer.sendTransaction(
-      populateAccountCreationTransaction(owner.address)
-    );
+    await relayer.sendTransaction(populateAccountCreation(owner.address));
 
     await moveERC20(DAI_WHALE, predictedAccountAddress, DAI);
 

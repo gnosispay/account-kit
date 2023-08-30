@@ -12,7 +12,7 @@ import {
 } from "./test-helpers/setup";
 
 import {
-  populateAccountCreationTransaction,
+  populateAccountCreation,
   populateAccountSetup,
   populateAllowanceTransfer,
   predictSafeAddress,
@@ -37,7 +37,7 @@ describe("allowance-tranfer", async () => {
     const [owner, alice, , charlie] = await hre.ethers.getSigners();
 
     const safeAddress = predictSafeAddress(owner.address);
-    const createTransaction = populateAccountCreationTransaction(owner.address);
+    const createTransaction = populateAccountCreation(owner.address);
 
     await charlie.sendTransaction(createTransaction);
 

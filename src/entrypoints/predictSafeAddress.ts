@@ -6,8 +6,8 @@ import {
   keccak256,
 } from "ethers";
 
-import { initializer, saltNonce } from ".";
-import deployments, { proxyCreationBytecode } from "../../deployments";
+import { initializer, saltNonce } from "./accountCreation";
+import deployments, { proxyCreationBytecode } from "../deployments";
 
 export default function predictSafeAddress(
   ownerAddress: string,

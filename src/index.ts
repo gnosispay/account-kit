@@ -1,17 +1,22 @@
-export {
-  populateAccountCreationTransaction,
-  predictSafeAddress,
-} from "./entrypoints/account-creation";
+import populateAccountCreation from "./entrypoints/accountCreation";
+import populateAccountSetup from "./entrypoints/accountSetup";
 
-export {
-  populateAccountIntegrityQuery,
+import populateAccountIntegrityQuery, {
   evaluateAccountIntegrityQuery,
-} from "./entrypoints/account-integrity/";
+} from "./entrypoints/accountIntegrity";
+
+import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
+import predictDelayAddress from "./entrypoints/predictDelayAddress";
+import predictSafeAddress from "./entrypoints/predictSafeAddress";
+import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 export {
+  populateAccountCreation,
+  populateAccountIntegrityQuery,
   populateAccountSetup,
+  populateAllowanceTransfer,
+  populateTokenTransfer,
   predictDelayAddress,
-} from "./entrypoints/account-setup/";
-
-export { populateTokenTransfer } from "./entrypoints/token-transfer";
-export { populateAllowanceTransfer } from "./entrypoints/allowance-transfer";
+  predictSafeAddress,
+  evaluateAccountIntegrityQuery,
+};

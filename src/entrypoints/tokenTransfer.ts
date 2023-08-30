@@ -1,14 +1,10 @@
 import { Interface, ZeroAddress } from "ethers";
 
-import deployments from "../../deployments";
-import { typedDataForSafeTransaction } from "../../eip712";
-import {
-  OperationType,
-  SafeTransactionData,
-  TransactionData,
-} from "../../types";
+import deployments from "../deployments";
+import { typedDataForSafeTransaction } from "../eip712";
+import { OperationType, SafeTransactionData, TransactionData } from "../types";
 
-export default async function populateTransferToken(
+export default async function populateTokenTransfer(
   safeAddress: string,
   chainId: bigint | number,
   transfer: { token: string; to: string; amount: bigint | number },

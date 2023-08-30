@@ -14,7 +14,7 @@ import {
 } from "./test-helpers/setup";
 import {
   evaluateAccountIntegrityQuery,
-  populateAccountCreationTransaction,
+  populateAccountCreation,
   populateAccountIntegrityQuery,
   populateAccountSetup,
   populateAllowanceTransfer,
@@ -43,9 +43,7 @@ describe("account-integrity", () => {
     const safeAddress = predictSafeAddress(owner.address);
     await moveERC20(DAI_WHALE, safeAddress, DAI);
 
-    await relayer.sendTransaction(
-      populateAccountCreationTransaction(owner.address)
-    );
+    await relayer.sendTransaction(populateAccountCreation(owner.address));
 
     const config = createAccountSetupConfig({
       owner: owner.address,

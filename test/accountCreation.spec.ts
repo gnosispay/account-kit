@@ -2,7 +2,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import { fork, forkReset } from "./test-helpers/setup";
-import { populateAccountCreationTransaction, predictSafeAddress } from "../src";
+import { populateAccountCreation, predictSafeAddress } from "../src";
 import { ISafe__factory } from "../typechain-types";
 
 describe("account-creation", async () => {
@@ -24,9 +24,7 @@ describe("account-creation", async () => {
       "0x"
     );
 
-    const accountCreationTransaction = populateAccountCreationTransaction(
-      owner.address
-    );
+    const accountCreationTransaction = populateAccountCreation(owner.address);
     await other.sendTransaction(accountCreationTransaction);
 
     // account deployed
