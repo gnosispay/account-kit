@@ -1,13 +1,13 @@
-import deployments from "../deployments";
 import predictDelayAddress from "./predictDelayAddress";
+import deployments from "../deployments";
 
-import { AccountIntegrityStatus, AccountSetupConfig } from "../types";
+import { AccountIntegrityStatus, AccountConfig } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
 export default function populateAccountIntegrityQuery(
   safeAddress: string,
-  { spender, token }: AccountSetupConfig
+  { spender, token }: AccountConfig
 ): string {
   const safe = {
     address: safeAddress,
@@ -60,7 +60,7 @@ export default function populateAccountIntegrityQuery(
 export function evaluateAccountIntegrityQuery(
   resultData: string,
   safeAddress: string,
-  config: AccountSetupConfig
+  config: AccountConfig
 ): { status: AccountIntegrityStatus; amount: bigint } {
   try {
     const multicall = deployments.multicall.iface;
@@ -144,7 +144,7 @@ export function evaluateAccountIntegrityQuery(
 function evaluateModulesCall(
   result: string,
   safeAddress: string
-  // { spender, token }: AccountSetupConfig
+  // { spender, token }: AccountConfig
 ) {
   const { iface } = deployments.safeMastercopy;
 
@@ -167,10 +167,7 @@ function evaluateModulesCall(
   );
 }
 
-function evaluateDelayCooldown(
-  cooldownResult: string,
-  config: AccountSetupConfig
-) {
+function evaluateDelayCooldown(cooldownResult: string, config: AccountConfig) {
   const { iface } = deployments.delayMastercopy;
 
   const [cooldown]: bigint[] = iface.decodeFunctionResult(

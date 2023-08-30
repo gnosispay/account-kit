@@ -16,7 +16,7 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
-export type AccountSetupConfig = {
+export type AccountConfig = {
   owner: string; // the owner of the account
   //** for allowance mod **/
   spender: string; // the gnosis signer, which will be enabled via allowance

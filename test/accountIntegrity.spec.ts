@@ -7,7 +7,7 @@ import execSafeTransaction from "./test-helpers/execSafeTransaction";
 import {
   DAI,
   DAI_WHALE,
-  createAccountSetupConfig,
+  createAccountConfig,
   fork,
   forkReset,
   moveERC20,
@@ -45,7 +45,7 @@ describe("account-integrity", () => {
 
     await relayer.sendTransaction(populateAccountCreation(owner.address));
 
-    const config = createAccountSetupConfig({
+    const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       period: 7654,

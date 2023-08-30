@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import hre from "hardhat";
-import { AccountSetupConfig } from "../../src/types";
+import { AccountConfig } from "../../src/types";
 import { IERC20__factory } from "../../typechain-types";
 
 export async function fork(blockNumber: number): Promise<void> {
@@ -43,7 +43,7 @@ export async function moveERC20(
   await receipt.wait();
 }
 
-export function createAccountSetupConfig({
+export function createAccountConfig({
   // for allowance
   owner,
   spender,
@@ -59,7 +59,7 @@ export function createAccountSetupConfig({
   amount?: number | bigint;
   period?: number;
   cooldown?: number;
-}): AccountSetupConfig {
+}): AccountConfig {
   return {
     owner,
     spender,

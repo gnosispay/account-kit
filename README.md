@@ -37,7 +37,7 @@ import {
 const owner: Signer = "0x...";
 const safeAddress = predictSafeAddress(owner.address);
 
-const config : AccountSetupConfig = {
+const config : AccountConfig = {
   //** for allowance mod **/
   spender: `0x<address>`
   token: `0x<address>`;

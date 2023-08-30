@@ -4,7 +4,7 @@ import hre from "hardhat";
 
 import {
   DAI,
-  createAccountSetupConfig,
+  createAccountConfig,
   fork,
   forkReset,
 } from "./test-helpers/setup";
@@ -66,7 +66,7 @@ describe("account-setup", async () => {
     const { owner, alice, safe, safeAddress, allowanceAddress, delayAddress } =
       await loadFixture(createAccount);
 
-    const config = createAccountSetupConfig({
+    const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
     });
@@ -99,7 +99,7 @@ describe("account-setup", async () => {
     const PERIOD = 7654;
     const AMOUNT = 123;
 
-    const config = createAccountSetupConfig({
+    const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       period: PERIOD,
@@ -139,7 +139,7 @@ describe("account-setup", async () => {
     const delayAddress = await delayModule.getAddress();
     const COOLDOWN = 9999;
 
-    const config = createAccountSetupConfig({
+    const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       cooldown: COOLDOWN,

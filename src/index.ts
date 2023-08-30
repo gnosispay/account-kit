@@ -1,9 +1,8 @@
 import populateAccountCreation from "./entrypoints/accountCreation";
-import populateAccountSetup from "./entrypoints/accountSetup";
-
 import populateAccountIntegrityQuery, {
   evaluateAccountIntegrityQuery,
 } from "./entrypoints/accountIntegrity";
+import populateAccountSetup from "./entrypoints/accountSetup";
 
 import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
 import predictDelayAddress from "./entrypoints/predictDelayAddress";

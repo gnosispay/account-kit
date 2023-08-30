@@ -5,16 +5,12 @@ import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
 
-import {
-  AccountSetupConfig,
-  SafeTransactionData,
-  TransactionData,
-} from "../types";
+import { AccountConfig, SafeTransactionData, TransactionData } from "../types";
 
 export default async function populateAccountSetup(
   safeAddress: string,
   chainId: bigint | number,
-  config: AccountSetupConfig,
+  config: AccountConfig,
   nonce: bigint | number,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
@@ -54,7 +50,7 @@ export default async function populateAccountSetup(
 
 function populateSafeTransaction(
   safeAddress: string,
-  config: AccountSetupConfig
+  config: AccountConfig
 ): SafeTransactionData {
   const factory = deployments.moduleProxyFactory;
   const safeIface = deployments.safeMastercopy.iface;

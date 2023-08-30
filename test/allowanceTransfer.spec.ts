@@ -5,7 +5,7 @@ import hre from "hardhat";
 import {
   DAI,
   DAI_WHALE,
-  createAccountSetupConfig,
+  createAccountConfig,
   fork,
   forkReset,
   moveERC20,
@@ -43,7 +43,7 @@ describe("allowance-tranfer", async () => {
 
     await moveERC20(DAI_WHALE, safeAddress, DAI);
 
-    const config = createAccountSetupConfig({
+    const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       amount: 1000,
