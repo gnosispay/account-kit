@@ -8,14 +8,25 @@ import {
   TransactionData,
 } from "../../types";
 
-export default function populateTransferTokenTransaction(
+export default async function populateTransferToken(
   safeAddress: string,
-  transfer: { token: string; to: string; amount: number | bigint },
-  signature: string
-): TransactionData {
+  chainId: bigint | number,
+  transfer: { token: string; to: string; amount: bigint | number },
+  nonce: bigint | number,
+  sign: (domain: any, types: any, message: any) => Promise<string>
+): Promise<TransactionData> {
   const safeInterface = deployments.safeMastercopy.iface;
 
   const { to, value, data, operation } = populateSafeTransaction(transfer);
+
+  const { domain, types, message } = typedDataForSafeTransaction(
+    safeAddress,
+    chainId,
+    { to, value, data, operation },
+    nonce
+  );
+
+  const signature = await sign(domain, types, message);
 
   return {
     to: safeAddress,
@@ -35,23 +46,6 @@ export default function populateTransferTokenTransaction(
   };
 }
 
-export function signTokenTransfer(
-  safeAddress: string,
-  chainId: number,
-  { token, to, amount }: { token: string; to: string; amount: number | bigint },
-  nonce: number,
-  sign: (domain: any, types: any, message: any) => Promise<string>
-) {
-  const { domain, types, message } = typedDataForSafeTransaction(
-    safeAddress,
-    chainId,
-    populateSafeTransaction({ token, to, amount }),
-    nonce
-  );
-
-  return sign(domain, types, message);
-}
-
 function populateSafeTransaction({
   token,
   to,
@@ -59,7 +53,7 @@ function populateSafeTransaction({
 }: {
   token: string;
   to: string;
-  amount: number | bigint;
+  amount: bigint | number;
 }): SafeTransactionData {
   const iface = new Interface([
     "function transfer(address recipient, uint256 amount)",

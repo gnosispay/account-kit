@@ -1,5 +1,3 @@
-import populateTokenTransferTransaction, {
-  signTokenTransfer,
-} from "./populateTokenTransferTransaction";
+import populateTokenTransfer from "./populateTokenTransfer";
 
-export { populateTokenTransferTransaction, signTokenTransfer };
+export { populateTokenTransfer };

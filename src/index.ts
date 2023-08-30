@@ -13,5 +13,5 @@ export {
   predictDelayAddress,
 } from "./entrypoints/account-setup/";
 
-export { populateTokenTransferTransaction } from "./entrypoints/token-transfer";
+export { populateTokenTransfer } from "./entrypoints/token-transfer";
 export { populateAllowanceTransfer } from "./entrypoints/allowance-transfer";

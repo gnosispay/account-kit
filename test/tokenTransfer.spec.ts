@@ -5,10 +5,9 @@ import hre from "hardhat";
 import { fork, forkReset, moveERC20 } from "./test-helpers/setup";
 import {
   populateAccountCreationTransaction,
-  populateTokenTransferTransaction,
+  populateTokenTransfer,
   predictSafeAddress,
 } from "../src";
-import { signTokenTransfer } from "../src/entrypoints/token-transfer";
 import { IERC20__factory } from "../typechain-types";
 
 describe("token-transfer", async () => {
@@ -45,7 +44,7 @@ describe("token-transfer", async () => {
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = await dai.balanceOf(safeAddress);
 
-    const signature = await signTokenTransfer(
+    const transaction = await populateTokenTransfer(
       safeAddress,
       31337,
       {
@@ -57,20 +56,10 @@ describe("token-transfer", async () => {
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
 
-    const trasnferTokenTransaction = populateTokenTransferTransaction(
-      safeAddress,
-      {
-        token: DAI,
-        to: AddressThree,
-        amount: balance,
-      },
-      signature
-    );
-
     expect(await dai.balanceOf(safeAddress)).to.be.equal(balance);
     expect(await dai.balanceOf(AddressThree)).to.equal(0);
 
-    await notTheOwner.sendTransaction(trasnferTokenTransaction);
+    await notTheOwner.sendTransaction(transaction);
 
     expect(await dai.balanceOf(safeAddress)).to.equal(0);
     expect(await dai.balanceOf(AddressThree)).to.be.equal(balance);
