@@ -8,44 +8,45 @@ export function populateAccountIntegrityQuery(
   safeAddress: string,
   { spender, token }: AccountSetupConfig
 ): string {
-  const multicallIface = deployments.multicall.iface;
+  const safe = {
+    address: safeAddress,
+    iface: deployments.safeMastercopy.iface,
+  };
+  const allowance = deployments.allowanceSingleton;
+  const delay = {
+    address: predictDelayAddress(safeAddress),
+    iface: deployments.delayMastercopy.iface,
+  };
 
-  const { iface: safeIface } = deployments.safeMastercopy;
-  const allowanceAddress = deployments.allowanceSingleton.address;
-  const delayAddress = predictDelayAddress(safeAddress);
-
-  const { iface: delayIface } = deployments.delayMastercopy;
-  const { iface: allowanceIface } = deployments.allowanceSingleton;
-
-  return multicallIface.encodeFunctionData("aggregate3", [
+  return deployments.multicall.iface.encodeFunctionData("aggregate3", [
     [
       {
         target: safeAddress,
         allowFailure: true,
-        callData: safeIface.encodeFunctionData("getModulesPaginated", [
+        callData: safe.iface.encodeFunctionData("getModulesPaginated", [
           AddressOne,
           10,
         ]),
       },
       {
-        target: delayAddress,
+        target: delay.address,
         allowFailure: true,
-        callData: delayIface.encodeFunctionData("txCooldown"),
+        callData: delay.iface.encodeFunctionData("txCooldown"),
       },
       {
-        target: delayAddress,
+        target: delay.address,
         allowFailure: true,
-        callData: delayIface.encodeFunctionData("txNonce"),
+        callData: delay.iface.encodeFunctionData("txNonce"),
       },
       {
-        target: delayAddress,
+        target: delay.address,
         allowFailure: true,
-        callData: delayIface.encodeFunctionData("queueNonce"),
+        callData: delay.iface.encodeFunctionData("queueNonce"),
       },
       {
-        target: allowanceAddress,
+        target: allowance.address,
         allowFailure: true,
-        callData: allowanceIface.encodeFunctionData("getTokenAllowance", [
+        callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
           safeAddress,
           spender,
           token,
