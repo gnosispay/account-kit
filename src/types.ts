@@ -16,12 +16,6 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
-// export interface Transfer {
-//   token: string;
-//   to: string;
-//   amount: bigint | number;
-// }
-
 export type AccountSetupConfig = {
   //** for allowance mod **/
   spender: string; // the gnosis signer, which will be enabled via allowance
@@ -31,3 +25,14 @@ export type AccountSetupConfig = {
   //** for delay mod **/
   cooldown: number; // execution delay for owner before he execute transactions (IN SECONDS)
 };
+
+export enum AccountIntegrityStatus {
+  Ok,
+  SafeNotDeployed,
+  SafeMisconfigured,
+  AllowanceNotDeployed,
+  DelayNotDeployed,
+  DelayMisconfigured,
+  DelayQueueNotEmpty,
+  UnexpectedError,
+}

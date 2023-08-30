@@ -4,6 +4,11 @@ export {
 } from "./entrypoints/account-creation";
 
 export {
+  populateAccountIntegrityQuery,
+  evaluateAccountIntegrityQuery,
+} from "./entrypoints/account-integrity/";
+
+export {
   populateAccountSetupTransaction,
   paramsToSignAccountSetup,
 } from "./entrypoints/account-setup/";
