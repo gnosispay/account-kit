@@ -42,15 +42,19 @@ describe("token-transfer", async () => {
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = await dai.balanceOf(safeAddress);
 
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 0,
+    };
+
     const transaction = await populateTokenTransfer(
-      safeAddress,
-      31337,
+      target,
       {
         token: DAI,
         to: AddressThree,
         amount: balance,
       },
-      0,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
 

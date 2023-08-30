@@ -43,6 +43,12 @@ describe("allowance-tranfer", async () => {
 
     await moveERC20(DAI_WHALE, safeAddress, DAI);
 
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 0,
+    };
+
     const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
@@ -51,10 +57,8 @@ describe("allowance-tranfer", async () => {
     });
 
     const setupTransaction = await populateAccountSetup(
-      safeAddress,
-      31337,
+      target,
       config,
-      0,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
 
@@ -83,13 +87,16 @@ describe("allowance-tranfer", async () => {
     const token = DAI;
     const to = "0x0000000000000000000000000000000000000003";
     const amount = 10;
-    const nonce = 1;
+
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 1,
+    };
 
     const transaction = await populateAllowanceTransfer(
-      safeAddress,
-      31337,
+      target,
       { spender: spender.address, token, to, amount },
-      nonce,
       (message) => spender.signMessage(message)
     );
 
@@ -109,13 +116,16 @@ describe("allowance-tranfer", async () => {
     const token = DAI;
     const to = "0x0000000000000000000000000000000000000003";
     const amount = 2000;
-    const nonce = 1;
+
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 1,
+    };
 
     const transaction = await populateAllowanceTransfer(
-      safeAddress,
-      31337,
+      target,
       { spender: spender.address, token, to, amount },
-      nonce,
       (message) => spender.signMessage(message)
     );
 

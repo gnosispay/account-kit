@@ -72,10 +72,12 @@ describe("account-setup", async () => {
     });
 
     const transaction = await populateAccountSetup(
-      safeAddress,
-      31337,
+      {
+        address: safeAddress,
+        chainId: 31337,
+        nonce: 0,
+      },
       config,
-      0,
       (...args) => owner.signTypedData(...args)
     );
 
@@ -99,7 +101,13 @@ describe("account-setup", async () => {
     const PERIOD = 7654;
     const AMOUNT = 123;
 
-    const config = createAccountConfig({
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 0,
+    };
+
+    const account = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       period: PERIOD,
@@ -107,12 +115,8 @@ describe("account-setup", async () => {
       amount: AMOUNT,
     });
 
-    const transaction = await populateAccountSetup(
-      safeAddress,
-      31337,
-      config,
-      0,
-      (...args) => owner.signTypedData(...args)
+    const transaction = await populateAccountSetup(target, account, (...args) =>
+      owner.signTypedData(...args)
     );
     await bob.sendTransaction(transaction);
 
@@ -139,18 +143,20 @@ describe("account-setup", async () => {
     const delayAddress = await delayModule.getAddress();
     const COOLDOWN = 9999;
 
-    const config = createAccountConfig({
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 0,
+    };
+
+    const account = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       cooldown: COOLDOWN,
     });
 
-    const transaction = await populateAccountSetup(
-      safeAddress,
-      31337,
-      config,
-      0,
-      (...args) => owner.signTypedData(...args)
+    const transaction = await populateAccountSetup(target, account, (...args) =>
+      owner.signTypedData(...args)
     );
 
     await bob.sendTransaction(transaction);

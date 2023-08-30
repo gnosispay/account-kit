@@ -45,7 +45,13 @@ describe("account-integrity", () => {
 
     await relayer.sendTransaction(populateAccountCreation(owner.address));
 
-    const config = createAccountConfig({
+    const target = {
+      address: safeAddress,
+      chainId: 31337,
+      nonce: 0,
+    };
+
+    const accountConfig = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       period: 7654,
@@ -54,10 +60,8 @@ describe("account-integrity", () => {
     });
 
     const transaction = await populateAccountSetup(
-      safeAddress,
-      31337,
-      config,
-      0,
+      target,
+      accountConfig,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
 
@@ -69,7 +73,7 @@ describe("account-integrity", () => {
       bob,
       relayer,
       safeAddress: safeAddress,
-      config,
+      config: accountConfig,
     };
   }
 
@@ -124,15 +128,17 @@ describe("account-integrity", () => {
 
     const justSpent = 23;
     const transaction = await populateAllowanceTransfer(
-      safeAddress,
-      31337,
+      {
+        address: safeAddress,
+        chainId: 31337,
+        nonce: 1,
+      },
       {
         spender: alice.address,
         token: DAI,
         to: ZeroAddress,
         amount: justSpent,
       },
-      nonce,
       (message) => alice.signMessage(message)
     );
     await relayer.sendTransaction(transaction);

@@ -2,30 +2,34 @@ import { Interface, ZeroAddress } from "ethers";
 
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
-import { OperationType, SafeTransactionData, TransactionData } from "../types";
+import {
+  OperationType,
+  SafeTransactionData,
+  TargetConfig,
+  TransactionData,
+} from "../types";
 
 export default async function populateTokenTransfer(
-  safeAddress: string,
-  chainId: bigint | number,
+  target: TargetConfig,
   transfer: { token: string; to: string; amount: bigint | number },
-  nonce: bigint | number,
+
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const safeInterface = deployments.safeMastercopy.iface;
 
   const { to, value, data, operation } = populateSafeTransaction(transfer);
 
-  const { domain, types, message } = typedDataForSafeTransaction(
-    safeAddress,
-    chainId,
-    { to, value, data, operation },
-    nonce
-  );
+  const { domain, types, message } = typedDataForSafeTransaction(target, {
+    to,
+    value,
+    data,
+    operation,
+  });
 
   const signature = await sign(domain, types, message);
 
   return {
-    to: safeAddress,
+    to: target.address,
     data: safeInterface.encodeFunctionData("execTransaction", [
       to,
       value,

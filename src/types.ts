@@ -16,6 +16,12 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
+export type TargetConfig = {
+  address: string;
+  chainId: bigint | number;
+  nonce: bigint | number;
+};
+
 export type AccountConfig = {
   owner: string; // the owner of the account
   //** for allowance mod **/

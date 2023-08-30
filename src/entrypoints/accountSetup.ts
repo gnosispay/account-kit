@@ -5,33 +5,36 @@ import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
 
-import { AccountConfig, SafeTransactionData, TransactionData } from "../types";
+import {
+  AccountConfig,
+  SafeTransactionData,
+  TargetConfig,
+  TransactionData,
+} from "../types";
 
 export default async function populateAccountSetup(
-  safeAddress: string,
-  chainId: bigint | number,
-  config: AccountConfig,
-  nonce: bigint | number,
+  target: TargetConfig,
+  account: AccountConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = populateSafeTransaction(
-    safeAddress,
-    config
+    target,
+    account
   );
 
-  const { domain, types, message } = typedDataForSafeTransaction(
-    safeAddress,
-    chainId,
-    { to, data, value, operation },
-    nonce
-  );
+  const { domain, types, message } = typedDataForSafeTransaction(target, {
+    to,
+    data,
+    value,
+    operation,
+  });
 
   const signature = await sign(domain, types, message);
 
   return {
-    to: safeAddress,
+    to: target.address,
     data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
@@ -49,8 +52,8 @@ export default async function populateAccountSetup(
 }
 
 function populateSafeTransaction(
-  safeAddress: string,
-  config: AccountConfig
+  { address: safeAddress }: TargetConfig,
+  { owner, spender, token, amount, period, cooldown }: AccountConfig
 ): SafeTransactionData {
   const factory = deployments.moduleProxyFactory;
   const safeIface = deployments.safeMastercopy.iface;
@@ -66,16 +69,16 @@ function populateSafeTransaction(
     // configure spender on the allowance mod
     {
       to: allowanceAddress,
-      data: allowanceIface.encodeFunctionData("addDelegate", [config.spender]),
+      data: allowanceIface.encodeFunctionData("addDelegate", [spender]),
     },
     // create an allowance entry for safe -> spender -> token
     {
       to: allowanceAddress,
       data: allowanceIface.encodeFunctionData("setAllowance", [
-        config.spender,
-        config.token,
-        config.amount,
-        config.period,
+        spender,
+        token,
+        amount,
+        period,
         0,
       ]),
     },
@@ -91,12 +94,12 @@ function populateSafeTransaction(
     // configure cooldown on delay
     {
       to: delayAddress,
-      data: delayIface.encodeFunctionData("setTxCooldown", [config.cooldown]),
+      data: delayIface.encodeFunctionData("setTxCooldown", [cooldown]),
     },
     // enable owner on the delay as module
     {
       to: delayAddress,
-      data: delayIface.encodeFunctionData("enableModule", [config.owner]),
+      data: delayIface.encodeFunctionData("enableModule", [owner]),
     },
     // enable allowance as module on safe
     {

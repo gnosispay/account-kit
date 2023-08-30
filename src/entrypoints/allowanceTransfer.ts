@@ -8,24 +8,22 @@ import {
 } from "ethers";
 
 import deployments from "../deployments";
-import { AllowanceTransfer, TransactionData } from "../types";
+import { AllowanceTransfer, TargetConfig, TransactionData } from "../types";
 
 export default async function populateAllowanceTransfer(
-  safeAddress: string,
-  chainId: number,
+  target: TargetConfig,
   transfer: AllowanceTransfer,
-  nonce: number,
   sign: (message: string | Uint8Array) => Promise<string>
 ): Promise<TransactionData> {
   const { iface, address } = deployments.allowanceSingleton;
 
-  const hash = transferHash(safeAddress, chainId, transfer, nonce);
+  const hash = transferHash(target, transfer);
   const signature = signaturePatch(await sign(hash));
 
   return {
     to: address,
     data: iface.encodeFunctionData("executeAllowanceTransfer", [
-      safeAddress,
+      target.address,
       transfer.token,
       transfer.to,
       transfer.amount,
@@ -40,13 +38,10 @@ export default async function populateAllowanceTransfer(
 
 /*
  *  This is a workaround implementation until  https://github.com/safe-global/safe-modules/issues/70
- * gets deployed
  */
 function transferHash(
-  safeAddress: string,
-  chainId: number,
-  { token, to, amount }: AllowanceTransfer,
-  nonce: number
+  { address: safe, chainId, nonce }: TargetConfig,
+  { token, to, amount }: AllowanceTransfer
 ) {
   const abi = AbiCoder.defaultAbiCoder();
   const verifyingContract = deployments.allowanceSingleton.address;
@@ -81,7 +76,7 @@ function transferHash(
       ],
       [
         ALLOWANCE_TRANSFER_TYPEHASH,
-        safeAddress,
+        safe,
         token,
         to,
         amount,
