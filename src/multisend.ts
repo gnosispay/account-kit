@@ -24,6 +24,6 @@ export default function encode(
 function packOneTransaction({ to, value, data }: TransactionData) {
   return pack(
     ["uint8", "address", "uint256", "uint256", "bytes"],
-    [OperationType.Call, to, value, hexDataLength(data as string), data]
+    [OperationType.Call, to, value || 0, hexDataLength(data as string), data]
   );
 }

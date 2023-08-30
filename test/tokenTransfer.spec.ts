@@ -11,7 +11,7 @@ import {
 } from "../src";
 import { IERC20__factory } from "../typechain-types";
 
-describe("tokenTransfer", async () => {
+describe("token-transfer", async () => {
   before(async () => {
     await fork(17741542);
   });

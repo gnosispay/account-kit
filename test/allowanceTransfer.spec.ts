@@ -47,6 +47,7 @@ describe("allowance-tranfer", async () => {
     await moveERC20(DAI_WHALE, safeAddress, DAI);
 
     const config = createAccountSetupConfig({
+      owner: owner.address,
       spender: alice.address,
       amount: 1000,
       token: DAI,

@@ -5,7 +5,7 @@ export enum OperationType {
 
 export interface TransactionData {
   to: string;
-  value: bigint | number;
+  value?: bigint | number;
   data: string;
 }
 
@@ -17,6 +17,7 @@ export interface SafeTransactionData {
 }
 
 export type AccountSetupConfig = {
+  owner: string; // the owner of the account
   //** for allowance mod **/
   spender: string; // the gnosis signer, which will be enabled via allowance
   token: string; // the address of the token used for payments

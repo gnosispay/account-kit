@@ -69,7 +69,10 @@ export function evaluateAccountIntegrityQuery(
     );
 
     if (resultList.length !== 5) {
-      return { status: AccountIntegrityStatus.UnexpectedError, amount: 0n };
+      return {
+        status: AccountIntegrityStatus.UnexpectedError,
+        amount: BigInt(0),
+      };
     }
 
     const [
@@ -81,12 +84,15 @@ export function evaluateAccountIntegrityQuery(
     ] = resultList;
 
     if (modulesSuccess !== true) {
-      return { status: AccountIntegrityStatus.SafeNotDeployed, amount: 0n };
+      return {
+        status: AccountIntegrityStatus.SafeNotDeployed,
+        amount: BigInt(0),
+      };
     }
     if (allowanceSuccess !== true) {
       return {
         status: AccountIntegrityStatus.AllowanceNotDeployed,
-        amount: 0n,
+        amount: BigInt(0),
       };
     }
     if (
@@ -94,19 +100,31 @@ export function evaluateAccountIntegrityQuery(
       txNonceSuccess !== true ||
       queueNonceSuccess != true
     ) {
-      return { status: AccountIntegrityStatus.DelayNotDeployed, amount: 0n };
+      return {
+        status: AccountIntegrityStatus.DelayNotDeployed,
+        amount: BigInt(0),
+      };
     }
 
     if (!evaluateModulesCall(modulesResult, safeAddress)) {
-      return { status: AccountIntegrityStatus.SafeMisconfigured, amount: 0n };
+      return {
+        status: AccountIntegrityStatus.SafeMisconfigured,
+        amount: BigInt(0),
+      };
     }
 
     if (!evaluateDelayCooldown(txCooldownResult, config)) {
-      return { status: AccountIntegrityStatus.DelayMisconfigured, amount: 0n };
+      return {
+        status: AccountIntegrityStatus.DelayMisconfigured,
+        amount: BigInt(0),
+      };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
-      return { status: AccountIntegrityStatus.DelayQueueNotEmpty, amount: 0n };
+      return {
+        status: AccountIntegrityStatus.DelayQueueNotEmpty,
+        amount: BigInt(0),
+      };
     }
 
     return {
@@ -114,7 +132,10 @@ export function evaluateAccountIntegrityQuery(
       amount: extractCurrentAmount(allowanceResult),
     };
   } catch (e) {
-    return { status: AccountIntegrityStatus.UnexpectedError, amount: 0n };
+    return {
+      status: AccountIntegrityStatus.UnexpectedError,
+      amount: BigInt(0),
+    };
   }
 }
 
@@ -155,7 +176,7 @@ function evaluateDelayCooldown(
     cooldownResult
   );
 
-  return cooldown <= config.cooldown;
+  return cooldown >= config.cooldown;
 }
 
 function evaluateDelayQueue(nonceResult: string, queueResult: string) {

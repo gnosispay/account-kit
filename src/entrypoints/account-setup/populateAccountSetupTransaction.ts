@@ -5,6 +5,7 @@ import {
   populateSetCooldown,
   predictDelayAddress,
 } from "./delay-mod";
+import { IDelayModule__factory } from "../../../typechain-types";
 import deployments from "../../deployments";
 import multisendEncode from "../../multisend";
 
@@ -50,17 +51,22 @@ export function populateInnerTransaction(
 ): SafeTransactionData {
   const allowanceAddress = deployments.allowanceSingleton.address;
   const delayAddress = predictDelayAddress(safeAddress);
+  const delay = IDelayModule__factory.connect(delayAddress);
 
   return multisendEncode([
     populateAddDelegate(config),
     populateSetAllowance(config),
+    populateDelayDeploy(safeAddress),
+    populateSetCooldown(safeAddress, config),
+    {
+      to: delayAddress,
+      data: delay.interface.encodeFunctionData("enableModule", [config.owner]),
+    },
     {
       to: safeAddress,
       data: encodeEnableModule(allowanceAddress),
       value: 0,
     },
-    populateDelayDeploy(safeAddress),
-    populateSetCooldown(safeAddress, config),
     {
       to: safeAddress,
       data: encodeEnableModule(delayAddress),

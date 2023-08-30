@@ -17,7 +17,7 @@ import {
   ISafe__factory,
 } from "../typechain-types";
 
-describe("accountSetup", async () => {
+describe("account-setup", async () => {
   before(async () => {
     await fork(17741542);
   });
@@ -61,7 +61,10 @@ describe("accountSetup", async () => {
     const { owner, alice, safe, safeAddress, allowanceAddress, delayAddress } =
       await loadFixture(createAccount);
 
-    const config = createAccountSetupConfig({ spender: alice.address });
+    const config = createAccountSetupConfig({
+      owner: owner.address,
+      spender: alice.address,
+    });
     const { domain, types, message } = paramsToSignAccountSetup(
       safeAddress,
       31337, // chainId hardhat
@@ -96,6 +99,7 @@ describe("accountSetup", async () => {
     const AMOUNT = 123;
 
     const config = createAccountSetupConfig({
+      owner: owner.address,
       spender: alice.address,
       period: PERIOD,
       token: DAI,
@@ -141,6 +145,7 @@ describe("accountSetup", async () => {
     const COOLDOWN = 9999;
 
     const config = createAccountSetupConfig({
+      owner: owner.address,
       spender: alice.address,
       cooldown: COOLDOWN,
     });

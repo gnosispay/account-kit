@@ -45,6 +45,7 @@ export async function moveERC20(
 
 export function createAccountSetupConfig({
   // for allowance
+  owner,
   spender,
   token = DAI,
   amount = 1000000,
@@ -52,6 +53,7 @@ export function createAccountSetupConfig({
   // for delay
   cooldown = 20, // in minutes, 20 minutes
 }: {
+  owner: string;
   spender: string;
   token?: string;
   amount?: number | bigint;
@@ -59,6 +61,7 @@ export function createAccountSetupConfig({
   cooldown?: number;
 }): AccountSetupConfig {
   return {
+    owner,
     spender,
     token,
     amount,
