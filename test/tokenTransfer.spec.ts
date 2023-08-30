@@ -8,8 +8,8 @@ import {
   populateTokenTransferTransaction,
   predictSafeAddress,
 } from "../src";
-import { IERC20__factory } from "../typechain-types";
 import { signTokenTransfer } from "../src/entrypoints/token-transfer";
+import { IERC20__factory } from "../typechain-types";
 
 describe("token-transfer", async () => {
   before(async () => {

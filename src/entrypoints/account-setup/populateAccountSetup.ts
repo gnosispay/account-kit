@@ -1,27 +1,38 @@
 import { ZeroAddress, ZeroHash } from "ethers";
 
-import deployments from "../../deployments";
-import multisendEncode from "../../multisend";
 import predictDelayAddress, { encodeSetUp } from "./predictDelayAddress";
+import deployments from "../../deployments";
+import { typedDataForSafeTransaction } from "../../eip712";
+import multisendEncode from "../../multisend";
 
 import {
   AccountSetupConfig,
   SafeTransactionData,
   TransactionData,
 } from "../../types";
-import { typedDataForSafeTransaction } from "../../eip712";
 
-export default function populateAccountSetupTransaction(
+export default async function populateAccountSetup(
   safeAddress: string,
+  chainId: bigint | number,
   config: AccountSetupConfig,
-  signature: string
-): TransactionData {
+  nonce: bigint | number,
+  sign: (domain: any, types: any, message: any) => Promise<string>
+): Promise<TransactionData> {
   const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = populateSafeTransaction(
     safeAddress,
     config
   );
+
+  const { domain, types, message } = typedDataForSafeTransaction(
+    safeAddress,
+    chainId,
+    { to, data, value, operation },
+    nonce
+  );
+
+  const signature = await sign(domain, types, message);
 
   return {
     to: safeAddress,
@@ -39,23 +50,6 @@ export default function populateAccountSetupTransaction(
     ]),
     value: 0,
   };
-}
-
-export async function signAccountSetup(
-  safeAddress: string,
-  chainId: number,
-  config: AccountSetupConfig,
-  nonce: number | bigint,
-  sign: (domain: any, types: any, message: any) => Promise<string>
-) {
-  const { domain, types, message } = typedDataForSafeTransaction(
-    safeAddress,
-    chainId,
-    populateSafeTransaction(safeAddress, config),
-    nonce
-  );
-
-  return sign(domain, types, message);
 }
 
 function populateSafeTransaction(

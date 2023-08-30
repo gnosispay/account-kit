@@ -1,12 +1,12 @@
 import { Interface, ZeroAddress } from "ethers";
 
 import deployments from "../../deployments";
+import { typedDataForSafeTransaction } from "../../eip712";
 import {
   OperationType,
   SafeTransactionData,
   TransactionData,
 } from "../../types";
-import { typedDataForSafeTransaction } from "../../eip712";
 
 export default function populateTransferTokenTransaction(
   safeAddress: string,

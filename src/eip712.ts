@@ -7,7 +7,7 @@ import { SafeTransactionData } from "./types";
 
 export function typedDataForSafeTransaction(
   safeAddress: string,
-  chainId: number,
+  chainId: bigint | number,
   { to, value, data, operation }: SafeTransactionData,
   nonce: bigint | number
 ) {

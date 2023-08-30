@@ -13,10 +13,9 @@ import {
 
 import {
   populateAccountCreationTransaction,
-  populateAccountSetupTransaction,
+  populateAccountSetup,
   populateAllowanceTransfer,
   predictSafeAddress,
-  signAccountSetup,
 } from "../src";
 import deployments from "../src/deployments";
 import {
@@ -51,18 +50,12 @@ describe("allowance-tranfer", async () => {
       token: DAI,
     });
 
-    const signature = await signAccountSetup(
+    const setupTransaction = await populateAccountSetup(
       safeAddress,
-      31337, // chainId hardhat
+      31337,
       config,
       0,
       (domain, types, message) => owner.signTypedData(domain, types, message)
-    );
-
-    const setupTransaction = populateAccountSetupTransaction(
-      safeAddress,
-      config,
-      signature
     );
 
     await charlie.sendTransaction(setupTransaction);

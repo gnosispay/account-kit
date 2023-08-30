@@ -3,25 +3,24 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import {
-  populateAccountCreationTransaction,
-  populateAccountSetupTransaction,
-  predictDelayAddress,
-  predictSafeAddress,
-  signAccountSetup,
-} from "../src";
-import deployments from "../src/deployments";
-import {
-  IAllowanceModule__factory,
-  IDelayModule__factory,
-  ISafe__factory,
-} from "../typechain-types";
-
-import {
   DAI,
   createAccountSetupConfig,
   fork,
   forkReset,
 } from "./test-helpers/setup";
+import {
+  populateAccountCreationTransaction,
+  populateAccountSetup,
+  predictDelayAddress,
+  predictSafeAddress,
+} from "../src";
+import deployments from "../src/deployments";
+
+import {
+  IAllowanceModule__factory,
+  IDelayModule__factory,
+  ISafe__factory,
+} from "../typechain-types";
 
 describe("account-setup", async () => {
   before(async () => {
@@ -72,18 +71,12 @@ describe("account-setup", async () => {
       spender: alice.address,
     });
 
-    const signature = await signAccountSetup(
+    const transaction = await populateAccountSetup(
       safeAddress,
       31337,
       config,
       0,
       (...args) => owner.signTypedData(...args)
-    );
-
-    const transaction = populateAccountSetupTransaction(
-      safeAddress,
-      config,
-      signature
     );
 
     expect(await safe.isModuleEnabled(allowanceAddress)).to.be.false;
@@ -114,20 +107,13 @@ describe("account-setup", async () => {
       amount: AMOUNT,
     });
 
-    const signature = await signAccountSetup(
+    const transaction = await populateAccountSetup(
       safeAddress,
       31337,
       config,
       0,
       (...args) => owner.signTypedData(...args)
     );
-
-    const transaction = populateAccountSetupTransaction(
-      safeAddress,
-      config,
-      signature
-    );
-
     await bob.sendTransaction(transaction);
 
     const [amount, spent, period, , nonce] =
@@ -159,18 +145,12 @@ describe("account-setup", async () => {
       cooldown: COOLDOWN,
     });
 
-    const signature = await signAccountSetup(
+    const transaction = await populateAccountSetup(
       safeAddress,
       31337,
       config,
       0,
       (...args) => owner.signTypedData(...args)
-    );
-
-    const transaction = populateAccountSetupTransaction(
-      safeAddress,
-      config,
-      signature
     );
 
     await bob.sendTransaction(transaction);

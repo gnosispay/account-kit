@@ -1,10 +1,4 @@
-import populateAccountSetupTransaction, {
-  signAccountSetup,
-} from "./populateAccountSetupTransaction";
+import populateAccountSetup from "./populateAccountSetup";
 import predictDelayAddress from "./predictDelayAddress";
 
-export {
-  populateAccountSetupTransaction,
-  signAccountSetup,
-  predictDelayAddress,
-};
+export { populateAccountSetup, predictDelayAddress };

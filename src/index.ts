@@ -9,14 +9,9 @@ export {
 } from "./entrypoints/account-integrity/";
 
 export {
-  populateAccountSetupTransaction,
-  signAccountSetup,
+  populateAccountSetup,
   predictDelayAddress,
 } from "./entrypoints/account-setup/";
 
-export {
-  populateTokenTransferTransaction,
-  // signTokenTransfer,
-} from "./entrypoints/token-transfer";
-
+export { populateTokenTransferTransaction } from "./entrypoints/token-transfer";
 export { populateAllowanceTransfer } from "./entrypoints/allowance-transfer";

@@ -3,22 +3,7 @@ import { expect } from "chai";
 import { ZeroAddress } from "ethers";
 import hre from "hardhat";
 
-import {
-  evaluateAccountIntegrityQuery,
-  populateAccountCreationTransaction,
-  populateAccountIntegrityQuery,
-  populateAccountSetupTransaction,
-  populateAllowanceTransfer,
-  predictSafeAddress,
-} from "../src";
-import deployments from "../src/deployments";
-import {
-  predictDelayAddress,
-  signAccountSetup,
-} from "../src/entrypoints/account-setup";
-import { AccountIntegrityStatus } from "../src/types";
-import { IDelayModule__factory, ISafe__factory } from "../typechain-types";
-
+import execSafeTransaction from "./test-helpers/execSafeTransaction";
 import {
   DAI,
   DAI_WHALE,
@@ -27,7 +12,18 @@ import {
   forkReset,
   moveERC20,
 } from "./test-helpers/setup";
-import execSafeTransaction from "./test-helpers/execSafeTransaction";
+import {
+  evaluateAccountIntegrityQuery,
+  populateAccountCreationTransaction,
+  populateAccountIntegrityQuery,
+  populateAccountSetup,
+  populateAllowanceTransfer,
+  predictDelayAddress,
+  predictSafeAddress,
+} from "../src";
+import deployments from "../src/deployments";
+import { AccountIntegrityStatus } from "../src/types";
+import { IDelayModule__factory, ISafe__factory } from "../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
@@ -45,6 +41,7 @@ describe("account-integrity", () => {
     const [owner, , , alice, bob, relayer] = await hre.ethers.getSigners();
 
     const safeAddress = predictSafeAddress(owner.address);
+    await moveERC20(DAI_WHALE, safeAddress, DAI);
 
     await relayer.sendTransaction(
       populateAccountCreationTransaction(owner.address)
@@ -58,19 +55,15 @@ describe("account-integrity", () => {
       amount: 123,
     });
 
-    const signature = await signAccountSetup(
+    const transaction = await populateAccountSetup(
       safeAddress,
-      31337, // chainId hardhat
+      31337,
       config,
       0,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
 
-    await relayer.sendTransaction(
-      populateAccountSetupTransaction(safeAddress, config, signature)
-    );
-
-    await moveERC20(DAI_WHALE, safeAddress, DAI);
+    await relayer.sendTransaction(transaction);
 
     return {
       owner,
@@ -111,9 +104,6 @@ describe("account-integrity", () => {
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
 
-    const token = DAI;
-    const to = ZeroAddress;
-    const amount = 23;
     const nonce = 1;
 
     const query = populateAccountIntegrityQuery(safeAddress, config);
