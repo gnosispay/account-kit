@@ -3,33 +3,35 @@ import { Interface, ZeroAddress } from "ethers";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import {
+  ExecutionConfig,
   OperationType,
   SafeTransactionData,
-  TargetConfig,
   TransactionData,
+  Transfer,
 } from "../types";
 
 export default async function populateTokenTransfer(
-  target: TargetConfig,
-  transfer: { token: string; to: string; amount: bigint | number },
+  { safe, chainId, nonce }: ExecutionConfig,
+  transfer: Transfer,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const iface = deployments.safeMastercopy.iface;
+  const safeAddress = safe;
+  const safeIface = deployments.safeMastercopy.iface;
 
   const { to, value, data, operation } = populateSafeTransaction(transfer);
 
-  const { domain, types, message } = typedDataForSafeTransaction(target, {
-    to,
-    value,
-    data,
-    operation,
-  });
+  const { domain, types, message } = typedDataForSafeTransaction(
+    safe,
+    chainId,
+    nonce,
+    { to, value, data, operation }
+  );
 
   const signature = await sign(domain, types, message);
 
   return {
-    to: target.address,
-    data: iface.encodeFunctionData("execTransaction", [
+    to: safeAddress,
+    data: safeIface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,
@@ -49,11 +51,7 @@ function populateSafeTransaction({
   token,
   to,
   amount,
-}: {
-  token: string;
-  to: string;
-  amount: bigint | number;
-}): SafeTransactionData {
+}: Transfer): SafeTransactionData {
   const iface = new Interface([
     "function transfer(address recipient, uint256 amount)",
   ]);

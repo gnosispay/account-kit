@@ -8,34 +8,35 @@ import multisendEncode from "../multisend";
 import {
   AccountConfig,
   SafeTransactionData,
-  TargetConfig,
+  ExecutionConfig,
   TransactionData,
 } from "../types";
 
 export default async function populateAccountSetup(
-  target: TargetConfig,
+  { safe, chainId, nonce }: ExecutionConfig,
   account: AccountConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const { iface } = deployments.safeMastercopy;
+  const safeIface = deployments.safeMastercopy.iface;
+  const safeAddress = safe;
 
   const { to, data, value, operation } = populateSafeTransaction(
-    target,
+    safeAddress,
     account
   );
 
-  const { domain, types, message } = typedDataForSafeTransaction(target, {
-    to,
-    data,
-    value,
-    operation,
-  });
+  const { domain, types, message } = typedDataForSafeTransaction(
+    safe,
+    chainId,
+    nonce,
+    { to, data, value, operation }
+  );
 
   const signature = await sign(domain, types, message);
 
   return {
-    to: target.address,
-    data: iface.encodeFunctionData("execTransaction", [
+    to: safeAddress,
+    data: safeIface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,
@@ -52,10 +53,12 @@ export default async function populateAccountSetup(
 }
 
 function populateSafeTransaction(
-  { address: safeAddress }: TargetConfig,
+  safeAddress: string,
   { owner, spender, token, amount, period, cooldown }: AccountConfig
 ): SafeTransactionData {
-  const factory = deployments.moduleProxyFactory;
+  const factoryIface = deployments.moduleProxyFactory.iface;
+  const factoryAddress = deployments.moduleProxyFactory.address;
+
   const safeIface = deployments.safeMastercopy.iface;
 
   const allowanceIface = deployments.allowanceSingleton.iface;
@@ -84,8 +87,8 @@ function populateSafeTransaction(
     },
     // deploy the delay mod
     {
-      to: factory.address,
-      data: factory.iface.encodeFunctionData("deployModule", [
+      to: factoryAddress,
+      data: factoryIface.encodeFunctionData("deployModule", [
         delayMastercopy,
         encodeSetUp(safeAddress),
         ZeroHash,

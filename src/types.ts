@@ -16,9 +16,9 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
-export type TargetConfig = {
-  address: string;
-  chainId?: bigint | number;
+export type ExecutionConfig = {
+  safe: string;
+  chainId: bigint | number;
   nonce: bigint | number;
 };
 

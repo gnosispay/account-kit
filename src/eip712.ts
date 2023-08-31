@@ -1,15 +1,17 @@
 import { ZeroAddress } from "ethers";
-import { SafeTransactionData, TargetConfig } from "./types";
+import { SafeTransactionData } from "./types";
 
 /*
  * produces the parameters to be passed to signer_signTypedData()
  */
 
 export function typedDataForSafeTransaction(
-  { address, chainId, nonce }: TargetConfig,
+  safe: string,
+  chainId: bigint | number,
+  nonce: bigint | number,
   { to, value, data, operation }: SafeTransactionData
 ) {
-  const domain = { verifyingContract: address, chainId };
+  const domain = { verifyingContract: safe, chainId };
   const primaryType = "SafeTx" as const;
   const types = {
     SafeTx: [
