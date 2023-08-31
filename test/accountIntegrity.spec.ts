@@ -13,13 +13,13 @@ import {
   moveERC20,
 } from "./test-helpers/setup";
 import {
-  evaluateAccountIntegrityQuery,
   populateAccountCreation,
-  populateAccountIntegrityQuery,
   populateAccountSetup,
   populateAllowanceTransfer,
   predictDelayAddress,
   predictSafeAddress,
+  populateAccountIntegrityQuery,
+  evaluateAccountIntegrityResult,
 } from "../src";
 import deployments from "../src/deployments";
 import { AccountIntegrityStatus } from "../src/types";
@@ -91,14 +91,15 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityQuery(
+    const result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
     );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.amount).to.equal(config.amount);
+    expect(result.allowance?.amount).to.equal(config.amount);
+    expect(result.allowance?.nonce).to.equal(1);
   });
 
   it("passes and reflects recent spending on the result", async () => {
@@ -116,13 +117,14 @@ describe("account-integrity", () => {
       },
     ]);
 
-    let result = await evaluateAccountIntegrityQuery(
+    let result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.amount).to.equal(config.amount);
+    expect(result.allowance?.amount).to.equal(config.amount);
+    expect(result.allowance?.nonce).to.equal(1);
 
     const justSpent = 23;
     const transaction = await populateAllowanceTransfer(
@@ -150,13 +152,16 @@ describe("account-integrity", () => {
       },
     ]);
 
-    result = await evaluateAccountIntegrityQuery(
+    result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.amount).to.equal(Number(config.amount) - justSpent);
+    expect(result.allowance?.amount).to.equal(
+      Number(config.amount) - justSpent
+    );
+    expect(result.allowance?.nonce).to.equal(2);
   });
 
   it("fails when the number of modules enabled is not two", async () => {
@@ -184,7 +189,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityQuery(
+    const result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -226,7 +231,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityQuery(
+    const result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -264,7 +269,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityQuery(
+    const result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -297,7 +302,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityQuery(
+    const result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -321,7 +326,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    let result = await evaluateAccountIntegrityQuery(
+    let result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -340,7 +345,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    result = await evaluateAccountIntegrityQuery(
+    result = await evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config

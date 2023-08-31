@@ -57,23 +57,26 @@ export default function populateAccountIntegrityQuery(
   ]);
 }
 
-export function evaluateAccountIntegrityQuery(
-  resultData: string,
+export function evaluateAccountIntegrityResult(
+  queryResult: string,
   safeAddress: string,
-  config: AccountConfig
-): { status: AccountIntegrityStatus; amount: bigint } {
+  account: AccountConfig
+): {
+  status: AccountIntegrityStatus;
+  allowance: { amount: bigint | number; nonce: bigint | number } | null;
+} {
   try {
     const multicall = deployments.multicall.iface;
 
-    const [resultList] = multicall.decodeFunctionResult(
+    const [aggregate3Result] = multicall.decodeFunctionResult(
       "aggregate3",
-      resultData
+      queryResult
     );
 
-    if (resultList.length !== 5) {
+    if (aggregate3Result.length !== 5) {
       return {
         status: AccountIntegrityStatus.UnexpectedError,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
 
@@ -83,18 +86,18 @@ export function evaluateAccountIntegrityQuery(
       [txNonceSuccess, txNonceResult],
       [queueNonceSuccess, queueNonceResult],
       [allowanceSuccess, allowanceResult],
-    ] = resultList;
+    ] = aggregate3Result;
 
     if (modulesSuccess !== true) {
       return {
         status: AccountIntegrityStatus.SafeNotDeployed,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
     if (allowanceSuccess !== true) {
       return {
         status: AccountIntegrityStatus.AllowanceNotDeployed,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
     if (
@@ -104,39 +107,39 @@ export function evaluateAccountIntegrityQuery(
     ) {
       return {
         status: AccountIntegrityStatus.DelayNotDeployed,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
 
     if (!evaluateModulesCall(modulesResult, safeAddress)) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
 
-    if (!evaluateDelayCooldown(txCooldownResult, config)) {
+    if (!evaluateDelayCooldown(txCooldownResult, account)) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
       return {
         status: AccountIntegrityStatus.DelayQueueNotEmpty,
-        amount: BigInt(0),
+        allowance: null,
       };
     }
 
     return {
       status: AccountIntegrityStatus.Ok,
-      amount: extractCurrentAmount(allowanceResult),
+      allowance: extractCurrentAllowance(allowanceResult),
     };
   } catch (e) {
     return {
       status: AccountIntegrityStatus.UnexpectedError,
-      amount: BigInt(0),
+      allowance: null,
     };
   }
 }
@@ -187,13 +190,16 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   return nonce == queue;
 }
 
-function extractCurrentAmount(allowanceResult: string): bigint {
+function extractCurrentAllowance(allowanceResult: string) {
   const { iface } = deployments.allowanceSingleton;
 
-  const [[amount, spent, , ,]] = iface.decodeFunctionResult(
+  const [[amount, spent, , , nonce]] = iface.decodeFunctionResult(
     "getTokenAllowance",
     allowanceResult
   );
 
-  return (amount as bigint) - (spent as bigint);
+  return {
+    amount: (amount as bigint) - (spent as bigint),
+    nonce: nonce as bigint,
+  };
 }

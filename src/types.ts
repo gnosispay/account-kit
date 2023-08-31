@@ -18,7 +18,7 @@ export interface SafeTransactionData {
 
 export type TargetConfig = {
   address: string;
-  chainId: bigint | number;
+  chainId?: bigint | number;
   nonce: bigint | number;
 };
 
@@ -43,6 +43,12 @@ export enum AccountIntegrityStatus {
   DelayQueueNotEmpty,
   UnexpectedError,
 }
+
+export type Transfer = {
+  token: string;
+  to: string;
+  amount: bigint | number;
+};
 
 export type AllowanceTransfer = {
   spender: string;

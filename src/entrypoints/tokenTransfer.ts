@@ -14,7 +14,7 @@ export default async function populateTokenTransfer(
   transfer: { token: string; to: string; amount: bigint | number },
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const safeInterface = deployments.safeMastercopy.iface;
+  const iface = deployments.safeMastercopy.iface;
 
   const { to, value, data, operation } = populateSafeTransaction(transfer);
 
@@ -29,7 +29,7 @@ export default async function populateTokenTransfer(
 
   return {
     to: target.address,
-    data: safeInterface.encodeFunctionData("execTransaction", [
+    data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,

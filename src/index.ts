@@ -1,6 +1,6 @@
 import populateAccountCreation from "./entrypoints/accountCreation";
 import populateAccountIntegrityQuery, {
-  evaluateAccountIntegrityQuery,
+  evaluateAccountIntegrityResult,
 } from "./entrypoints/accountIntegrity";
 import populateAccountSetup from "./entrypoints/accountSetup";
 
@@ -10,12 +10,15 @@ import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 export {
+  // build and sign, relayer/gelato ready transactions
   populateAccountCreation,
-  populateAccountIntegrityQuery,
   populateAccountSetup,
   populateAllowanceTransfer,
   populateTokenTransfer,
+  // predict account setup addresses
   predictDelayAddress,
   predictSafeAddress,
-  evaluateAccountIntegrityQuery,
+  // integrity and status query
+  populateAccountIntegrityQuery,
+  evaluateAccountIntegrityResult,
 };
