@@ -58,7 +58,7 @@ export default function populateAccountIntegrityQuery(
 }
 
 export function evaluateAccountIntegrityResult(
-  queryResult: string,
+  functionResult: string,
   safeAddress: string,
   account: AccountConfig
 ): {
@@ -70,7 +70,7 @@ export function evaluateAccountIntegrityResult(
 
     const [aggregate3Result] = multicall.decodeFunctionResult(
       "aggregate3",
-      queryResult
+      functionResult
     );
 
     if (aggregate3Result.length !== 5) {
