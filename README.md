@@ -79,7 +79,7 @@ const token = `0x<address>`
 const to = `0x<address>`
 const amount = '<number>'
 
-const transaction = populateAccountSetup(
+const transaction = await populateAccountSetup(
   { safe, chainId, nonce },
   { token, to, amount },
   (domain, types, message) => owner.signTypedData(domain, types, message) // any eip712 works
@@ -104,7 +104,7 @@ const token = `0x<address>`
 const to = `0x<address>`
 const amount = '<number>'
 
-const transaction = populateAccountSetup(
+const transaction = await populateAccountSetup(
   { safe, chainId, nonce },
   { spender: spender.address, token, to, amount },
   // a bug in the current allowance mod, requires us to use eip-191
@@ -145,7 +145,7 @@ const functionData = populateAccountIntegrityQuery(safe, config);
 
 const functionResult = await provider.send("eth_call", functionData);
 
-const result = await evaluateAccountIntegrityResult(
+const result = evaluateAccountIntegrityResult(
   functionResult, safe, config
 );
 

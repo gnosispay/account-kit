@@ -85,7 +85,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityResult(
+    const result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -111,7 +111,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    let result = await evaluateAccountIntegrityResult(
+    let result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -142,11 +142,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    result = await evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    result = evaluateAccountIntegrityResult(resultData, safeAddress, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance?.amount).to.equal(
       Number(config.amount) - justSpent
@@ -179,7 +175,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityResult(
+    const result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -221,7 +217,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityResult(
+    const result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -259,7 +255,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityResult(
+    const result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -292,7 +288,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    const result = await evaluateAccountIntegrityResult(
+    const result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -316,7 +312,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    let result = await evaluateAccountIntegrityResult(
+    let result = evaluateAccountIntegrityResult(
       resultData,
       safeAddress,
       config
@@ -335,11 +331,7 @@ describe("account-integrity", () => {
       },
     ]);
 
-    result = await evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    result = evaluateAccountIntegrityResult(resultData, safeAddress, config);
     // integrity fails
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
