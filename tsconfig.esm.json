@@ -4,7 +4,5 @@
     "target": "es2016",
     "outDir": "dist/esm",
     "module": "es6"
-  },
-  "include": ["scripts/**/*.ts", "src/**/*.ts"]
-  //  "exclude": ["sdk/**/__tests__/**/*"]
+  }
 }
