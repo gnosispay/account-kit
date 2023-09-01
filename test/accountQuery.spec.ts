@@ -23,12 +23,16 @@ import {
 } from "../src";
 import deployments from "../src/deployments";
 import { AccountIntegrityStatus } from "../src/types";
-import { IDelayModule__factory, ISafe__factory } from "../typechain-types";
+import {
+  IAllowanceModule__factory,
+  IDelayModule__factory,
+  ISafe__factory,
+} from "../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
 
-describe.only("account-query", () => {
+describe("account-query", () => {
   before(async () => {
     await fork(17741542);
   });
@@ -67,6 +71,11 @@ describe.only("account-query", () => {
       bob,
       relayer,
       safeAddress: safeAddress,
+      safe: ISafe__factory.connect(safeAddress, relayer),
+      allowance: IAllowanceModule__factory.connect(
+        deployments.allowanceSingleton.address,
+        relayer
+      ),
       config: accountConfig,
     };
   }
@@ -254,5 +263,54 @@ describe.only("account-query", () => {
     result = evaluateAccountQuery(safeAddress, config, resultData);
     // integrity fails
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
+  });
+
+  it("fails when spender was removed", async () => {
+    const { safeAddress, safe, allowance, owner, config } =
+      await loadFixture(setupAccount);
+
+    const query = populateAccountQuery(safeAddress, config);
+    let resultData = await hre.ethers.provider.send("eth_call", [query]);
+    let result = evaluateAccountQuery(safeAddress, config, resultData);
+    // everything is alright
+    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+
+    await execSafeTransaction(
+      safe,
+      await allowance.removeDelegate.populateTransaction(config.spender, true),
+      owner
+    );
+
+    resultData = await hre.ethers.provider.send("eth_call", [query]);
+    result = evaluateAccountQuery(safeAddress, config, resultData);
+    // integrity fails
+    expect(result.status).to.equal(
+      AccountIntegrityStatus.AllowanceMisconfigured
+    );
+  });
+
+  it("fails when allowance for spender was removed", async () => {
+    const { safeAddress, safe, allowance, owner, config } =
+      await loadFixture(setupAccount);
+
+    const query = populateAccountQuery(safeAddress, config);
+    let resultData = await hre.ethers.provider.send("eth_call", [query]);
+    let result = evaluateAccountQuery(safeAddress, config, resultData);
+    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+
+    await execSafeTransaction(
+      safe,
+      await allowance.deleteAllowance.populateTransaction(
+        config.spender,
+        config.token
+      ),
+      owner
+    );
+    resultData = await hre.ethers.provider.send("eth_call", [query]);
+    result = evaluateAccountQuery(safeAddress, config, resultData);
+    // integrity fails
+    expect(result.status).to.equal(
+      AccountIntegrityStatus.AllowanceMisconfigured
+    );
   });
 });

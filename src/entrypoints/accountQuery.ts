@@ -1,12 +1,9 @@
+import assert from "assert";
 import predictDelayAddress from "./predictDelayAddress";
+import { IERC20__factory } from "../../typechain-types";
 import deployments from "../deployments";
 
-import {
-  AccountIntegrityStatus,
-  AccountConfig,
-  TransactionData,
-} from "../types";
-import { IERC20__factory } from "../../typechain-types";
+import { AccountIntegrityStatus, TransactionData } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
@@ -45,6 +42,15 @@ export default function populateAccountQuery(
         ]),
       },
       {
+        target: allowance.address,
+        allowFailure: true,
+        callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
+          safeAddress,
+          spender,
+          token,
+        ]),
+      },
+      {
         target: delay.address,
         allowFailure: true,
         callData: delay.iface.encodeFunctionData("txCooldown"),
@@ -58,15 +64,6 @@ export default function populateAccountQuery(
         target: delay.address,
         allowFailure: true,
         callData: delay.iface.encodeFunctionData("queueNonce"),
-      },
-      {
-        target: allowance.address,
-        allowFailure: true,
-        callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
-          safeAddress,
-          spender,
-          token,
-        ]),
       },
     ],
   ]);
@@ -106,10 +103,10 @@ export function evaluateAccountQuery(
     const [
       [, balanceResult],
       [modulesSuccess, modulesResult],
+      [, allowanceResult],
       [txCooldownSuccess, txCooldownResult],
       [txNonceSuccess, txNonceResult],
       [queueNonceSuccess, queueNonceResult],
-      [allowanceSuccess, allowanceResult],
     ] = aggregate3Result;
 
     if (modulesSuccess !== true || modulesSuccess !== true) {
@@ -118,12 +115,21 @@ export function evaluateAccountQuery(
         detail: null,
       };
     }
-    if (allowanceSuccess !== true) {
+
+    if (!evaluateModulesCall(modulesResult, safeAddress)) {
       return {
-        status: AccountIntegrityStatus.AllowanceNotDeployed,
+        status: AccountIntegrityStatus.SafeMisconfigured,
         detail: null,
       };
     }
+
+    if (!evaluateAllowance(allowanceResult)) {
+      return {
+        status: AccountIntegrityStatus.AllowanceMisconfigured,
+        detail: null,
+      };
+    }
+
     if (
       txCooldownSuccess !== true ||
       txNonceSuccess !== true ||
@@ -131,13 +137,6 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.DelayNotDeployed,
-        detail: null,
-      };
-    }
-
-    if (!evaluateModulesCall(modulesResult, safeAddress)) {
-      return {
-        status: AccountIntegrityStatus.SafeMisconfigured,
         detail: null,
       };
     }
@@ -200,6 +199,21 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   // const [queue] = iface.decodeFunctionResult("queueNonce", queueResult);
   // return nonce == queue;
   return nonceResult == queueResult;
+}
+
+function evaluateAllowance(allowanceResult: string) {
+  const { iface } = deployments.allowanceSingleton;
+
+  const [[amount, , , , nonce]] = iface.decodeFunctionResult(
+    "getTokenAllowance",
+    allowanceResult
+  );
+
+  assert(typeof amount == "bigint");
+  assert(typeof nonce == "bigint");
+
+  // means an allowance exists for spender
+  return amount > 0 && nonce > 0;
 }
 
 function extractDetail(balanceResult: string, allowanceResult: string) {
