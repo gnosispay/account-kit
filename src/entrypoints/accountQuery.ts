@@ -1,6 +1,5 @@
 import assert from "assert";
 import predictDelayAddress from "./predictDelayAddress";
-import { IERC20__factory } from "../../typechain-types";
 import deployments from "../deployments";
 
 import { AccountIntegrityStatus, TransactionData } from "../types";
@@ -74,7 +73,6 @@ export function evaluateAccountQuery(
   status: AccountIntegrityStatus;
   detail: {
     allowance: { unspent: bigint; nonce: bigint };
-    balance: bigint;
   } | null;
 } {
   try {

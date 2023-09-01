@@ -9,6 +9,8 @@ import predictDelayAddress from "./entrypoints/predictDelayAddress";
 import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
+export * from "./types";
+
 export {
   // build and sign, relayer/gelato ready transactions
   populateAccountCreation,
