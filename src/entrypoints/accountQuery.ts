@@ -12,7 +12,7 @@ const AddressOne = "0x0000000000000000000000000000000000000001";
 
 export default function populateAccountQuery(
   safeAddress: string,
-  config: AccountConfig
+  { spender, token }: { spender: string; token: string }
 ): TransactionData {
   const safe = {
     address: safeAddress,
@@ -29,7 +29,7 @@ export default function populateAccountQuery(
   const data = multicall.iface.encodeFunctionData("aggregate3", [
     [
       {
-        target: config.token,
+        target: token,
         allowFailure: false,
         callData: IERC20__factory.createInterface().encodeFunctionData(
           "balanceOf",
@@ -64,8 +64,8 @@ export default function populateAccountQuery(
         allowFailure: true,
         callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
           safeAddress,
-          config.spender,
-          config.token,
+          spender,
+          token,
         ]),
       },
     ],
@@ -79,7 +79,7 @@ export default function populateAccountQuery(
 
 export function evaluateAccountQuery(
   safeAddress: string,
-  config: AccountConfig,
+  { cooldown }: { cooldown: bigint | number },
   functionResult: string
 ): {
   status: AccountIntegrityStatus;
@@ -142,7 +142,7 @@ export function evaluateAccountQuery(
       };
     }
 
-    if (!evaluateDelayCooldown(txCooldownResult, config)) {
+    if (!evaluateDelayCooldown(txCooldownResult, cooldown)) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
         detail: null,
@@ -168,11 +168,7 @@ export function evaluateAccountQuery(
   }
 }
 
-function evaluateModulesCall(
-  result: string,
-  safeAddress: string
-  // { spender, token }: AccountConfig
-) {
+function evaluateModulesCall(result: string, safeAddress: string) {
   const { iface } = deployments.safeMastercopy;
 
   let [enabledModules]: string[][] = iface.decodeFunctionResult(
@@ -194,24 +190,16 @@ function evaluateModulesCall(
   );
 }
 
-function evaluateDelayCooldown(cooldownResult: string, config: AccountConfig) {
-  const { iface } = deployments.delayMastercopy;
-
-  const [cooldown]: bigint[] = iface.decodeFunctionResult(
-    "txCooldown",
-    cooldownResult
-  );
-
-  return cooldown >= config.cooldown;
+function evaluateDelayCooldown(result: string, cooldown: bigint | number) {
+  return BigInt(result) >= cooldown;
 }
 
 function evaluateDelayQueue(nonceResult: string, queueResult: string) {
-  const { iface } = deployments.delayMastercopy;
-
-  const [nonce] = iface.decodeFunctionResult("txNonce", nonceResult);
-  const [queue] = iface.decodeFunctionResult("queueNonce", queueResult);
-
-  return nonce == queue;
+  // const { iface } = deployments.delayMastercopy;
+  // const [nonce] = iface.decodeFunctionResult("txNonce", nonceResult);
+  // const [queue] = iface.decodeFunctionResult("queueNonce", queueResult);
+  // return nonce == queue;
+  return nonceResult == queueResult;
 }
 
 function extractDetail(balanceResult: string, allowanceResult: string) {

@@ -28,7 +28,7 @@ export type AccountConfig = {
   spender: string; // the gnosis signer, which will be enabled via allowance
   token: string; // the address of the token used for payments
   amount: bigint | number; // the allowance amount granted to spender
-  period: number; // optional period after which an allowance will be replenished (IN MINUTES)
+  period: number; // period after which an allowance will be replenished (IN MINUTES)
   //** for delay mod **/
   cooldown: number; // execution delay for owner before he execute transactions (IN SECONDS)
 };

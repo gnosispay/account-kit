@@ -28,7 +28,7 @@ import { IDelayModule__factory, ISafe__factory } from "../typechain-types";
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
 
-describe("account-integrity", () => {
+describe.only("account-query", () => {
   before(async () => {
     await fork(17741542);
   });
@@ -71,7 +71,7 @@ describe("account-integrity", () => {
     };
   }
 
-  it.only("passes for a well configured account", async () => {
+  it("passes for a well configured account", async () => {
     const { safeAddress, config } = await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
 
@@ -87,7 +87,7 @@ describe("account-integrity", () => {
     expect(result.detail?.balance).to.equal(2000);
   });
 
-  it.only("passes and reflects recent spending on the result", async () => {
+  it("passes and reflects recent spending on the result", async () => {
     const { safeAddress, alice, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -126,7 +126,7 @@ describe("account-integrity", () => {
     expect(result.detail?.allowance.nonce).to.equal(2);
   });
 
-  it.only("fails when the number of modules enabled is not two", async () => {
+  it("fails when the number of modules enabled is not two", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -149,7 +149,7 @@ describe("account-integrity", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it.only("fails when allowance module is not enabled", async () => {
+  it("fails when allowance module is not enabled", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -181,7 +181,7 @@ describe("account-integrity", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it.only("fails when delay module is not enabled", async () => {
+  it("fails when delay module is not enabled", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -209,7 +209,7 @@ describe("account-integrity", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it.only("fails when cooldown is too short", async () => {
+  it("fails when cooldown is too short", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
 
@@ -232,7 +232,7 @@ describe("account-integrity", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
 
-  it.only("fails when queue is not empty", async () => {
+  it("fails when queue is not empty", async () => {
     const { safeAddress, owner, config } = await loadFixture(setupAccount);
 
     const delayAddress = predictDelayAddress(safeAddress);
