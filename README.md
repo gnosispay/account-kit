@@ -15,7 +15,7 @@ For each relevant account action, this SDK provides a function that generates re
 
 ## <a name="account-creation">Account Creation</a>
 
-Creates a new 1/1 safe with `ownerAddress` as sole owner.
+Creates a new 1/1 safe.
 
 ```js
 import { populateAccountCreation } from "@gnosispay/account-kit";
@@ -35,27 +35,23 @@ import { populateAccountSetup } from "@gnosispay/account-kit";
 
 const owner : Signer = {};
 const safe = `0x<address>`;
-const chainId = `<network-id>`;
+const chainId = `<number-network-id>`;
 const nonce = `<number-safe-nonce>`;
 
 const config : AccountConfig = {
   //** allowance mod **/
   spender: `0x<address>`,
   token: `0x<address>`,
-  amount: "<value allowed by spender>",
-  period: "<replenish period in minutes>",
+  amount: `<granted to spender>`,
+  period: `<replenish period in minutes>`,
   //** delay mod **/
-  cooldown: "<execution delay for owner in seconds>",
+  cooldown: `<execution delay in seconds>`,
 };
 
-/*
- * get the encoded safe transaction, including the signature.
- * Can be submitted for execution by any account #AA
- */
 const transaction = populateAccountSetup(
   { safe, chainId, nonce },
   config,
-  (domain, types, message) => owner.signTypedData(domain, types, message) // any eip712 works
+  (domain, types, message) => owner.signTypedData(domain, types, message) // eip712 sig
 );
 
 await provider.sendTransaction(transaction);
@@ -80,7 +76,7 @@ const amount = `<bigint>`;
 const transaction = await populateAccountSetup(
   { safe, chainId, nonce },
   { token, to, amount },
-  (domain, types, message) => owner.signTypedData(domain, types, message) // any eip712 works
+  (domain, types, message) => owner.signTypedData(domain, types, message) // eip712 sig
 );
 
 await provider.sendTransaction(transaction);
@@ -124,7 +120,7 @@ import {
 const safe = `0x<address>`;
 const spender = `0x<address>`;
 const token = `0x<address>`;
-const cooldown = "<the configured execution delay>";
+const cooldown = `<configured execution delay in seconds>`;
 
 const functionData = populateAccountQuery(safe, { spender, token });
 
