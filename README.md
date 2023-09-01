@@ -1,53 +1,51 @@
 # Account Kit
 
-Software development kit that facilitates the interaction with on-chain Gnosis Pay accounts
+Software development kit that facilitates the interaction with on-chain Gnosis Pay accounts.
+
+For each relevant account action, this SDK provides a function that generates relay ready transaction payloads. These payloads are pre-signed and ready for transmission and execution, e.g. in Gelato.
 
 ## Table of contents
 
 - [Account Creation](#account-creation)
 - [Account Setup](#account-setup)
 - [Token Transfer](#token-transfer)
-- [Allowance Token Transfer](#allowance-token-transfer)
-- [Account Integrity](#account-integrity)
-- [API Reference](#api-reference)
+- [Allowance Transfer](#allowance-transfer)
+- [Account Query](#account-query)
 - [Contributors](#contributors)
 
 ## <a name="account-creation">Account Creation</a>
 
-Creates a new 1/1 safe with `ownerAddress` as owner.
+Creates a new 1/1 safe with `ownerAddress` as sole owner.
 
 ```js
-import { populateAccountCreationTransanction } from "@gnosispay/account-kit";
+import { populateAccountCreation } from "@gnosispay/account-kit";
 
 const ownerAddress = `0x<address>`;
-const transaction = populateAccountCreationTransaction(ownerAddress);
-await provider.sendTransaction(transaction);
+await provider.sendTransaction(
+  populateAccountCreationTransaction(ownerAddress)
+);
 ```
 
 ## <a name="account-setup">Account Setup</a>
 
-Upgrades a newly created 1/1 safe to a Gnosis Pay account.
+Sets up a fresh 1/1 safe, as a Gnosis Pay account.
 
 ```js
-import {
-  predictSafeAddress,
-  populateAccountSetupTransaction,
-} from "@gnosispay/account-kit";
+import { populateAccountSetup } from "@gnosispay/account-kit";
 
-
-const owner: Signer = {};
-const safe = predictSafeAddress(owner.address);
-const chainId = `<network-id>`
-const nonce = `<safe-nonce-number>`
+const owner : Signer = {};
+const safe = `0x<address>`;
+const chainId = `<network-id>`;
+const nonce = `<number-safe-nonce>`;
 
 const config : AccountConfig = {
   //** allowance mod **/
-  spender: `0x<address>`
-  token: `0x<address>`;
-  amount: '<value allowed by spender>';
-  period: '<replenish period in minutes>';
+  spender: `0x<address>`,
+  token: `0x<address>`,
+  amount: "<value allowed by spender>",
+  period: "<replenish period in minutes>",
   //** delay mod **/
-  cooldown: '<execution delay for owner in seconds>'
+  cooldown: "<execution delay for owner in seconds>",
 };
 
 /*
@@ -65,19 +63,19 @@ await provider.sendTransaction(transaction);
 
 ## <a name="token-transfer">Token Transfer</a>
 
-Signs a ERC20 token transfer to be executed from the safe. To be used after the account is created, but before full setup
+Signs a ERC20 token transfer of tokens from the account. To be used on freshly created accounts (before setup). The resulting transaction is relay ready.
 
 ```js
 import { populateTokenTransfer } from "@gnosispay/account-kit";
 
-const owner: Signer = {};
-const safe =  `0x<address>`;
-const chainId = `<network-id>`
-const nonce = 0
+const owner : Signer = {};
+const safe = `0x<address>`;
+const chainId = `<network-id>`;
+const nonce = 0;
 
-const token = `0x<address>`
-const to = `0x<address>`
-const amount = '<number>'
+const token = `0x<address>`;
+const to = `0x<address>`;
+const amount = `<bigint>`;
 
 const transaction = await populateAccountSetup(
   { safe, chainId, nonce },
@@ -88,9 +86,9 @@ const transaction = await populateAccountSetup(
 await provider.sendTransaction(transaction);
 ```
 
-## <a name="allowance-token-transfer">Allowance Token Transfer</a>
+## <a name="allowance-transfer">Allowance Transfer</a>
 
-Signs a ERC20 token transfer to be executed via AllowanceMod. The signer must be the spender, for which an allowance was setup
+Signs an ERC20 token transfer of tokens via AllowanceMod. The signer must be the configured spender, as per Gnosis Pay account setup. The resulting transaction is relay ready.
 
 ```js
 import { populateTokenTransfer } from "@gnosispay/account-kit";
@@ -98,7 +96,7 @@ import { populateTokenTransfer } from "@gnosispay/account-kit";
 const spender: Signer = {};
 const safe =  `0x<address>`;
 const chainId = `<network-id>`
-const nonce = `<current-allowance-nonce>`
+const nonce = `<number-allowance-nonce>`
 
 const token = `0x<address>`
 const to = `0x<address>`
@@ -107,56 +105,45 @@ const amount = '<number>'
 const transaction = await populateAccountSetup(
   { safe, chainId, nonce },
   { spender: spender.address, token, to, amount },
-  // a bug in the current allowance mod, requires us to use eip-191
-  // (domain, types, message) => spender.signTypedData(domain, types, message) // after bug fixed
-  (message) => spender.signMessage(message) // after bug fixed
+  (message) => spender.signMessage(message) // temporarily using eip-191 for sign
 );
 
 await provider.sendTransaction(transaction);
 ```
 
-## <a name="account-integrity">Account Integrity</a>
+## <a name="account-query">Account Query</a>
 
-Creates a multicall encoded payload that collects all data required to assess if the account is in integrity. The payload is to be sent via eth_call, and then later evaluated.
+Creates a multicall payload that collects all data required to assess if a given GnosisPay account is integrous.
 
 ```js
 import {
-  populateAccountIntegrityQuery,
-  evaluateAccountIntegrityResult,
+  populateAccountQuery,
+  evaluateAccountQuery,
 } from "@gnosispay/account-kit";
 
+const safe = `0x<address>`;
+const spender = `0x<address>`;
+const token = `0x<address>`;
+const cooldown = "<the configured execution delay>";
 
-const owner: Signer = {};
-const safe =  `0x<address>`;
-const chainId = `<network-id>`
-const nonce = `<safe-nonce-number>`
-
-const config : AccountConfig = {
-  //** allowance mod **/
-  spender: `0x<address>`
-  token: `0x<address>`;
-  amount: '<value allowed by spender>';
-  period: '<replenish period in minutes>';
-  //** delay mod **/
-  cooldown: '<execution delay for owner in seconds>'
-};
-
-const functionData = populateAccountIntegrityQuery(safe, config);
+const functionData = populateAccountQuery(safe, { spender, token });
 
 const functionResult = await provider.send("eth_call", functionData);
 
-const result = evaluateAccountIntegrityResult(
-  functionResult, safe, config
-);
+const result = evaluateAccountQuery(safe, { cooldown }, functionResult);
 
-// result.status -> the account status
-// result.allowance.amount -> unspent allowance
-// result.allowance.nonce -> current allowance nonce
+/*
+ * Returns
+ *  {
+ *    status: AccountIntegrityStatus
+ *    allowance: {
+ *      unspent: current allowed amount
+ *      nonce: allowance mod nonce
+ *    }
+ *  }
+ *
+ */
 ```
-
-## <a name="api-reference">API Reference</a>
-
-TODO
 
 ## <a name="contributors">Contributors</a>
 
