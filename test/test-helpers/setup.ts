@@ -32,13 +32,17 @@ export async function forkReset(): Promise<void> {
 export async function moveERC20(
   from: string,
   to: string,
-  tokenAddress: string
+  tokenAddress: string,
+  balance?: bigint | number
 ) {
   const impersonator = await hre.ethers.getImpersonatedSigner(from);
 
   const token = IERC20__factory.connect(tokenAddress, impersonator);
 
-  const receipt = await token.transfer(to, await token.balanceOf(from));
+  const receipt = await token.transfer(
+    to,
+    balance || (await token.balanceOf(from))
+  );
 
   await receipt.wait();
 }

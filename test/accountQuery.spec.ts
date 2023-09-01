@@ -18,8 +18,8 @@ import {
   populateAllowanceTransfer,
   predictDelayAddress,
   predictSafeAddress,
-  populateAccountIntegrityQuery,
-  evaluateAccountIntegrityResult,
+  populateAccountQuery,
+  evaluateAccountQuery,
 } from "../src";
 import deployments from "../src/deployments";
 import { AccountIntegrityStatus } from "../src/types";
@@ -41,7 +41,7 @@ describe("account-integrity", () => {
     const [owner, , , alice, bob, relayer] = await hre.ethers.getSigners();
 
     const safeAddress = predictSafeAddress(owner.address);
-    await moveERC20(DAI_WHALE, safeAddress, DAI);
+    await moveERC20(DAI_WHALE, safeAddress, DAI, 2000);
 
     await relayer.sendTransaction(populateAccountCreation(owner.address));
 
@@ -71,54 +71,36 @@ describe("account-integrity", () => {
     };
   }
 
-  it("passes for a well configured account", async () => {
+  it.only("passes for a well configured account", async () => {
     const { safeAddress, config } = await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
 
-    const data = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
-    const resultData = await provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data,
-      },
-    ]);
+    const functionData = await provider.send("eth_call", [query]);
 
-    const result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    const result = evaluateAccountQuery(safeAddress, config, functionData);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance?.amount).to.equal(config.amount);
-    expect(result.allowance?.nonce).to.equal(1);
+    expect(result.detail?.allowance.unspent).to.equal(config.amount);
+    expect(result.detail?.allowance.nonce).to.equal(1);
+    expect(result.detail?.balance).to.equal(2000);
   });
 
-  it("passes and reflects recent spending on the result", async () => {
+  it.only("passes and reflects recent spending on the result", async () => {
     const { safeAddress, alice, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
 
-    const query = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
-    let resultData = await provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: query,
-      },
-    ]);
+    let resultData = await provider.send("eth_call", [query]);
 
-    let result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    let result = evaluateAccountQuery(safeAddress, config, resultData);
+
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance?.amount).to.equal(config.amount);
-    expect(result.allowance?.nonce).to.equal(1);
+    expect(result.detail?.allowance.unspent).to.equal(config.amount);
+    expect(result.detail?.allowance.nonce).to.equal(1);
 
     const justSpent = 23;
     const transaction = await populateAllowanceTransfer(
@@ -134,23 +116,17 @@ describe("account-integrity", () => {
     await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
-    resultData = await provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: query,
-      },
-    ]);
+    resultData = await provider.send("eth_call", [query]);
 
-    result = evaluateAccountIntegrityResult(resultData, safeAddress, config);
+    result = evaluateAccountQuery(safeAddress, config, resultData);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance?.amount).to.equal(
+    expect(result.detail?.allowance.unspent).to.equal(
       Number(config.amount) - justSpent
     );
-    expect(result.allowance?.nonce).to.equal(2);
+    expect(result.detail?.allowance.nonce).to.equal(2);
   });
 
-  it("fails when the number of modules enabled is not two", async () => {
+  it.only("fails when the number of modules enabled is not two", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -165,25 +141,15 @@ describe("account-integrity", () => {
       owner
     );
 
-    const query = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
-    const resultData = await provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: query,
-      },
-    ]);
+    const resultData = await provider.send("eth_call", [query]);
 
-    const result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    const result = evaluateAccountQuery(safeAddress, config, resultData);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it("fails when allowance module is not enabled", async () => {
+  it.only("fails when allowance module is not enabled", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -207,25 +173,15 @@ describe("account-integrity", () => {
       owner
     );
 
-    const query = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
-    const resultData = await provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: query,
-      },
-    ]);
+    const resultData = await provider.send("eth_call", [query]);
 
-    const result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    const result = evaluateAccountQuery(safeAddress, config, resultData);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it("fails when delay module is not enabled", async () => {
+  it.only("fails when delay module is not enabled", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
     const provider = hre.ethers.provider;
@@ -245,25 +201,15 @@ describe("account-integrity", () => {
       owner
     );
 
-    const query = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
-    const resultData = await provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: query,
-      },
-    ]);
+    const resultData = await provider.send("eth_call", [query]);
 
-    const result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    const result = evaluateAccountQuery(safeAddress, config, resultData);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it("fails when cooldown is too short", async () => {
+  it.only("fails when cooldown is too short", async () => {
     const { safeAddress, owner, relayer, config } =
       await loadFixture(setupAccount);
 
@@ -272,7 +218,7 @@ describe("account-integrity", () => {
     const safe = ISafe__factory.connect(safeAddress, relayer);
     const delay = IDelayModule__factory.connect(delayAddress, relayer);
 
-    const query = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
     await execSafeTransaction(
       safe,
@@ -280,58 +226,32 @@ describe("account-integrity", () => {
       owner
     );
 
-    const resultData = await hre.ethers.provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: query,
-      },
-    ]);
+    const resultData = await hre.ethers.provider.send("eth_call", [query]);
 
-    const result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    const result = evaluateAccountQuery(safeAddress, config, resultData);
     expect(result.status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
 
-  it("fails when queue is not empty", async () => {
+  it.only("fails when queue is not empty", async () => {
     const { safeAddress, owner, config } = await loadFixture(setupAccount);
 
     const delayAddress = predictDelayAddress(safeAddress);
     const delay = IDelayModule__factory.connect(delayAddress, owner);
 
-    const integrityQuery = populateAccountIntegrityQuery(safeAddress, config);
+    const query = populateAccountQuery(safeAddress, config);
 
-    let resultData = await hre.ethers.provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: integrityQuery,
-      },
-    ]);
+    let resultData = await hre.ethers.provider.send("eth_call", [query]);
 
-    let result = evaluateAccountIntegrityResult(
-      resultData,
-      safeAddress,
-      config
-    );
+    let result = evaluateAccountQuery(safeAddress, config, resultData);
     // everything is alright
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     // enqueue a via delay
     await delay.execTransactionFromModule(AddressOther, 0, "0x", 0);
 
-    resultData = await hre.ethers.provider.send("eth_call", [
-      {
-        from: null,
-        to: deployments.multicall.address,
-        data: integrityQuery,
-      },
-    ]);
+    resultData = await hre.ethers.provider.send("eth_call", [query]);
 
-    result = evaluateAccountIntegrityResult(resultData, safeAddress, config);
+    result = evaluateAccountQuery(safeAddress, config, resultData);
     // integrity fails
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });

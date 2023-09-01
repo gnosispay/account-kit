@@ -1,14 +1,19 @@
 import predictDelayAddress from "./predictDelayAddress";
 import deployments from "../deployments";
 
-import { AccountIntegrityStatus, AccountConfig } from "../types";
+import {
+  AccountIntegrityStatus,
+  AccountConfig,
+  TransactionData,
+} from "../types";
+import { IERC20__factory } from "../../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
-export default function populateAccountIntegrityQuery(
+export default function populateAccountQuery(
   safeAddress: string,
-  { spender, token }: AccountConfig
-): string {
+  config: AccountConfig
+): TransactionData {
   const safe = {
     address: safeAddress,
     iface: deployments.safeMastercopy.iface,
@@ -19,8 +24,18 @@ export default function populateAccountIntegrityQuery(
     iface: deployments.delayMastercopy.iface,
   };
 
-  return deployments.multicall.iface.encodeFunctionData("aggregate3", [
+  const multicall = deployments.multicall;
+
+  const data = multicall.iface.encodeFunctionData("aggregate3", [
     [
+      {
+        target: config.token,
+        allowFailure: false,
+        callData: IERC20__factory.createInterface().encodeFunctionData(
+          "balanceOf",
+          [safeAddress]
+        ),
+      },
       {
         target: safeAddress,
         allowFailure: true,
@@ -49,21 +64,29 @@ export default function populateAccountIntegrityQuery(
         allowFailure: true,
         callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
           safeAddress,
-          spender,
-          token,
+          config.spender,
+          config.token,
         ]),
       },
     ],
   ]);
+
+  return {
+    to: multicall.address,
+    data,
+  };
 }
 
-export function evaluateAccountIntegrityResult(
-  functionResult: string,
+export function evaluateAccountQuery(
   safeAddress: string,
-  account: AccountConfig
+  config: AccountConfig,
+  functionResult: string
 ): {
   status: AccountIntegrityStatus;
-  allowance: { amount: bigint | number; nonce: bigint | number } | null;
+  detail: {
+    allowance: { unspent: bigint; nonce: bigint };
+    balance: bigint;
+  } | null;
 } {
   try {
     const multicall = deployments.multicall.iface;
@@ -73,14 +96,15 @@ export function evaluateAccountIntegrityResult(
       functionResult
     );
 
-    if (aggregate3Result.length !== 5) {
+    if (aggregate3Result.length !== 6) {
       return {
         status: AccountIntegrityStatus.UnexpectedError,
-        allowance: null,
+        detail: null,
       };
     }
 
     const [
+      [, balanceResult],
       [modulesSuccess, modulesResult],
       [txCooldownSuccess, txCooldownResult],
       [txNonceSuccess, txNonceResult],
@@ -88,16 +112,16 @@ export function evaluateAccountIntegrityResult(
       [allowanceSuccess, allowanceResult],
     ] = aggregate3Result;
 
-    if (modulesSuccess !== true) {
+    if (modulesSuccess !== true || modulesSuccess !== true) {
       return {
         status: AccountIntegrityStatus.SafeNotDeployed,
-        allowance: null,
+        detail: null,
       };
     }
     if (allowanceSuccess !== true) {
       return {
         status: AccountIntegrityStatus.AllowanceNotDeployed,
-        allowance: null,
+        detail: null,
       };
     }
     if (
@@ -107,39 +131,39 @@ export function evaluateAccountIntegrityResult(
     ) {
       return {
         status: AccountIntegrityStatus.DelayNotDeployed,
-        allowance: null,
+        detail: null,
       };
     }
 
     if (!evaluateModulesCall(modulesResult, safeAddress)) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
-        allowance: null,
+        detail: null,
       };
     }
 
-    if (!evaluateDelayCooldown(txCooldownResult, account)) {
+    if (!evaluateDelayCooldown(txCooldownResult, config)) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
-        allowance: null,
+        detail: null,
       };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
       return {
         status: AccountIntegrityStatus.DelayQueueNotEmpty,
-        allowance: null,
+        detail: null,
       };
     }
 
     return {
       status: AccountIntegrityStatus.Ok,
-      allowance: extractCurrentAllowance(allowanceResult),
+      detail: extractDetail(balanceResult, allowanceResult),
     };
   } catch (e) {
     return {
       status: AccountIntegrityStatus.UnexpectedError,
-      allowance: null,
+      detail: null,
     };
   }
 }
@@ -190,7 +214,7 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   return nonce == queue;
 }
 
-function extractCurrentAllowance(allowanceResult: string) {
+function extractDetail(balanceResult: string, allowanceResult: string) {
   const { iface } = deployments.allowanceSingleton;
 
   const [[amount, spent, , , nonce]] = iface.decodeFunctionResult(
@@ -199,7 +223,10 @@ function extractCurrentAllowance(allowanceResult: string) {
   );
 
   return {
-    amount: (amount as bigint) - (spent as bigint),
-    nonce: nonce as bigint,
+    balance: BigInt(balanceResult),
+    allowance: {
+      unspent: (amount as bigint) - (spent as bigint),
+      nonce: nonce as bigint,
+    },
   };
 }

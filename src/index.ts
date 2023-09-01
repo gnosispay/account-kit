@@ -1,7 +1,7 @@
 import populateAccountCreation from "./entrypoints/accountCreation";
-import populateAccountIntegrityQuery, {
-  evaluateAccountIntegrityResult,
-} from "./entrypoints/accountIntegrity";
+import populateAccountQuery, {
+  evaluateAccountQuery,
+} from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
 
 import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
@@ -19,6 +19,6 @@ export {
   predictDelayAddress,
   predictSafeAddress,
   // integrity and status query
-  populateAccountIntegrityQuery,
-  evaluateAccountIntegrityResult,
+  populateAccountQuery,
+  evaluateAccountQuery,
 };
