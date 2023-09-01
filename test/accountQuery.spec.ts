@@ -93,7 +93,6 @@ describe("account-query", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.detail?.allowance.unspent).to.equal(config.amount);
     expect(result.detail?.allowance.nonce).to.equal(1);
-    expect(result.detail?.balance).to.equal(2000);
   });
 
   it("passes and reflects recent spending on the result", async () => {

@@ -26,14 +26,6 @@ export default function populateAccountQuery(
   const data = multicall.iface.encodeFunctionData("aggregate3", [
     [
       {
-        target: token,
-        allowFailure: false,
-        callData: IERC20__factory.createInterface().encodeFunctionData(
-          "balanceOf",
-          [safeAddress]
-        ),
-      },
-      {
         target: safeAddress,
         allowFailure: true,
         callData: safe.iface.encodeFunctionData("getModulesPaginated", [
@@ -93,7 +85,7 @@ export function evaluateAccountQuery(
       functionResult
     );
 
-    if (aggregate3Result.length !== 6) {
+    if (aggregate3Result.length !== 5) {
       return {
         status: AccountIntegrityStatus.UnexpectedError,
         detail: null,
@@ -101,7 +93,6 @@ export function evaluateAccountQuery(
     }
 
     const [
-      [, balanceResult],
       [modulesSuccess, modulesResult],
       [, allowanceResult],
       [txCooldownSuccess, txCooldownResult],
@@ -157,7 +148,7 @@ export function evaluateAccountQuery(
 
     return {
       status: AccountIntegrityStatus.Ok,
-      detail: extractDetail(balanceResult, allowanceResult),
+      detail: extractDetail(allowanceResult),
     };
   } catch (e) {
     return {
@@ -216,7 +207,7 @@ function evaluateAllowance(allowanceResult: string) {
   return amount > 0 && nonce > 0;
 }
 
-function extractDetail(balanceResult: string, allowanceResult: string) {
+function extractDetail(allowanceResult: string) {
   const { iface } = deployments.allowanceSingleton;
 
   const [[amount, spent, , , nonce]] = iface.decodeFunctionResult(
@@ -225,7 +216,6 @@ function extractDetail(balanceResult: string, allowanceResult: string) {
   );
 
   return {
-    balance: BigInt(balanceResult),
     allowance: {
       unspent: (amount as bigint) - (spent as bigint),
       nonce: nonce as bigint,

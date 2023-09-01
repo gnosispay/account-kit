@@ -37,10 +37,10 @@ export enum AccountIntegrityStatus {
   Ok,
   SafeNotDeployed,
   SafeMisconfigured,
+  AllowanceMisconfigured,
   DelayNotDeployed,
   DelayMisconfigured,
   DelayQueueNotEmpty,
-  AllowanceMisconfigured,
   UnexpectedError,
 }
 
