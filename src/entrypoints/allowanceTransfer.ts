@@ -1,8 +1,8 @@
 import { ZeroAddress } from "ethers";
 
 import deployments from "../deployments";
-import { AllowanceTransfer, ExecutionConfig, TransactionData } from "../types";
 import { hashForAllowanceTransfer } from "../eip191";
+import { AllowanceTransfer, ExecutionConfig, TransactionData } from "../types";
 
 export default async function populateAllowanceTransfer(
   { account, chainId, nonce }: ExecutionConfig,
