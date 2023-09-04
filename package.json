@@ -1,6 +1,6 @@
 {
   "name": "@gnosispay/account-kit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "cristovao.honorato@gnosis.io",
   "main": "dist/cjs/src/index.js",
   "module": "dist/esm/src/index.js",
