@@ -12,6 +12,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
 
@@ -19,8 +22,13 @@ jobs:
         with:
           node-version: '16.x'
           registry-url: 'https://registry.npmjs.org'
+      
+      - name: Get package info
+        id: package
+        uses: codex-team/action-nodejs-package-info@v1.1
 
       - uses: actions/cache@v2
+        if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
         with:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
@@ -31,6 +39,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
       - name: Create Release
+        if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
