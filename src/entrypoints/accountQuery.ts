@@ -1,4 +1,5 @@
 import assert from "assert";
+import { AbiCoder } from "ethers";
 import predictDelayAddress from "./predictDelayAddress";
 import deployments from "../deployments";
 
@@ -7,16 +8,16 @@ import { AccountIntegrityStatus, TransactionData } from "../types";
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
 export default function populateAccountQuery(
-  safeAddress: string,
+  account: string,
   { spender, token }: { spender: string; token: string }
 ): TransactionData {
   const safe = {
-    address: safeAddress,
+    address: account,
     iface: deployments.safeMastercopy.iface,
   };
   const allowance = deployments.allowanceSingleton;
   const delay = {
-    address: predictDelayAddress(safeAddress),
+    address: predictDelayAddress(account),
     iface: deployments.delayMastercopy.iface,
   };
 
@@ -25,7 +26,17 @@ export default function populateAccountQuery(
   const data = multicall.iface.encodeFunctionData("aggregate3", [
     [
       {
-        target: safeAddress,
+        target: safe.address,
+        allowFailure: true,
+        callData: safe.iface.encodeFunctionData("getOwners"),
+      },
+      {
+        target: safe.address,
+        allowFailure: true,
+        callData: safe.iface.encodeFunctionData("getThreshold"),
+      },
+      {
+        target: safe.address,
         allowFailure: true,
         callData: safe.iface.encodeFunctionData("getModulesPaginated", [
           AddressOne,
@@ -36,10 +47,15 @@ export default function populateAccountQuery(
         target: allowance.address,
         allowFailure: true,
         callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
-          safeAddress,
+          safe.address,
           spender,
           token,
         ]),
+      },
+      {
+        target: delay.address,
+        allowFailure: true,
+        callData: delay.iface.encodeFunctionData("owner"),
       },
       {
         target: delay.address,
@@ -67,7 +83,7 @@ export default function populateAccountQuery(
 
 export function evaluateAccountQuery(
   safeAddress: string,
-  { cooldown }: { cooldown: bigint | number },
+  { spender, cooldown }: { spender: string; cooldown: bigint | number },
   functionResult: string
 ): {
   status: AccountIntegrityStatus;
@@ -83,7 +99,7 @@ export function evaluateAccountQuery(
       functionResult
     );
 
-    if (aggregate3Result.length !== 5) {
+    if (aggregate3Result.length !== 8) {
       return {
         status: AccountIntegrityStatus.UnexpectedError,
         detail: null,
@@ -91,21 +107,35 @@ export function evaluateAccountQuery(
     }
 
     const [
+      [ownersSuccess, ownersResult],
+      [thresholdSuccess, thresholdResult],
       [modulesSuccess, modulesResult],
       [, allowanceResult],
+      [delayOwnerSuccess, delayOwnerResult],
       [txCooldownSuccess, txCooldownResult],
       [txNonceSuccess, txNonceResult],
       [queueNonceSuccess, queueNonceResult],
     ] = aggregate3Result;
 
-    if (modulesSuccess !== true || modulesSuccess !== true) {
+    if (
+      ownersSuccess !== true ||
+      thresholdSuccess !== true ||
+      modulesSuccess !== true
+    ) {
       return {
         status: AccountIntegrityStatus.SafeNotDeployed,
         detail: null,
       };
     }
 
-    if (!evaluateModulesCall(modulesResult, safeAddress)) {
+    if (!evaluateOwners(ownersResult, thresholdResult, spender)) {
+      return {
+        status: AccountIntegrityStatus.SafeMisconfigured,
+        detail: null,
+      };
+    }
+
+    if (!evaluateModules(modulesResult, safeAddress)) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
         detail: null,
@@ -120,6 +150,7 @@ export function evaluateAccountQuery(
     }
 
     if (
+      delayOwnerSuccess !== true ||
       txCooldownSuccess !== true ||
       txNonceSuccess !== true ||
       queueNonceSuccess != true
@@ -130,7 +161,14 @@ export function evaluateAccountQuery(
       };
     }
 
-    if (!evaluateDelayCooldown(txCooldownResult, cooldown)) {
+    if (
+      !evaluateDelayConfig(
+        delayOwnerResult,
+        txCooldownResult,
+        safeAddress,
+        cooldown
+      )
+    ) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
         detail: null,
@@ -156,7 +194,29 @@ export function evaluateAccountQuery(
   }
 }
 
-function evaluateModulesCall(result: string, safeAddress: string) {
+function evaluateOwners(
+  ownersResult: string,
+  thresholdResult: string,
+  spender: string
+) {
+  if (BigInt(thresholdResult) !== BigInt(2)) {
+    return false;
+  }
+
+  const { iface } = deployments.safeMastercopy;
+
+  const [owners]: string[][] = iface.decodeFunctionResult(
+    "getOwners",
+    ownersResult
+  );
+
+  return (
+    owners.length == 2 &&
+    owners.map((m: string) => m.toLowerCase()).includes(spender.toLowerCase())
+  );
+}
+
+function evaluateModules(result: string, safeAddress: string) {
   const { iface } = deployments.safeMastercopy;
 
   let [enabledModules]: string[][] = iface.decodeFunctionResult(
@@ -178,8 +238,19 @@ function evaluateModulesCall(result: string, safeAddress: string) {
   );
 }
 
-function evaluateDelayCooldown(result: string, cooldown: bigint | number) {
-  return BigInt(result) >= cooldown;
+function evaluateDelayConfig(
+  ownerResult: string,
+  cooldownResult: string,
+  safeAddress: string,
+  cooldown: bigint | number
+) {
+  const abi = AbiCoder.defaultAbiCoder();
+  const [owner] = abi.decode(["address"], ownerResult);
+
+  return (
+    owner.toLowerCase() == safeAddress.toLowerCase() &&
+    BigInt(cooldownResult) >= cooldown
+  );
 }
 
 function evaluateDelayQueue(nonceResult: string, queueResult: string) {

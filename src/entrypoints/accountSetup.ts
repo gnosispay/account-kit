@@ -104,6 +104,11 @@ function populateSafeTransaction(
       to: delayAddress,
       data: delayIface.encodeFunctionData("enableModule", [owner]),
     },
+    // configure set spender as signer
+    {
+      to: safeAddress,
+      data: safeIface.encodeFunctionData("addOwnerWithThreshold", [spender, 2]),
+    },
     // enable allowance as module on safe
     {
       to: safeAddress,
