@@ -6,7 +6,7 @@ import { ISafe } from "../../typechain-types";
 export default async function execSafeTransaction(
   safe: ISafe,
   { to, data, value = 0 }: TransactionRequest,
-  signer: SignerWithAddress
+  signers: SignerWithAddress[]
 ) {
   const address = await safe.getAddress();
   const chainId = await safe.getChainId();
@@ -19,7 +19,17 @@ export default async function execSafeTransaction(
     nonce
   );
 
-  const signature = await signer.signTypedData(domain, types, message);
+  const signatures = await Promise.all(
+    [...signers]
+      .sort((s1, s2) =>
+        s1.address.toLowerCase() < s2.address.toLowerCase() ? -1 : 1
+      )
+      .map((signer) => signer.signTypedData(domain, types, message))
+  );
+
+  const signature = `0x${signatures
+    .map((signature) => signature.slice(2))
+    .join("")}`;
 
   return safe.execTransaction(
     to as string,

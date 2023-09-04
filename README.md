@@ -2,7 +2,7 @@
 
 Software development kit that facilitates the interaction with on-chain Gnosis Pay accounts.
 
-For each relevant account action, this SDK provides a function that generates relay ready transaction payloads. These payloads are pre-signed and ready for transmission and execution, e.g. in Gelato.
+For each relevant account action, this SDK provides a function that generates relay ready transactions. These payloads are ready to be transmitted, and require no further signing
 
 ## Table of contents
 
@@ -21,14 +21,12 @@ Creates a new 1/1 safe.
 import { populateAccountCreation } from "@gnosispay/account-kit";
 
 const ownerAddress = `0x<address>`;
-await provider.sendTransaction(
-  populateAccountCreationTransaction(ownerAddress)
-);
+await provider.sendTransaction(populateAccountCreation(ownerAddress));
 ```
 
 ## <a name="account-setup">Account Setup</a>
 
-Sets up a fresh 1/1 safe, as a Gnosis Pay account.
+Creates a new 1/1 safe as a Gnosis Pay account.
 
 ```js
 import { populateAccountSetup } from "@gnosispay/account-kit";
@@ -59,7 +57,7 @@ await provider.sendTransaction(transaction);
 
 ## <a name="token-transfer">Token Transfer</a>
 
-Signs a ERC20 token transfer of tokens from the account. To be used on freshly created accounts (before setup). The resulting transaction is relay ready.
+Signs a ERC20 token transfer from account. To be used on freshly created accounts (before setup). The resulting transaction is relay ready.
 
 ```js
 import { populateTokenTransfer } from "@gnosispay/account-kit";
@@ -109,7 +107,7 @@ await provider.sendTransaction(transaction);
 
 ## <a name="account-query">Account Query</a>
 
-Creates a multicall payload that collects all data required to assess if a given GnosisPay account is integrous.
+Creates a multicall payload that collects all data required to assess if a given GnosisPay account passes integrity requirements.
 
 ```js
 import {
@@ -122,9 +120,9 @@ const spender = `0x<address>`;
 const token = `0x<address>`;
 const cooldown = `<configured execution delay in seconds>`;
 
-const functionData = populateAccountQuery(safe, { spender, token });
+const { to, data } = populateAccountQuery(safe, { spender, token });
 
-const functionResult = await provider.send("eth_call", functionData);
+const functionResult = await provider.send("eth_call", [{ to, data }]);
 
 const result = evaluateAccountQuery(safe, { cooldown }, functionResult);
 
