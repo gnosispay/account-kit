@@ -1,10 +1,10 @@
-import { ZeroAddress, ZeroHash, keccak256, toUtf8Bytes } from "ethers";
+import { ZeroAddress } from "ethers";
 import deployments from "../deployments";
 import { TransactionData } from "../types";
 
 export default function populateAccountCreation(
-  ownerAddress: string,
-  seed: string = ZeroHash
+  owner: string,
+  seed: bigint = BigInt(0)
 ): TransactionData {
   const { iface, address: factory } = deployments.safeProxyFactory;
   const mastercopy = deployments.safeMastercopy.address;
@@ -17,14 +17,14 @@ export default function populateAccountCreation(
      */
     data: iface.encodeFunctionData("createProxyWithNonce", [
       mastercopy,
-      initializer(ownerAddress),
-      saltNonce(seed),
+      initializer(owner),
+      seed,
     ]),
     value: 0,
   };
 }
 
-export function initializer(ownerAddress: string) {
+export function initializer(owner: string) {
   /*
    * The initializer contains the calldata that invokes the setup
    * function. This is what effectively sets up the proxy's storage
@@ -39,7 +39,7 @@ export function initializer(ownerAddress: string) {
 
   const initializer = iface.encodeFunctionData("setup", [
     // owners
-    [ownerAddress],
+    [owner],
     // threshold
     1,
     // to - for setupModules
@@ -57,11 +57,4 @@ export function initializer(ownerAddress: string) {
   ]);
 
   return initializer;
-}
-
-/*
- * NOTE seed was formerly process.env.NEXT_PUBLIC_SAFE_SALT_SEED
- */
-export function saltNonce(seed: string) {
-  return keccak256(toUtf8Bytes(seed));
 }

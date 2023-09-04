@@ -72,7 +72,7 @@ describe("account-setup", async () => {
     });
 
     const transaction = await populateAccountSetup(
-      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      { account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => owner.signTypedData(...args)
     );
@@ -106,7 +106,7 @@ describe("account-setup", async () => {
     });
 
     const transaction = await populateAccountSetup(
-      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      { account: safeAddress, chainId: 31337, nonce: 0 },
       account,
       (...args) => owner.signTypedData(...args)
     );
@@ -142,7 +142,7 @@ describe("account-setup", async () => {
     });
 
     const transaction = await populateAccountSetup(
-      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      { account: safeAddress, chainId: 31337, nonce: 0 },
       account,
       (...args) => owner.signTypedData(...args)
     );

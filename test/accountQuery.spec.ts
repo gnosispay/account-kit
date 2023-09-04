@@ -57,7 +57,7 @@ describe("account-query", () => {
 
     const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
-      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      { account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
@@ -104,7 +104,7 @@ describe("account-query", () => {
 
     const justSpent = 23;
     const transaction = await populateAllowanceTransfer(
-      { safe: safeAddress, chainId: 31337, nonce: 1 },
+      { account: safeAddress, chainId: 31337, nonce: 1 },
       {
         spender: alice.address,
         token: DAI,

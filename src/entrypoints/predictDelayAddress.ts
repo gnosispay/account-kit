@@ -1,13 +1,13 @@
 import {
   AbiCoder,
-  ZeroHash,
   getCreate2Address,
   keccak256,
   solidityPackedKeccak256,
+  ZeroHash,
 } from "ethers";
 import deployments from "../deployments";
 
-export default function predictDelayAddress(safeAddress: string): string {
+export default function predictDelayAddress(account: string): string {
   const factory = deployments.moduleProxyFactory.address;
   const mastercopy = deployments.delayMastercopy.address;
   const saltNonce = ZeroHash;
@@ -19,7 +19,7 @@ export default function predictDelayAddress(safeAddress: string): string {
 
   const salt = solidityPackedKeccak256(
     ["bytes32", "uint256"],
-    [solidityPackedKeccak256(["bytes"], [encodeSetUp(safeAddress)]), saltNonce]
+    [solidityPackedKeccak256(["bytes"], [encodeSetUp(account)]), saltNonce]
   );
 
   return getCreate2Address(factory, salt, keccak256(byteCode));

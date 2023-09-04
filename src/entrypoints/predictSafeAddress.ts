@@ -1,26 +1,20 @@
-import {
-  AbiCoder,
-  ZeroHash,
-  concat,
-  getCreate2Address,
-  keccak256,
-} from "ethers";
+import { AbiCoder, concat, getCreate2Address, keccak256 } from "ethers";
 
-import { initializer, saltNonce } from "./accountCreation";
+import { initializer } from "./accountCreation";
 import deployments, { proxyCreationBytecode } from "../deployments";
 
 export default function predictSafeAddress(
-  ownerAddress: string,
-  seed: string = ZeroHash
+  owner: string,
+  seed: bigint = BigInt(0)
 ): string {
   const { address: factory } = deployments.safeProxyFactory;
   const { address: mastercopy } = deployments.safeMastercopy;
 
-  const salt = keccak256(
-    concat([keccak256(initializer(ownerAddress)), saltNonce(seed)])
-  );
-
   const abi = AbiCoder.defaultAbiCoder();
+
+  const salt = keccak256(
+    concat([keccak256(initializer(owner)), abi.encode(["uint256"], [seed])])
+  );
 
   const deploymentData = concat([
     proxyCreationBytecode,

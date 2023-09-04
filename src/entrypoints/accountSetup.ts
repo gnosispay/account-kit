@@ -1,6 +1,8 @@
 import { ZeroAddress, ZeroHash } from "ethers";
 
-import predictDelayAddress, { encodeSetUp } from "./predictDelayAddress";
+import predictDelayAddress, {
+  encodeSetUp as encodeDelaySetUp,
+} from "./predictDelayAddress";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
@@ -13,20 +15,22 @@ import {
 } from "../types";
 
 export default async function populateAccountSetup(
-  { safe, chainId, nonce }: ExecutionConfig,
-  account: AccountConfig,
+  { account, chainId, nonce }: ExecutionConfig,
+  config: AccountConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const safeIface = deployments.safeMastercopy.iface;
-  const safeAddress = safe;
+  const safe = {
+    address: account,
+    iface: deployments.safeMastercopy.iface,
+  };
 
   const { to, data, value, operation } = populateSafeTransaction(
-    safeAddress,
-    account
+    safe.address,
+    config
   );
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    safe,
+    safe.address,
     chainId,
     nonce,
     { to, data, value, operation }
@@ -35,8 +39,8 @@ export default async function populateAccountSetup(
   const signature = await sign(domain, types, message);
 
   return {
-    to: safeAddress,
-    data: safeIface.encodeFunctionData("execTransaction", [
+    to: safe.address,
+    data: safe.iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,
@@ -53,31 +57,54 @@ export default async function populateAccountSetup(
 }
 
 function populateSafeTransaction(
-  safeAddress: string,
+  account: string,
   { owner, spender, token, amount, period, cooldown }: AccountConfig
 ): SafeTransactionData {
-  const factoryIface = deployments.moduleProxyFactory.iface;
-  const factoryAddress = deployments.moduleProxyFactory.address;
-
-  const safeIface = deployments.safeMastercopy.iface;
-
-  const allowanceIface = deployments.allowanceSingleton.iface;
-  const allowanceAddress = deployments.allowanceSingleton.address;
-
-  const delayIface = deployments.delayMastercopy.iface;
-  const delayAddress = predictDelayAddress(safeAddress);
-  const delayMastercopy = deployments.delayMastercopy.address;
+  const moduleProxyFactory = deployments.moduleProxyFactory;
+  const safe = {
+    address: account,
+    iface: deployments.safeMastercopy.iface,
+  };
+  const allowance = deployments.allowanceSingleton;
+  const delay = {
+    address: predictDelayAddress(safe.address),
+    iface: deployments.delayMastercopy.iface,
+  };
 
   return multisendEncode([
+    /**
+     * CONFIG SAFE
+     */
+    // set add the gnosis signer, and set threshold to 2
+    {
+      to: safe.address,
+      data: safe.iface.encodeFunctionData("addOwnerWithThreshold", [
+        spender,
+        2,
+      ]),
+    },
+    // enable allowance as module on safe
+    {
+      to: safe.address,
+      data: safe.iface.encodeFunctionData("enableModule", [allowance.address]),
+    },
+    // enable delay as module on safe
+    {
+      to: safe.address,
+      data: safe.iface.encodeFunctionData("enableModule", [delay.address]),
+    },
+    /**
+     * CONFIG ALLOWANCE
+     */
     // configure spender on the allowance mod
     {
-      to: allowanceAddress,
-      data: allowanceIface.encodeFunctionData("addDelegate", [spender]),
+      to: allowance.address,
+      data: allowance.iface.encodeFunctionData("addDelegate", [spender]),
     },
     // create an allowance entry for safe -> spender -> token
     {
-      to: allowanceAddress,
-      data: allowanceIface.encodeFunctionData("setAllowance", [
+      to: allowance.address,
+      data: allowance.iface.encodeFunctionData("setAllowance", [
         spender,
         token,
         amount,
@@ -85,39 +112,27 @@ function populateSafeTransaction(
         0,
       ]),
     },
-    // deploy the delay mod
+    /**
+     * CONFIG DELAY
+     */
+    // actually deploy the delay mod proxy
     {
-      to: factoryAddress,
-      data: factoryIface.encodeFunctionData("deployModule", [
-        delayMastercopy,
-        encodeSetUp(safeAddress),
+      to: moduleProxyFactory.address,
+      data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
+        deployments.delayMastercopy.address,
+        encodeDelaySetUp(safe.address),
         ZeroHash,
       ]),
     },
     // configure cooldown on delay
     {
-      to: delayAddress,
-      data: delayIface.encodeFunctionData("setTxCooldown", [cooldown]),
+      to: delay.address,
+      data: delay.iface.encodeFunctionData("setTxCooldown", [cooldown]),
     },
     // enable owner on the delay as module
     {
-      to: delayAddress,
-      data: delayIface.encodeFunctionData("enableModule", [owner]),
-    },
-    // configure set spender as signer
-    {
-      to: safeAddress,
-      data: safeIface.encodeFunctionData("addOwnerWithThreshold", [spender, 2]),
-    },
-    // enable allowance as module on safe
-    {
-      to: safeAddress,
-      data: safeIface.encodeFunctionData("enableModule", [allowanceAddress]),
-    },
-    // enable delay as module on safe
-    {
-      to: safeAddress,
-      data: safeIface.encodeFunctionData("enableModule", [delayAddress]),
+      to: delay.address,
+      data: delay.iface.encodeFunctionData("enableModule", [owner]),
     },
   ]);
 }

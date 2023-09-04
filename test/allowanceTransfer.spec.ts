@@ -51,7 +51,7 @@ describe("allowance-tranfer", async () => {
     });
 
     const setupTransaction = await populateAccountSetup(
-      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      { account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
@@ -83,7 +83,7 @@ describe("allowance-tranfer", async () => {
     const amount = 10;
 
     const transaction = await populateAllowanceTransfer(
-      { safe: safeAddress, chainId: 31337, nonce: 1 },
+      { account: safeAddress, chainId: 31337, nonce: 1 },
       { spender: spender.address, token, to, amount },
       (message) => spender.signMessage(message)
     );
@@ -106,7 +106,7 @@ describe("allowance-tranfer", async () => {
     const amount = 2000;
 
     const transaction = await populateAllowanceTransfer(
-      { safe: safeAddress, chainId: 31337, nonce: 1 },
+      { account: safeAddress, chainId: 31337, nonce: 1 },
       { spender: spender.address, token, to, amount },
       (message) => spender.signMessage(message)
     );

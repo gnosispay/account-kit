@@ -82,7 +82,7 @@ export default function populateAccountQuery(
 }
 
 export function evaluateAccountQuery(
-  safeAddress: string,
+  account: string,
   { spender, cooldown }: { spender: string; cooldown: bigint | number },
   functionResult: string
 ): {
@@ -135,7 +135,7 @@ export function evaluateAccountQuery(
       };
     }
 
-    if (!evaluateModules(modulesResult, safeAddress)) {
+    if (!evaluateModules(modulesResult, account)) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
         detail: null,
@@ -165,7 +165,7 @@ export function evaluateAccountQuery(
       !evaluateDelayConfig(
         delayOwnerResult,
         txCooldownResult,
-        safeAddress,
+        account,
         cooldown
       )
     ) {
@@ -241,14 +241,15 @@ function evaluateModules(result: string, safeAddress: string) {
 function evaluateDelayConfig(
   ownerResult: string,
   cooldownResult: string,
-  safeAddress: string,
+  account: string,
   cooldown: bigint | number
 ) {
   const abi = AbiCoder.defaultAbiCoder();
   const [owner] = abi.decode(["address"], ownerResult);
 
+  // check that the safe is the owner of the delay mod
   return (
-    owner.toLowerCase() == safeAddress.toLowerCase() &&
+    owner.toLowerCase() == account.toLowerCase() &&
     BigInt(cooldownResult) >= cooldown
   );
 }

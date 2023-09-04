@@ -11,17 +11,19 @@ import {
 } from "../types";
 
 export default async function populateTokenTransfer(
-  { safe, chainId, nonce }: ExecutionConfig,
+  { account, chainId, nonce }: ExecutionConfig,
   transfer: Transfer,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const safeAddress = safe;
-  const safeIface = deployments.safeMastercopy.iface;
+  const safe = {
+    address: account,
+    iface: deployments.safeMastercopy.iface,
+  };
 
   const { to, value, data, operation } = populateSafeTransaction(transfer);
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    safe,
+    account,
     chainId,
     nonce,
     { to, value, data, operation }
@@ -30,8 +32,8 @@ export default async function populateTokenTransfer(
   const signature = await sign(domain, types, message);
 
   return {
-    to: safeAddress,
-    data: safeIface.encodeFunctionData("execTransaction", [
+    to: safe.address,
+    data: safe.iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,

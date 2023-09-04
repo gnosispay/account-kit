@@ -17,7 +17,7 @@ export interface SafeTransactionData {
 }
 
 export type ExecutionConfig = {
-  safe: string;
+  account: string;
   chainId: bigint | number;
   nonce: bigint | number;
 };
