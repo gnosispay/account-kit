@@ -20,7 +20,6 @@ export default function populateAccountCreation(
       initializer(owner),
       seed,
     ]),
-    value: 0,
   };
 }
 

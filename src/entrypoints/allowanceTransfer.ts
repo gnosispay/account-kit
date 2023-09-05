@@ -21,7 +21,6 @@ export default function populateAllowanceTransfer(
       transfer.spender,
       "0x",
     ]),
-    value: 0,
   };
 }
 

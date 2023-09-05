@@ -52,7 +52,6 @@ export default async function populateAccountSetup(
       ZeroAddress, // gasRefund
       signature,
     ]),
-    value: 0,
   };
 }
 
