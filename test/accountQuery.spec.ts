@@ -92,8 +92,7 @@ describe("account-query", () => {
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { safeAddress, alice, bob, relayer, config } =
-      await loadFixture(setupAccount);
+    const { safeAddress, alice, bob, config } = await loadFixture(setupAccount);
 
     let result = await evaluateAccount(safeAddress, config);
 

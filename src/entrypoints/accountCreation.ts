@@ -1,8 +1,8 @@
 import { ZeroAddress } from "ethers";
 
+import { SALT_NONCE } from "./predictSafeAddress";
 import deployments from "../deployments";
 import { TransactionData } from "../types";
-import { SALT_NONCE } from "./predictSafeAddress";
 
 export default function populateAccountCreation(
   owner: string,
