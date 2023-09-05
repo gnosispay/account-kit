@@ -102,17 +102,14 @@ describe("account-query", () => {
     expect(result.detail?.allowance.nonce).to.equal(1);
 
     const justSpent = 23;
-    const transaction = await populateAllowanceTransfer(
-      { account: safeAddress, chainId: 31337, nonce: 1 },
-      {
-        spender: alice.address,
-        token: GNO,
-        to: bob.address,
-        amount: justSpent,
-      },
-      (message) => alice.signMessage(message)
-    );
-    await relayer.sendTransaction(transaction);
+    const transaction = populateAllowanceTransfer(safeAddress, {
+      spender: alice.address,
+      token: GNO,
+      to: bob.address,
+      amount: justSpent,
+    });
+
+    await alice.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
     result = await evaluateAccount(safeAddress, config);
