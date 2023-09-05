@@ -22,7 +22,7 @@ import {
   ISafe__factory,
 } from "../typechain-types";
 
-describe("account-setup", async () => {
+describe("account-setup", () => {
   before(async () => {
     await fork(29800000);
   });

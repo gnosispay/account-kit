@@ -92,8 +92,7 @@ describe("account-query", () => {
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { safeAddress, alice, bob, relayer, config } =
-      await loadFixture(setupAccount);
+    const { safeAddress, alice, bob, config } = await loadFixture(setupAccount);
 
     let result = await evaluateAccount(safeAddress, config);
 
@@ -102,17 +101,14 @@ describe("account-query", () => {
     expect(result.detail?.allowance.nonce).to.equal(1);
 
     const justSpent = 23;
-    const transaction = await populateAllowanceTransfer(
-      { account: safeAddress, chainId: 31337, nonce: 1 },
-      {
-        spender: alice.address,
-        token: GNO,
-        to: bob.address,
-        amount: justSpent,
-      },
-      (message) => alice.signMessage(message)
-    );
-    await relayer.sendTransaction(transaction);
+    const transaction = populateAllowanceTransfer(safeAddress, {
+      spender: alice.address,
+      token: GNO,
+      to: bob.address,
+      amount: justSpent,
+    });
+
+    await alice.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
     result = await evaluateAccount(safeAddress, config);
@@ -344,8 +340,8 @@ describe("account-query", () => {
   });
 });
 
-async function evaluateAccount(safeAddress: string, config: AccountConfig) {
-  const { to, data } = populateAccountQuery(safeAddress, config);
+async function evaluateAccount(account: string, config: AccountConfig) {
+  const { to, data } = populateAccountQuery(account, config);
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery(safeAddress, config, resultData);
+  return evaluateAccountQuery(account, config, resultData);
 }
