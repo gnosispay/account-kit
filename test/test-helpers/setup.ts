@@ -7,14 +7,15 @@ export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.
   dotenv.config();
 
-  const { ALCHEMY_KEY } = process.env;
+  const { GATEWAY_API_KEY, GATEWAY_RPC_URL } = process.env;
   // fork mainnet
   await hre.network.provider.request({
     method: "hardhat_reset",
     params: [
       {
         forking: {
-          jsonRpcUrl: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+          jsonRpcUrl: GATEWAY_RPC_URL,
+          httpHeaders: { Authorization: `Bearer ${GATEWAY_API_KEY}` },
           blockNumber,
         },
       },
@@ -51,7 +52,7 @@ export function createAccountConfig({
   // for allowance
   owner,
   spender,
-  token = DAI,
+  token = GNO,
   amount = 1000000,
   period = 60 * 24, // in minutes, 1 day
   // for delay
@@ -74,5 +75,5 @@ export function createAccountConfig({
   };
 }
 
-export const DAI = "0x6B175474E89094C44Da98b954EedeAC495271d0F";
-export const DAI_WHALE = "0x075e72a5edf65f0a5f44699c7654c1a76941ddc8";
+export const GNO = "0x9C58BAcC331c9aa871AFD802DB6379a98e80CEdb";
+export const GNO_WHALE = "0x458cd345b4c05e8df39d0a07220feb4ec19f5e6f";

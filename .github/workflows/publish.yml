@@ -1,9 +1,5 @@
 name: Version release
 
-# on:
-#   release:
-#     types: [created]
-
 on:
   push:
     tags:
@@ -20,9 +16,9 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.x'
-          registry-url: 'https://registry.npmjs.org'
-      
+          node-version: "16.x"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Get package info
         id: package
         uses: codex-team/action-nodejs-package-info@v1.1
@@ -32,9 +28,8 @@ jobs:
         with:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-      - run: yarn
-      - run: yarn build
-      - run: npm publish -access public
+      - run: yarn --frozen-lockfile
+      - run: yarn publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
@@ -49,5 +44,3 @@ jobs:
           body: ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
-
-
