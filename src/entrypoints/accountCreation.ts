@@ -1,10 +1,12 @@
 import { ZeroAddress } from "ethers";
+
 import deployments from "../deployments";
 import { TransactionData } from "../types";
+import { SALT_NONCE } from "./predictSafeAddress";
 
 export default function populateAccountCreation(
   owner: string,
-  seed: bigint = BigInt(0)
+  seed: bigint = SALT_NONCE
 ): TransactionData {
   const { iface, address: factory } = deployments.safeProxyFactory;
   const mastercopy = deployments.safeMastercopy.address;

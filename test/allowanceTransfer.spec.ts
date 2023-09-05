@@ -24,7 +24,7 @@ import {
   ISafe__factory,
 } from "../typechain-types";
 
-describe("allowance-tranfer", async () => {
+describe("allowance-tranfer", () => {
   before(async () => {
     await fork(29800000);
   });

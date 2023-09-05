@@ -3,9 +3,14 @@ import { AbiCoder, concat, getCreate2Address, keccak256 } from "ethers";
 import { initializer } from "./accountCreation";
 import deployments, { proxyCreationBytecode } from "../deployments";
 
+// the salt nonce used for gnosis-pay account creation
+export const SALT_NONCE = BigInt(
+  "5114647649581446628743670001764890754687493338792207058163325042301318925668"
+);
+
 export default function predictSafeAddress(
   owner: string,
-  seed: bigint = BigInt(0)
+  saltNonce: bigint = SALT_NONCE
 ): string {
   const { address: factory } = deployments.safeProxyFactory;
   const { address: mastercopy } = deployments.safeMastercopy;
@@ -13,7 +18,10 @@ export default function predictSafeAddress(
   const abi = AbiCoder.defaultAbiCoder();
 
   const salt = keccak256(
-    concat([keccak256(initializer(owner)), abi.encode(["uint256"], [seed])])
+    concat([
+      keccak256(initializer(owner)),
+      abi.encode(["uint256"], [saltNonce]),
+    ])
   );
 
   const deploymentData = concat([
