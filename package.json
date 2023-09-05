@@ -16,11 +16,12 @@
     "build": "hardhat compile && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
     "test": "hardhat test",
     "lint": "tsc --noEmit && eslint '{src,test,scripts}/**/*.ts' --max-warnings 0 --fix",
-    "lint:check": "tsc  --noEmit && eslint  '{src,test,scripts}/**/*.ts'",
+    "lint:check": "tsc --noEmit && eslint  '{src,test,scripts}/**/*.ts'",
     "format": "prettier '{src,test,scripts}/**/*.ts' --write",
     "format:check": "prettier '{src,test,scripts}/**/*.ts' --check",
     "interfaces": "ts-node ./scripts/generateInterfaces.ts",
-    "prepare": "yarn run clean && yarn interfaces && yarn run build"
+    "interfaces:check": "ts-node ./scripts/generateInterfaces.ts --check",
+    "prepublishOnly": "yarn interfaces:check && yarn run clean && yarn run build"
   },
   "repository": {
     "type": "git",

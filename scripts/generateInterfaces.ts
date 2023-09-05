@@ -11,6 +11,11 @@ import path from "path";
 
 const VERSION = "v1.3.0";
 
+const isCheck = process.argv
+  .filter((v) => typeof v == "string")
+  .map((v) => v.toLowerCase())
+  .some((v) => v == "--check" || v == "-c");
+
 generate("IAllowanceModule", getAllowanceModuleDeployment()?.abi);
 // generate("IDelayModule", ContractAbis[KnownContracts.DELAY], "^0.8.0");
 generate("IModuleProxyFactory", ContractAbis[KnownContracts.FACTORY]);
@@ -31,9 +36,23 @@ function generate(name: string, abi: any) {
     license: "LGPL-3.0-only",
   });
 
-  fs.writeFileSync(
-    path.join(__dirname, "..", "contracts", "interfaces", `${name}.sol`),
-    code,
-    "utf8"
+  const fileName = path.join(
+    __dirname,
+    "..",
+    "contracts",
+    "interfaces",
+    `${name}.sol`
   );
+
+  if (isCheck) {
+    const data = fs.readFileSync(fileName, "utf8");
+    if (data !== code) {
+      console.error(
+        "Solidity interfaces are outdated. Regenerate by running 'yarn interfaces'"
+      );
+      process.exit(1);
+    }
+  } else {
+    fs.writeFileSync(fileName, code, "utf8");
+  }
 }
