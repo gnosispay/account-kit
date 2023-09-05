@@ -7,14 +7,15 @@ export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.
   dotenv.config();
 
-  const { ALCHEMY_KEY } = process.env;
+  const { GATEWAY_API_KEY, GATEWAY_RPC_URL } = process.env;
   // fork mainnet
   await hre.network.provider.request({
     method: "hardhat_reset",
     params: [
       {
         forking: {
-          jsonRpcUrl: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_KEY}`,
+          jsonRpcUrl: GATEWAY_RPC_URL,
+          httpHeaders: { Authorization: `Bearer ${GATEWAY_API_KEY}` },
           blockNumber,
         },
       },
