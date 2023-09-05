@@ -39,8 +39,6 @@ describe("token-transfer", async () => {
     const [, , , , notTheOwner] = await hre.ethers.getSigners();
     const dai = IERC20__factory.connect(DAI, hre.ethers.provider);
 
-    console.log("BLAAAAAAAAAAAAAAAAAA - ", process.env.GATEWAY_RPC_URL);
-
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = await dai.balanceOf(safeAddress);
 
