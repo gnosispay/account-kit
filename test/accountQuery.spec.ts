@@ -341,8 +341,8 @@ describe("account-query", () => {
   });
 });
 
-async function evaluateAccount(safeAddress: string, config: AccountConfig) {
-  const { to, data } = populateAccountQuery(safeAddress, config);
+async function evaluateAccount(account: string, config: AccountConfig) {
+  const { to, data } = populateAccountQuery(account, config);
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery(safeAddress, config, resultData);
+  return evaluateAccountQuery(account, config, resultData);
 }
