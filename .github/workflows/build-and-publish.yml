@@ -1,9 +1,5 @@
 name: Version release
 
-# on:
-#   release:
-#     types: [created]
-
 on:
   push:
     tags:
@@ -20,9 +16,9 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '16.x'
-          registry-url: 'https://registry.npmjs.org'
-      
+          node-version: "16.x"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Get package info
         id: package
         uses: codex-team/action-nodejs-package-info@v1.1
@@ -49,5 +45,3 @@ jobs:
           body: ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
-
-

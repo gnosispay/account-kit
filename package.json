@@ -15,8 +15,10 @@
     "clean": "rm -rf dist build typechain-types",
     "build": "hardhat compile && tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json",
     "test": "hardhat test",
-    "lint": "eslint 'scripts/**/*.ts' 'src/**/*.ts' 'test/**/*.ts' --max-warnings 0 --fix",
-    "format": "prettier ./scripts/**/*.ts ./src/**/*.ts ./test/**/*.ts ./*.ts -w",
+    "lint": "tsc --noEmit && eslint '{src,test,scripts}/**/*.ts' --max-warnings 0 --fix",
+    "lint:check": "tsc  --noEmit && eslint  '{src,test,scripts}/**/*.ts'",
+    "format": "prettier '{src,test,scripts}/**/*.ts' --write",
+    "format:check": "prettier '{src,test,scripts}/**/*.ts' --check",
     "interfaces": "ts-node ./scripts/generateInterfaces.ts",
     "prepare": "yarn run clean && yarn interfaces && yarn run build"
   },
