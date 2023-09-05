@@ -3,8 +3,8 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import {
-  DAI,
-  DAI_WHALE,
+  GNO,
+  GNO_WHALE,
   createAccountConfig,
   fork,
   forkReset,
@@ -26,7 +26,7 @@ import {
 
 describe("allowance-tranfer", async () => {
   before(async () => {
-    await fork(17741542);
+    await fork(29800000);
   });
 
   after(async () => {
@@ -41,13 +41,13 @@ describe("allowance-tranfer", async () => {
 
     await charlie.sendTransaction(createTransaction);
 
-    await moveERC20(DAI_WHALE, safeAddress, DAI);
+    await moveERC20(GNO_WHALE, safeAddress, GNO);
 
     const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       amount: 1000,
-      token: DAI,
+      token: GNO,
     });
 
     const setupTransaction = await populateAccountSetup(
@@ -75,10 +75,10 @@ describe("allowance-tranfer", async () => {
   it("transfer using allowance and spender", async () => {
     const { safe, spender, charlie } = await loadFixture(createAccount);
 
-    const dai = IERC20__factory.connect(DAI, hre.ethers.provider);
+    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
     const safeAddress = await safe.getAddress();
 
-    const token = DAI;
+    const token = GNO;
     const to = "0x0000000000000000000000000000000000000003";
     const amount = 10;
 
@@ -88,20 +88,20 @@ describe("allowance-tranfer", async () => {
       (message) => spender.signMessage(message)
     );
 
-    expect(await dai.balanceOf(to)).to.be.equal(0);
+    expect(await gno.balanceOf(to)).to.be.equal(0);
 
     await charlie.sendTransaction(transaction);
 
-    expect(await dai.balanceOf(to)).to.be.equal(amount);
+    expect(await gno.balanceOf(to)).to.be.equal(amount);
   });
 
   it("transfer overusing allowance fails", async () => {
     const { safe, spender, charlie } = await loadFixture(createAccount);
 
     const safeAddress = await safe.getAddress();
-    const dai = IERC20__factory.connect(DAI, hre.ethers.provider);
+    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
 
-    const token = DAI;
+    const token = GNO;
     const to = "0x0000000000000000000000000000000000000003";
     const amount = 2000;
 
@@ -111,7 +111,7 @@ describe("allowance-tranfer", async () => {
       (message) => spender.signMessage(message)
     );
 
-    expect(await dai.balanceOf(to)).to.be.equal(0);
+    expect(await gno.balanceOf(to)).to.be.equal(0);
 
     await expect(charlie.sendTransaction(transaction)).to.be.reverted;
   });

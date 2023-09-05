@@ -3,7 +3,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import {
-  DAI,
+  GNO,
   createAccountConfig,
   fork,
   forkReset,
@@ -24,7 +24,7 @@ import {
 
 describe("account-setup", async () => {
   before(async () => {
-    await fork(17741542);
+    await fork(29800000);
   });
 
   after(async () => {
@@ -101,7 +101,7 @@ describe("account-setup", async () => {
       owner: owner.address,
       spender: alice.address,
       period: PERIOD,
-      token: DAI,
+      token: GNO,
       amount: AMOUNT,
     });
 
@@ -116,7 +116,7 @@ describe("account-setup", async () => {
       await allowanceModule.getTokenAllowance(
         safeAddress,
         spender.address,
-        DAI
+        GNO
       );
 
     expect(amount).to.equal(AMOUNT);

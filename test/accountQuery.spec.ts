@@ -1,12 +1,11 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { ZeroAddress } from "ethers";
 import hre from "hardhat";
 
 import execSafeTransaction from "./test-helpers/execSafeTransaction";
 import {
-  DAI,
-  DAI_WHALE,
+  GNO,
+  GNO_WHALE,
   createAccountConfig,
   fork,
   forkReset,
@@ -34,7 +33,7 @@ const AddressOther = "0x0000000000000000000000000000000000000009";
 
 describe("account-query", () => {
   before(async () => {
-    await fork(17741542);
+    await fork(29800000);
   });
 
   after(async () => {
@@ -42,18 +41,18 @@ describe("account-query", () => {
   });
 
   async function setupAccount() {
-    const [owner, , , alice, bob, relayer] = await hre.ethers.getSigners();
+    const [owner, alice, bob, relayer] = await hre.ethers.getSigners();
 
     const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
       period: 7654,
-      token: DAI,
+      token: GNO,
       amount: 123,
     });
     const safeAddress = predictSafeAddress(owner.address);
     const delayAddress = predictDelayAddress(safeAddress);
-    await moveERC20(DAI_WHALE, safeAddress, DAI, 2000);
+    await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);
 
     const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
@@ -93,7 +92,7 @@ describe("account-query", () => {
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { safeAddress, alice, relayer, config } =
+    const { safeAddress, alice, bob, relayer, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(safeAddress, config);
@@ -107,8 +106,8 @@ describe("account-query", () => {
       { account: safeAddress, chainId: 31337, nonce: 1 },
       {
         spender: alice.address,
-        token: DAI,
-        to: ZeroAddress,
+        token: GNO,
+        to: bob.address,
         amount: justSpent,
       },
       (message) => alice.signMessage(message)
