@@ -28,7 +28,7 @@ jobs:
         with:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
-      - run: yarn
+      - run: yarn --frozen-lockfile
       - run: yarn build
       - run: npm publish -access public
         env:
