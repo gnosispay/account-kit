@@ -52,6 +52,7 @@ export function createAccountConfig({
   // for allowance
   owner,
   spender,
+  receiver,
   token = GNO,
   amount = 1000000,
   period = 60 * 24, // in minutes, 1 day
@@ -60,6 +61,7 @@ export function createAccountConfig({
 }: {
   owner: string;
   spender: string;
+  receiver: string;
   token?: string;
   amount?: number | bigint;
   period?: number;
@@ -68,6 +70,7 @@ export function createAccountConfig({
   return {
     owner,
     spender,
+    receiver,
     token,
     amount,
     period,

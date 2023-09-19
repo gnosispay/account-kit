@@ -18,6 +18,7 @@ const isCheck = process.argv
 
 generate("IAllowanceModule", getAllowanceModuleDeployment()?.abi);
 // generate("IDelayModule", ContractAbis[KnownContracts.DELAY], "^0.8.0");
+// generate("IRolesModifier", ContractAbis[KnownContracts.ROLES]);
 generate("IModuleProxyFactory", ContractAbis[KnownContracts.FACTORY]);
 generate("IMultisend", getMultiSendDeployment({ version: VERSION })?.abi);
 generate("ISafe", getSafeSingletonDeployment({ version: VERSION })?.abi);

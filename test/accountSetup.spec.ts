@@ -12,15 +12,17 @@ import {
   populateAccountCreation,
   populateAccountSetup,
   predictDelayAddress,
+  predictRolesAddress,
   predictSafeAddress,
 } from "../src";
-import deployments from "../src/deployments";
 
 import {
-  IAllowanceModule__factory,
   IDelayModule__factory,
+  IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
+import { predictAllowanceAdminAddress } from "../src/entrypoints/predictSingletonAddress";
+import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
 
 describe("account-setup", () => {
   before(async () => {
@@ -34,11 +36,15 @@ describe("account-setup", () => {
   async function createAccount() {
     const [owner, , , alice, bob, charlie] = await hre.ethers.getSigners();
 
-    const safeAddress = predictSafeAddress(owner.address);
     const transaction = populateAccountCreation(owner.address);
 
-    const allowanceAddress = deployments.allowanceSingleton.address;
+    const safeAddress = predictSafeAddress(owner.address);
+    const rolesAddress = predictRolesAddress(safeAddress);
     const delayAddress = predictDelayAddress(safeAddress);
+    const forwarderAddress = predictAllowanceAdminAddress(
+      owner.address,
+      rolesAddress
+    );
 
     await charlie.sendTransaction(transaction);
 
@@ -48,8 +54,8 @@ describe("account-setup", () => {
       bob,
       charlie,
       safe: ISafe__factory.connect(safeAddress, hre.ethers.provider),
-      allowanceModule: IAllowanceModule__factory.connect(
-        allowanceAddress,
+      rolesModifier: IRolesModifier__factory.connect(
+        rolesAddress,
         hre.ethers.provider
       ),
       delayModule: IDelayModule__factory.connect(
@@ -57,19 +63,26 @@ describe("account-setup", () => {
         hre.ethers.provider
       ),
       safeAddress: safeAddress,
-      allowanceAddress,
+      rolesAddress,
       delayAddress,
+      forwarderAddress,
     };
   }
 
-  it("setup enables two mods", async () => {
-    const { owner, alice, safe, safeAddress, allowanceAddress, delayAddress } =
+  it("setup deploys and enables two mods", async () => {
+    const { owner, alice, bob, safe, safeAddress } =
       await loadFixture(createAccount);
 
+    const provider = hre.ethers.provider;
     const config = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
+      receiver: bob.address,
     });
+
+    const delayAddress = predictDelayAddress(safeAddress);
+    const rolesAddress = predictRolesAddress(safeAddress);
+    expect(delayAddress).to.not.equal(rolesAddress);
 
     const transaction = await populateAccountSetup(
       { account: safeAddress, chainId: 31337, nonce: 0 },
@@ -77,54 +90,68 @@ describe("account-setup", () => {
       (...args) => owner.signTypedData(...args)
     );
 
-    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.false;
+    expect(await provider.getCode(delayAddress)).to.equal("0x");
     expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
+    expect(await provider.getCode(rolesAddress)).to.equal("0x");
+    expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     await alice.sendTransaction(transaction);
 
-    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.true;
+    expect(await provider.getCode(rolesAddress)).to.not.equal("0x");
+    expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
+    expect(await provider.getCode(delayAddress)).to.not.equal("0x");
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
   });
 
-  it("setup correctly configures allowance", async () => {
-    const { owner, alice, bob, safe, allowanceModule } =
-      await loadFixture(createAccount);
+  it("setup correctly configures Roles", async () => {
+    const {
+      owner,
+      alice,
+      bob,
+      charlie,
+      safe,
+      rolesModifier,
+      safeAddress,
+      rolesAddress,
+      forwarderAddress,
+    } = await loadFixture(createAccount);
 
-    const safeAddress = await safe.getAddress();
-    const allowanceAddress = await allowanceModule.getAddress();
-
-    const spender = alice;
     const PERIOD = 7654;
     const AMOUNT = 123;
 
     const account = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
+      receiver: bob.address,
       period: PERIOD,
       token: GNO,
       amount: AMOUNT,
     });
+
+    expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     const transaction = await populateAccountSetup(
       { account: safeAddress, chainId: 31337, nonce: 0 },
       account,
       (...args) => owner.signTypedData(...args)
     );
-    await bob.sendTransaction(transaction);
+    await charlie.sendTransaction(transaction);
 
-    const [amount, spent, period, , nonce] =
-      await allowanceModule.getTokenAllowance(
-        safeAddress,
-        spender.address,
-        GNO
-      );
+    expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
+    expect(await rolesModifier.owner()).to.equal(forwarderAddress);
 
-    expect(amount).to.equal(AMOUNT);
-    expect(spent).to.equal(0);
-    expect(period).to.equal(PERIOD);
-    expect(nonce).to.equal(1); // allowance token 1 means new
-
-    expect(await safe.isModuleEnabled(allowanceAddress)).to.be.true;
+    const {
+      refillAmount,
+      refillInterval,
+      refillTimestamp,
+      balance,
+      maxBalance,
+    } = await rolesModifier.allowances(ALLOWANCE_KEY);
+    expect(refillAmount).to.equal(AMOUNT);
+    expect(refillInterval).to.equal(PERIOD);
+    expect(refillTimestamp).to.equal(0);
+    expect(balance).to.equal(AMOUNT);
+    expect(maxBalance).to.equal(AMOUNT);
   });
 
   it("setup correctly configures delay", async () => {
@@ -138,6 +165,7 @@ describe("account-setup", () => {
     const account = createAccountConfig({
       owner: owner.address,
       spender: alice.address,
+      receiver: bob.address,
       cooldown: COOLDOWN,
     });
 
@@ -150,6 +178,7 @@ describe("account-setup", () => {
     await bob.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
+    expect(await delayModule.owner()).to.equal(safeAddress);
     expect(await delayModule.txCooldown()).to.equal(9999);
     expect(await delayModule.queueNonce()).to.equal(
       await delayModule.txNonce()

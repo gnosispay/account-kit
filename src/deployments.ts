@@ -12,6 +12,7 @@ import {
   IModuleProxyFactory__factory,
   IMulticall__factory,
   IMultisend__factory,
+  IRolesModifier__factory,
   ISafeProxyFactory__factory,
   ISafe__factory,
 } from "../typechain-types";
@@ -50,6 +51,11 @@ export default {
     // 1 and 100 same address
     address: ContractAddresses[1][KnownContracts.DELAY],
     iface: IDelayModule__factory.createInterface(),
+  },
+  rolesMastercopy: {
+    // 1 and 100 same address
+    address: ContractAddresses[1][KnownContracts.ROLES],
+    iface: IRolesModifier__factory.createInterface(),
   },
   multisend: {
     address: getMultiSendDeployment({ version: VERSION })
