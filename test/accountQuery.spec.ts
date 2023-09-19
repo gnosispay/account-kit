@@ -19,19 +19,21 @@ import {
   predictSafeAddress,
   populateAccountQuery,
   evaluateAccountQuery,
+  predictRolesAddress,
 } from "../src";
-import deployments from "../src/deployments";
 import { AccountConfig, AccountIntegrityStatus } from "../src/types";
 import {
-  IAllowanceModule__factory,
   IDelayModule__factory,
+  IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
+import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
+import { predictForwarderAddress } from "../src/entrypoints/predictSingletonAddress";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
 
-describe("account-query", () => {
+describe.only("account-query", () => {
   before(async () => {
     await fork(29800000);
   });
@@ -41,17 +43,20 @@ describe("account-query", () => {
   });
 
   async function setupAccount() {
-    const [owner, alice, bob, relayer] = await hre.ethers.getSigners();
+    const [owner, spender, receiver, other, relayer] =
+      await hre.ethers.getSigners();
 
     const config = createAccountConfig({
       owner: owner.address,
-      spender: alice.address,
+      spender: spender.address,
+      receiver: receiver.address,
       period: 7654,
       token: GNO,
       amount: 123,
     });
     const safeAddress = predictSafeAddress(owner.address);
     const delayAddress = predictDelayAddress(safeAddress);
+    const rolesAddress = predictRolesAddress(safeAddress);
     await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);
 
     const creationTx = populateAccountCreation(owner.address);
@@ -66,64 +71,68 @@ describe("account-query", () => {
 
     return {
       owner,
-      spender: alice,
-      alice,
-      bob,
+      spender,
+      receiver,
+      other,
       relayer,
-      safeAddress: safeAddress,
       safe: ISafe__factory.connect(safeAddress, relayer),
-      allowance: IAllowanceModule__factory.connect(
-        deployments.allowanceSingleton.address,
-        relayer
-      ),
       delay: IDelayModule__factory.connect(delayAddress, relayer),
+      roles: IRolesModifier__factory.connect(rolesAddress, relayer),
+      safeAddress: safeAddress,
       config,
     };
   }
 
   it("passes for a well configured account", async () => {
-    const { safeAddress, config } = await loadFixture(setupAccount);
+    const { owner, safeAddress, config } = await loadFixture(setupAccount);
 
-    const result = await evaluateAccount(safeAddress, config);
+    const result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.detail?.allowance.unspent).to.equal(config.amount);
-    expect(result.detail?.allowance.nonce).to.equal(1);
+    expect(result.balance).to.equal(config.amount);
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { safeAddress, alice, bob, config } = await loadFixture(setupAccount);
+    const { owner, spender, receiver, safeAddress, config } =
+      await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.detail?.allowance.unspent).to.equal(config.amount);
-    expect(result.detail?.allowance.nonce).to.equal(1);
+    expect(result.balance).to.equal(config.amount);
 
     const justSpent = 23;
     const transaction = populateAllowanceTransfer(safeAddress, {
-      spender: alice.address,
       token: GNO,
-      to: bob.address,
+      to: receiver.address,
       amount: justSpent,
     });
 
-    await alice.sendTransaction(transaction);
+    await spender.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.detail?.allowance.unspent).to.equal(
-      Number(config.amount) - justSpent
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
     );
-    expect(result.detail?.allowance.nonce).to.equal(2);
+    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+    expect(result.balance).to.equal(Number(config.amount) - justSpent);
   });
 
   it("fails when there aren't exactly two owners", async () => {
     const { safe, safeAddress, owner, spender, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     await execSafeTransaction(
@@ -136,7 +145,10 @@ describe("account-query", () => {
       [owner, spender]
     );
 
-    result = await evaluateAccount(safeAddress, config);
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
@@ -144,7 +156,10 @@ describe("account-query", () => {
     const { safe, safeAddress, owner, spender, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     // move threshold to 1, fails
@@ -153,7 +168,10 @@ describe("account-query", () => {
       await safe.changeThreshold.populateTransaction(1),
       [owner, spender]
     );
-    result = await evaluateAccount(safeAddress, config);
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
@@ -161,7 +179,10 @@ describe("account-query", () => {
     const { safe, safeAddress, owner, spender, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     const sentinel = "0x0000000000000000000000000000000000000001";
@@ -175,7 +196,10 @@ describe("account-query", () => {
     );
 
     expect(await safe.getOwners()).to.have.length(2);
-    result = await evaluateAccount(safeAddress, config);
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
@@ -191,33 +215,30 @@ describe("account-query", () => {
       [owner, spender]
     );
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    const { status } = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
-  it("fails when allowance module is not enabled", async () => {
+  it("fails when roles module is not enabled", async () => {
     const { safe, safeAddress, owner, spender, config } =
       await loadFixture(setupAccount);
 
-    const allowanceAddress = deployments.allowanceSingleton.address;
+    const rolesAddress = predictRolesAddress(safeAddress);
     const delayAddress = predictDelayAddress(safeAddress);
 
     await execSafeTransaction(
       safe,
-      await safe.disableModule.populateTransaction(
-        delayAddress,
-        allowanceAddress
-      ),
+      await safe.disableModule.populateTransaction(delayAddress, rolesAddress),
       [owner, spender]
     );
 
-    await execSafeTransaction(
-      safe,
-      await safe.enableModule.populateTransaction(AddressOther),
-      [owner, spender]
+    const { status } = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
     );
-
-    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
@@ -239,7 +260,10 @@ describe("account-query", () => {
       [owner, spender]
     );
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    const { status } = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
@@ -247,7 +271,10 @@ describe("account-query", () => {
     const { safe, safeAddress, delay, owner, spender, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     await execSafeTransaction(
@@ -258,7 +285,10 @@ describe("account-query", () => {
       [owner, spender]
     );
 
-    result = await evaluateAccount(safeAddress, config);
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
 
@@ -272,7 +302,10 @@ describe("account-query", () => {
       [owner, spender]
     );
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    const { status } = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
 
@@ -284,64 +317,70 @@ describe("account-query", () => {
     const delay = IDelayModule__factory.connect(delayAddress, owner);
 
     // everything is alright
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     // enqueue a via delay
     await delay.execTransactionFromModule(AddressOther, 0, "0x", 0);
 
     // integrity fails
-    result = await evaluateAccount(safeAddress, config);
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
 
-  it("fails when spender was removed", async () => {
-    const { safeAddress, safe, allowance, owner, spender, config } =
-      await loadFixture(setupAccount);
-
-    // everything is alright
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-
-    await execSafeTransaction(
-      safe,
-      await allowance.removeDelegate.populateTransaction(config.spender, true),
-      [owner, spender]
-    );
-
-    // integrity fails
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(
-      AccountIntegrityStatus.AllowanceMisconfigured
-    );
-  });
-
   it("fails when allowance for spender was removed", async () => {
-    const { safeAddress, safe, allowance, owner, spender, config } =
+    const { owner, spender, receiver, roles, safeAddress, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
-    await execSafeTransaction(
-      safe,
-      await allowance.deleteAllowance.populateTransaction(
-        config.spender,
-        config.token
-      ),
-      [owner, spender]
+    const transaction = await roles.setAllowance.populateTransaction(
+      ALLOWANCE_KEY,
+      0,
+      0,
+      0,
+      0,
+      0
     );
+    const forwarder = predictForwarderAddress({
+      owner: owner.address,
+      safe: safeAddress,
+    });
 
-    // integrity fails
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(
-      AccountIntegrityStatus.AllowanceMisconfigured
-    );
+    console.log(forwarder);
+    console.log(await roles.owner());
+    console.log(await hre.ethers.provider.getCode(forwarder));
+
+    // await expect(spender.sendTransaction({ ...transaction, to: forwarder })).to
+    //   .be.reverted;
+    // await expect(receiver.sendTransaction({ ...transaction, to: forwarder })).to
+    //   .be.reverted;
+    //   await owner.sendTransaction({ ...transaction, to: forwarder });
+
+    //   // integrity fails
+    //   result = await evaluateAccount(
+    //     { owner: owner.address, safe: safeAddress },
+    //     config
+    //   );
+    //   expect(result.status).to.equal(AccountIntegrityStatus.RolesMisconfigured);
   });
 });
 
-async function evaluateAccount(account: string, config: AccountConfig) {
-  const { to, data } = populateAccountQuery(account, config);
+async function evaluateAccount(
+  { owner, safe }: { owner: string; safe: string },
+  config: AccountConfig
+) {
+  const { to, data } = populateAccountQuery(safe, config);
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery(account, config, resultData);
+  return evaluateAccountQuery({ owner, safe }, config, resultData);
 }

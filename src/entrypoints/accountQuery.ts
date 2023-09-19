@@ -1,9 +1,15 @@
 import assert from "assert";
 import { AbiCoder } from "ethers";
-import predictDelayAddress from "./predictDelayAddress";
+
 import deployments from "../deployments";
 
 import { AccountIntegrityStatus, TransactionData } from "../types";
+import {
+  ALLOWANCE_KEY,
+  predictDelayAddress,
+  predictRolesAddress,
+} from "./predictModuleAddress";
+import { predictForwarderAddress } from "./predictSingletonAddress";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
@@ -15,10 +21,14 @@ export default function populateAccountQuery(
     address: account,
     iface: deployments.safeMastercopy.iface,
   };
-  const allowance = deployments.allowanceSingleton;
+
   const delay = {
     address: predictDelayAddress(account),
     iface: deployments.delayMastercopy.iface,
+  };
+  const roles = {
+    address: predictRolesAddress(safe.address),
+    iface: deployments.rolesMastercopy.iface,
   };
 
   const multicall = deployments.multicall;
@@ -44,13 +54,14 @@ export default function populateAccountQuery(
         ]),
       },
       {
-        target: allowance.address,
+        target: roles.address,
         allowFailure: true,
-        callData: allowance.iface.encodeFunctionData("getTokenAllowance", [
-          safe.address,
-          spender,
-          token,
-        ]),
+        callData: roles.iface.encodeFunctionData("owner"),
+      },
+      {
+        target: roles.address,
+        allowFailure: true,
+        callData: roles.iface.encodeFunctionData("allowances", [ALLOWANCE_KEY]),
       },
       {
         target: delay.address,
@@ -82,14 +93,12 @@ export default function populateAccountQuery(
 }
 
 export function evaluateAccountQuery(
-  account: string,
+  { owner, safe }: { owner: string; safe: string },
   { spender, cooldown }: { spender: string; cooldown: bigint | number },
   functionResult: string
 ): {
   status: AccountIntegrityStatus;
-  detail: {
-    allowance: { unspent: bigint; nonce: bigint };
-  } | null;
+  balance: bigint;
 } {
   try {
     const multicall = deployments.multicall.iface;
@@ -99,10 +108,10 @@ export function evaluateAccountQuery(
       functionResult
     );
 
-    if (aggregate3Result.length !== 8) {
+    if (aggregate3Result.length != 9) {
       return {
         status: AccountIntegrityStatus.UnexpectedError,
-        detail: null,
+        balance: BigInt(0),
       };
     }
 
@@ -110,7 +119,8 @@ export function evaluateAccountQuery(
       [ownersSuccess, ownersResult],
       [thresholdSuccess, thresholdResult],
       [modulesSuccess, modulesResult],
-      [, allowanceResult],
+      [rolesOwnerSuccess, rolesOwnerResult],
+      [allowanceSuccess, allowanceResult],
       [delayOwnerSuccess, delayOwnerResult],
       [txCooldownSuccess, txCooldownResult],
       [txNonceSuccess, txNonceResult],
@@ -124,28 +134,33 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.SafeNotDeployed,
-        detail: null,
+        balance: BigInt(0),
       };
     }
 
-    if (!evaluateOwners(ownersResult, thresholdResult, spender)) {
+    if (
+      !evaluateOwners(ownersResult, thresholdResult, spender) ||
+      !evaluateModules({ owner, safe }, modulesResult)
+    ) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
-        detail: null,
+        balance: BigInt(0),
       };
     }
 
-    if (!evaluateModules(modulesResult, account)) {
+    if (rolesOwnerSuccess !== true || allowanceSuccess != true) {
       return {
-        status: AccountIntegrityStatus.SafeMisconfigured,
-        detail: null,
+        status: AccountIntegrityStatus.RolesNotDeployed,
+        balance: BigInt(0),
       };
     }
 
-    if (!evaluateAllowance(allowanceResult)) {
+    if (
+      !evaluateRolesConfig({ owner, safe }, rolesOwnerResult, allowanceResult)
+    ) {
       return {
-        status: AccountIntegrityStatus.AllowanceMisconfigured,
-        detail: null,
+        status: AccountIntegrityStatus.RolesMisconfigured,
+        balance: BigInt(0),
       };
     }
 
@@ -157,39 +172,35 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.DelayNotDeployed,
-        detail: null,
+        balance: BigInt(0),
       };
     }
 
     if (
-      !evaluateDelayConfig(
-        delayOwnerResult,
-        txCooldownResult,
-        account,
-        cooldown
-      )
+      !evaluateDelayConfig(delayOwnerResult, txCooldownResult, safe, cooldown)
     ) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
-        detail: null,
+        balance: BigInt(0),
       };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
       return {
         status: AccountIntegrityStatus.DelayQueueNotEmpty,
-        detail: null,
+        balance: BigInt(0),
       };
     }
 
     return {
       status: AccountIntegrityStatus.Ok,
-      detail: extractDetail(allowanceResult),
+      balance: extractBalance(allowanceResult),
     };
   } catch (e) {
+    console.log(e);
     return {
       status: AccountIntegrityStatus.UnexpectedError,
-      detail: null,
+      balance: BigInt(0),
     };
   }
 }
@@ -216,7 +227,10 @@ function evaluateOwners(
   );
 }
 
-function evaluateModules(result: string, safeAddress: string) {
+function evaluateModules(
+  { owner, safe }: { owner: string; safe: string },
+  result: string
+) {
   const { iface } = deployments.safeMastercopy;
 
   let [enabledModules]: string[][] = iface.decodeFunctionResult(
@@ -229,19 +243,42 @@ function evaluateModules(result: string, safeAddress: string) {
   }
 
   enabledModules = enabledModules.map((m: string) => m.toLowerCase());
-  const delayAddress = predictDelayAddress(safeAddress).toLowerCase();
-  const allowanceAddress = deployments.allowanceSingleton.address.toLowerCase();
+  const delayAddress = predictDelayAddress(safe).toLowerCase();
+  const rolesAddress = predictRolesAddress(safe).toLowerCase();
 
   return (
     enabledModules.includes(delayAddress) &&
-    enabledModules.includes(allowanceAddress)
+    enabledModules.includes(rolesAddress)
   );
+}
+
+function evaluateRolesConfig(
+  { owner, safe }: { owner: string; safe: string },
+  rolesOwnerResult: string,
+  allowanceResult: string
+) {
+  const abi = AbiCoder.defaultAbiCoder();
+  const { iface } = deployments.rolesMastercopy;
+
+  const [rolesOwner] = abi.decode(["address"], rolesOwnerResult);
+  const forwarder = predictForwarderAddress({ owner, safe });
+
+  const [refill, maxBalance, period, balance, timestamp] =
+    iface.decodeFunctionResult("allowances", allowanceResult);
+
+  assert(typeof refill == "bigint");
+  assert(typeof maxBalance == "bigint");
+  assert(typeof period == "bigint");
+  assert(typeof balance == "bigint");
+  assert(typeof timestamp == "bigint");
+
+  return rolesOwner === forwarder && period > 0 && refill > 0;
 }
 
 function evaluateDelayConfig(
   ownerResult: string,
   cooldownResult: string,
-  account: string,
+  safe: string,
   cooldown: bigint | number
 ) {
   const abi = AbiCoder.defaultAbiCoder();
@@ -249,7 +286,7 @@ function evaluateDelayConfig(
 
   // check that the safe is the owner of the delay mod
   return (
-    owner.toLowerCase() == account.toLowerCase() &&
+    owner.toLowerCase() == safe.toLowerCase() &&
     BigInt(cooldownResult) >= cooldown
   );
 }
@@ -262,33 +299,12 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   return nonceResult == queueResult;
 }
 
-function evaluateAllowance(allowanceResult: string) {
+function extractBalance(allowanceResult: string) {
   const { iface } = deployments.allowanceSingleton;
 
-  const [[amount, , , , nonce]] = iface.decodeFunctionResult(
-    "getTokenAllowance",
-    allowanceResult
-  );
+  const [refill, maxBalance, period, balance, timestamp] =
+    iface.decodeFunctionResult("allowances", allowanceResult);
 
-  assert(typeof amount == "bigint");
-  assert(typeof nonce == "bigint");
-
-  // means an allowance exists for spender
-  return amount > 0 && nonce > 0;
-}
-
-function extractDetail(allowanceResult: string) {
-  const { iface } = deployments.allowanceSingleton;
-
-  const [[amount, spent, , , nonce]] = iface.decodeFunctionResult(
-    "getTokenAllowance",
-    allowanceResult
-  );
-
-  return {
-    allowance: {
-      unspent: (amount as bigint) - (spent as bigint),
-      nonce: nonce as bigint,
-    },
-  };
+  // todo put onchain math heref
+  return balance;
 }

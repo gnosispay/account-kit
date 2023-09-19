@@ -1,8 +1,23 @@
 import { AbiCoder, ZeroAddress, ZeroHash } from "ethers";
+import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
+
+import {
+  ALLOWANCE_KEY,
+  SPENDING_ROLE_KEY,
+  encodeDelaySetUp,
+  encodeRolesSetUp,
+  predictDelayAddress,
+  predictRolesAddress,
+} from "./predictModuleAddress";
+
+import {
+  forwarderBytecode,
+  predictForwarderAddress,
+} from "./predictSingletonAddress";
 
 import {
   AccountConfig,
@@ -13,19 +28,6 @@ import {
   RolesOperator,
   RolesExecutionOptions,
 } from "../types";
-import {
-  ALLOWANCE_KEY,
-  SPENDING_ROLE_KEY,
-  encodeDelaySetUp,
-  encodeRolesSetUp,
-  predictDelayAddress,
-  predictRolesAddress,
-} from "./predictModuleAddress";
-import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
-import {
-  allowanceAdminBytecode,
-  predictAllowanceAdminAddress,
-} from "./predictSingletonAddress";
 
 import { IERC20__factory } from "../../typechain-types";
 
@@ -94,7 +96,7 @@ function populateSafeTransaction(
     iface: deployments.rolesMastercopy.iface,
   };
   const allowanceAdmin = {
-    address: predictAllowanceAdminAddress(owner, roles.address),
+    address: predictForwarderAddress({ owner, safe: account }),
   };
 
   return multisendEncode([
@@ -141,7 +143,7 @@ function populateSafeTransaction(
       data: delay.iface.encodeFunctionData("enableModule", [owner]),
     },
     /**
-     * DEPLOY AND CONFIG ROLES
+     * DEPLOY AND CONFIG ROLES MODIFIER
      */
     {
       to: moduleProxyFactory.address,
@@ -217,7 +219,7 @@ function populateSafeTransaction(
      */
     {
       to: singletonFactory.address,
-      data: `${ZeroHash}${allowanceAdminBytecode(owner, roles.address).slice(
+      data: `${ZeroHash}${forwarderBytecode({ owner, safe: account }).slice(
         2
       )}`,
     },

@@ -8,12 +8,25 @@ import {
   IRolesModifier__factory,
   SinglePurposeForwarder__factory,
 } from "../../typechain-types";
+import { predictRolesAddress } from "./predictModuleAddress";
 
-export function predictAllowanceAdminAddress(owner: string, roles: string) {
-  return predictSingletonAddress(allowanceAdminBytecode(owner, roles));
+export function predictForwarderAddress({
+  owner,
+  safe,
+}: {
+  owner: string;
+  safe: string;
+}) {
+  return predictSingletonAddress(forwarderBytecode({ owner, safe }));
 }
 
-export function allowanceAdminBytecode(owner: string, roles: string) {
+export function forwarderBytecode({
+  owner,
+  safe,
+}: {
+  owner: string;
+  safe: string;
+}) {
   const selector =
     IRolesModifier__factory.createInterface().getFunction(
       "setAllowance"
@@ -22,7 +35,12 @@ export function allowanceAdminBytecode(owner: string, roles: string) {
   // encode the creationBytecode
   return AbiCoder.defaultAbiCoder().encode(
     ["bytes", "address", "address", "bytes4"],
-    [SinglePurposeForwarder__factory.bytecode, owner, roles, selector]
+    [
+      SinglePurposeForwarder__factory.bytecode,
+      owner,
+      predictRolesAddress(safe),
+      selector,
+    ]
   );
 }
 

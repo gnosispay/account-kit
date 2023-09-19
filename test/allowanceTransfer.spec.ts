@@ -20,7 +20,7 @@ import {
 
 import { IERC20__factory, ISafe__factory } from "../typechain-types";
 
-describe.only("allowance-tranfer", () => {
+describe("allowance-tranfer", () => {
   before(async () => {
     await fork(29800000);
   });

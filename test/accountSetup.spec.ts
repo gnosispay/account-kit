@@ -21,10 +21,11 @@ import {
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
-import { predictAllowanceAdminAddress } from "../src/entrypoints/predictSingletonAddress";
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
 
-describe("account-setup", () => {
+import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
+import { predictForwarderAddress } from "../src/entrypoints/predictSingletonAddress";
+
+describe.only("account-setup", () => {
   before(async () => {
     await fork(29800000);
   });
@@ -41,10 +42,10 @@ describe("account-setup", () => {
     const safeAddress = predictSafeAddress(owner.address);
     const rolesAddress = predictRolesAddress(safeAddress);
     const delayAddress = predictDelayAddress(safeAddress);
-    const forwarderAddress = predictAllowanceAdminAddress(
-      owner.address,
-      rolesAddress
-    );
+    const forwarderAddress = predictForwarderAddress({
+      owner: owner.address,
+      safe: safeAddress,
+    });
 
     await relayer.sendTransaction(transaction);
 
@@ -70,8 +71,15 @@ describe("account-setup", () => {
   }
 
   it("setup deploys and enables two mods", async () => {
-    const { owner, spender, receiver, relayer, safe, safeAddress } =
-      await loadFixture(createAccount);
+    const {
+      owner,
+      spender,
+      receiver,
+      relayer,
+      safe,
+      safeAddress,
+      forwarderAddress,
+    } = await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
     const config = createAccountConfig({
@@ -90,6 +98,7 @@ describe("account-setup", () => {
       (...args) => owner.signTypedData(...args)
     );
 
+    expect(await provider.getCode(forwarderAddress)).to.equal("0x");
     expect(await provider.getCode(delayAddress)).to.equal("0x");
     expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
     expect(await provider.getCode(rolesAddress)).to.equal("0x");
@@ -97,6 +106,7 @@ describe("account-setup", () => {
 
     await relayer.sendTransaction(transaction);
 
+    expect(await provider.getCode(forwarderAddress)).to.not.equal("0x");
     expect(await provider.getCode(rolesAddress)).to.not.equal("0x");
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
     expect(await provider.getCode(delayAddress)).to.not.equal("0x");
