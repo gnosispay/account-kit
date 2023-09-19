@@ -7,7 +7,7 @@ import {
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 
-describe.only("SinglePurposeForwarder", () => {
+describe("SinglePurposeForwarder", () => {
   async function setup() {
     const [caller, notTheCaller] = await hre.ethers.getSigners();
 

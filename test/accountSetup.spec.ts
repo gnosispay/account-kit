@@ -34,7 +34,7 @@ describe("account-setup", () => {
   });
 
   async function createAccount() {
-    const [owner, , , alice, bob, charlie] = await hre.ethers.getSigners();
+    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
     const transaction = populateAccountCreation(owner.address);
 
@@ -46,13 +46,13 @@ describe("account-setup", () => {
       rolesAddress
     );
 
-    await charlie.sendTransaction(transaction);
+    await relayer.sendTransaction(transaction);
 
     return {
       owner,
-      alice,
-      bob,
-      charlie,
+      spender,
+      receiver,
+      relayer,
       safe: ISafe__factory.connect(safeAddress, hre.ethers.provider),
       rolesModifier: IRolesModifier__factory.connect(
         rolesAddress,
@@ -70,14 +70,14 @@ describe("account-setup", () => {
   }
 
   it("setup deploys and enables two mods", async () => {
-    const { owner, alice, bob, safe, safeAddress } =
+    const { owner, spender, receiver, relayer, safe, safeAddress } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
     const config = createAccountConfig({
       owner: owner.address,
-      spender: alice.address,
-      receiver: bob.address,
+      spender: spender.address,
+      receiver: receiver.address,
     });
 
     const delayAddress = predictDelayAddress(safeAddress);
@@ -95,7 +95,7 @@ describe("account-setup", () => {
     expect(await provider.getCode(rolesAddress)).to.equal("0x");
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
-    await alice.sendTransaction(transaction);
+    await relayer.sendTransaction(transaction);
 
     expect(await provider.getCode(rolesAddress)).to.not.equal("0x");
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
@@ -106,9 +106,9 @@ describe("account-setup", () => {
   it("setup correctly configures Roles", async () => {
     const {
       owner,
-      alice,
-      bob,
-      charlie,
+      spender,
+      receiver,
+      relayer,
       safe,
       rolesModifier,
       safeAddress,
@@ -121,8 +121,8 @@ describe("account-setup", () => {
 
     const account = createAccountConfig({
       owner: owner.address,
-      spender: alice.address,
-      receiver: bob.address,
+      spender: spender.address,
+      receiver: receiver.address,
       period: PERIOD,
       token: GNO,
       amount: AMOUNT,
@@ -135,10 +135,14 @@ describe("account-setup", () => {
       account,
       (...args) => owner.signTypedData(...args)
     );
-    await charlie.sendTransaction(transaction);
+    await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
     expect(await rolesModifier.owner()).to.equal(forwarderAddress);
+
+    expect(await rolesModifier.isModuleEnabled(owner.address)).to.be.false;
+    expect(await rolesModifier.isModuleEnabled(spender.address)).to.be.true;
+    expect(await rolesModifier.isModuleEnabled(receiver.address)).to.be.false;
 
     const {
       refillAmount,
@@ -154,8 +158,8 @@ describe("account-setup", () => {
     expect(maxBalance).to.equal(AMOUNT);
   });
 
-  it("setup correctly configures delay", async () => {
-    const { owner, alice, bob, safe, delayModule } =
+  it("setup correctly configures Delay", async () => {
+    const { owner, spender, receiver, relayer, safe, delayModule } =
       await loadFixture(createAccount);
 
     const safeAddress = await safe.getAddress();
@@ -164,8 +168,8 @@ describe("account-setup", () => {
 
     const account = createAccountConfig({
       owner: owner.address,
-      spender: alice.address,
-      receiver: bob.address,
+      spender: spender.address,
+      receiver: receiver.address,
       cooldown: COOLDOWN,
     });
 
@@ -175,9 +179,14 @@ describe("account-setup", () => {
       (...args) => owner.signTypedData(...args)
     );
 
-    await bob.sendTransaction(transaction);
+    await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
+
+    expect(await delayModule.isModuleEnabled(owner.address)).to.be.true;
+    expect(await delayModule.isModuleEnabled(spender.address)).to.be.false;
+    expect(await delayModule.isModuleEnabled(receiver.address)).to.be.false;
+
     expect(await delayModule.owner()).to.equal(safeAddress);
     expect(await delayModule.txCooldown()).to.equal(9999);
     expect(await delayModule.queueNonce()).to.equal(

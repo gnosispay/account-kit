@@ -1,31 +1,27 @@
-import { ZeroAddress } from "ethers";
-
 import deployments from "../deployments";
-import { AllowanceTransfer, TransactionData } from "../types";
+import { TransactionData, Transfer } from "../types";
+import { SPENDING_ROLE_KEY, predictRolesAddress } from "./predictModuleAddress";
+import { IERC20__factory } from "../../typechain-types";
 
 export default function populateAllowanceTransfer(
   account: string,
-  transfer: AllowanceTransfer
+  { token, to, amount }: Transfer
 ): TransactionData {
-  const { iface, address } = deployments.allowanceSingleton;
+  const { iface } = deployments.rolesMastercopy;
+  const address = predictRolesAddress(account);
 
   return {
     to: address,
-    data: iface.encodeFunctionData("executeAllowanceTransfer", [
-      account,
-      transfer.token,
-      transfer.to,
-      transfer.amount,
-      ZeroAddress, // paymentToken
-      0, // payment
-      transfer.spender,
-      "0x",
+    data: iface.encodeFunctionData("execTransactionWithRole", [
+      token,
+      0,
+      IERC20__factory.createInterface().encodeFunctionData("transfer", [
+        to,
+        amount,
+      ]),
+      0, // operation
+      SPENDING_ROLE_KEY,
+      true, // shouldRevert
     ]),
   };
 }
-
-// // workaround https://github.com/safe-global/safe-modules/issues/70
-// function signaturePatch(signature: string) {
-//   const v = parseInt(signature.slice(130, 132), 16);
-//   return `${signature.slice(0, 130)}${Number(v + 4).toString(16)}`;
-// }
