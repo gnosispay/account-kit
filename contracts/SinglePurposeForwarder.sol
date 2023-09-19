@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity ^0.8.0;
 
 contract SinglePurposeForwarder {
@@ -13,21 +13,16 @@ contract SinglePurposeForwarder {
   }
 
   fallback() external payable virtual {
-    address caller_ = caller;
+    if (msg.sender != caller) {
+      revert("Unauthorized Caller");
+    }
+
+    if (bytes4(msg.data) != selector) {
+      revert("Unauthorized Selector");
+    }
+
     address to_ = to;
-    bytes32 selector_ = bytes32(selector) >> 224;
-
     assembly {
-      // only caller allowed
-      if eq(eq(caller(), caller_), 0) {
-        revert(0, 0)
-      }
-
-      // only selector allowed
-      if eq(eq(shr(224, calldataload(0)), selector_), 0) {
-        revert(0, 0)
-      }
-
       // Copy msg.data. We take full control of memory because
       // won't return to Solidity code. No need to respect conventions,
       // we overwrite the Solidity scratch pad at memory position 0.
@@ -36,16 +31,14 @@ contract SinglePurposeForwarder {
       let result := call(gas(), to_, callvalue(), 0, calldatasize(), 0, 0)
 
       // Copy the returned data.
-      returndatacopy(0, 0, returndatasize())
+      let size := returndatasize()
+      returndatacopy(0, 0, size)
 
-      switch result
-      // call returns 0 on error.
-      case 0 {
-        revert(0, returndatasize())
+      if eq(result, 0) {
+        revert(0, size)
       }
-      default {
-        return(0, returndatasize())
-      }
+
+      return(0, size)
     }
   }
 }

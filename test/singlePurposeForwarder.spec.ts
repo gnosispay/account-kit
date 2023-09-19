@@ -44,8 +44,9 @@ describe.only("SinglePurposeForwarder", () => {
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
 
-    await expect(notTheCaller.sendTransaction({ ...transaction, to })).to.be
-      .reverted;
+    await expect(
+      notTheCaller.sendTransaction({ ...transaction, to })
+    ).to.be.revertedWith("Unauthorized Caller");
 
     await expect(caller.sendTransaction({ ...transaction, to })).to.not.be
       .reverted;
@@ -59,8 +60,9 @@ describe.only("SinglePurposeForwarder", () => {
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
 
-    await expect(caller.sendTransaction({ ...transactionOther, to })).to.be
-      .reverted;
+    await expect(
+      caller.sendTransaction({ ...transactionOther, to })
+    ).to.be.to.be.revertedWith("Unauthorized Selector");
 
     await expect(caller.sendTransaction({ ...transaction, to })).to.not.be
       .reverted;
