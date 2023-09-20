@@ -1,3 +1,7 @@
+import {
+  getSingletonFactoryInfo,
+  SingletonFactoryInfo,
+} from "@safe-global/safe-singleton-factory";
 import assert from "assert";
 import {
   AbiCoder,
@@ -6,10 +10,6 @@ import {
   keccak256,
   ZeroHash,
 } from "ethers";
-import {
-  getSingletonFactoryInfo,
-  SingletonFactoryInfo,
-} from "@safe-global/safe-singleton-factory";
 
 import { predictRolesAddress } from "./predictModuleAddress";
 import {

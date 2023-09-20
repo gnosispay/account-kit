@@ -78,7 +78,7 @@ describe("allowanceReconfig", () => {
   }
 
   it("correctly reconfigures allowance", async () => {
-    const { eoa, roles, safeAddress, config } = await loadFixture(setupAccount);
+    const { eoa, roles, safeAddress } = await loadFixture(setupAccount);
 
     let allowance = await roles.allowances(ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.not.equal(1);

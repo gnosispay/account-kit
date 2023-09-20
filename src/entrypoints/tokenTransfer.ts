@@ -1,7 +1,8 @@
 import { ZeroAddress } from "ethers";
 
-import { typedDataForSafeTransaction } from "../eip712";
+import { IERC20__factory } from "../../typechain-types";
 import deployments from "../deployments";
+import { typedDataForSafeTransaction } from "../eip712";
 
 import {
   OperationType,
@@ -9,7 +10,6 @@ import {
   TransactionData,
   Transfer,
 } from "../types";
-import { IERC20__factory } from "../../typechain-types";
 
 export default async function populateTokenTransfer(
   { safe, chainId, nonce }: { safe: string; chainId: number; nonce: number },

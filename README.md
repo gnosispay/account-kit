@@ -63,7 +63,7 @@ await provider.sendTransaction(transaction);
 
 ## <a name="token-transfer">Token Transfer</a>
 
-Signs a ERC20 token transfer from account. To be used on freshly created accounts (before setup). The resulting transaction is relay ready.
+Signs a ERC20 token transfer out of the safe. To be used on freshly created safes (before setup). The resulting transaction is relay ready.
 
 ```js
 import { populateTokenTransfer } from "@gnosispay/account-kit";
@@ -80,7 +80,7 @@ const amount = `<bigint>`;
 const transaction = await populateAccountSetup(
   { safe, chainId, nonce },
   { token, to, amount },
-  (domain, types, message) => owner.signTypedData(domain, types, message) // eip712 sig
+  (domain, types, message) => eoa.signTypedData(domain, types, message) // eip712 sig
 );
 
 await provider.sendTransaction(transaction);
@@ -88,7 +88,7 @@ await provider.sendTransaction(transaction);
 
 ## <a name="allowance-transfer">Allowance Transfer</a>
 
-Generates an ERC20 token transfer via the RolesMod's AllowanceSpend Role. The generated transaction is unsigned, and can only be sent by the spender, which is the only account configured on that role.
+Generates an ERC20 token transfer via the RolesMod's AllowanceSpend Role. The generated transaction is unsigned, and can only be sent by the spender, which is the only account configured on the role.
 
 ```js
 import { populateAllowanceTransfer } from "@gnosispay/account-kit";
@@ -143,7 +143,7 @@ await spender.sendTransaction(transaction);
 
 ## <a name="account-query">Account Query</a>
 
-Creates a multicall payload that collects all data required to assess if a given GnosisPay account passes integrity requirements.
+Creates a multicall payload that collects all data required to assess if a given GnosisPay account passes integrity requirements. It also computed the accrued available allowance granted to spender.
 
 ```js
 import {

@@ -233,7 +233,7 @@ function evaluateOwners(
 function evaluateModules({ safe }: { safe: string }, result: string) {
   const { iface } = deployments.safeMastercopy;
 
-  let [enabledModules]: string[][] = iface.decodeFunctionResult(
+  const [enabledModules]: string[][] = iface.decodeFunctionResult(
     "getModulesPaginated",
     result
   );

@@ -95,7 +95,7 @@ describe("account-query", () => {
   });
 
   it("calculates accrued allowance", async () => {
-    const { eoa, safeAddress, roles, config } = await loadFixture(setupAccount);
+    const { eoa, safeAddress, config } = await loadFixture(setupAccount);
 
     const REFILL = 100;
 
