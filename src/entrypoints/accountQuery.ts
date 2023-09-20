@@ -1,22 +1,19 @@
 import assert from "assert";
-import { AbiCoder } from "ethers";
+import { AbiCoder, getAddress } from "ethers";
 
-import deployments from "../deployments";
-
-import { AccountIntegrityStatus, TransactionData } from "../types";
 import {
   ALLOWANCE_KEY,
   predictDelayAddress,
   predictRolesAddress,
 } from "./predictModuleAddress";
 import { predictForwarderAddress } from "./predictSingletonAddress";
+import deployments from "../deployments";
+
+import { AccountIntegrityStatus, TransactionData } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
-export default function populateAccountQuery(
-  account: string,
-  { spender, token }: { spender: string; token: string }
-): TransactionData {
+export default function populateAccountQuery(account: string): TransactionData {
   const safe = {
     address: account,
     iface: deployments.safeMastercopy.iface,
@@ -83,6 +80,13 @@ export default function populateAccountQuery(
         allowFailure: true,
         callData: delay.iface.encodeFunctionData("queueNonce"),
       },
+      {
+        target: multicall.address,
+        allowFailure: false,
+        callData: multicall.iface.encodeFunctionData(
+          "getCurrentBlockTimestamp"
+        ),
+      },
     ],
   ]);
 
@@ -108,13 +112,6 @@ export function evaluateAccountQuery(
       functionResult
     );
 
-    if (aggregate3Result.length != 9) {
-      return {
-        status: AccountIntegrityStatus.UnexpectedError,
-        balance: BigInt(0),
-      };
-    }
-
     const [
       [ownersSuccess, ownersResult],
       [thresholdSuccess, thresholdResult],
@@ -125,6 +122,7 @@ export function evaluateAccountQuery(
       [txCooldownSuccess, txCooldownResult],
       [txNonceSuccess, txNonceResult],
       [queueNonceSuccess, queueNonceResult],
+      [, blockTimestampResult],
     ] = aggregate3Result;
 
     if (
@@ -194,7 +192,7 @@ export function evaluateAccountQuery(
 
     return {
       status: AccountIntegrityStatus.Ok,
-      balance: extractBalance(allowanceResult),
+      balance: extractBalance(allowanceResult, blockTimestampResult),
     };
   } catch (e) {
     return {
@@ -241,9 +239,8 @@ function evaluateModules(
     return false;
   }
 
-  enabledModules = enabledModules.map((m: string) => m.toLowerCase());
-  const delayAddress = predictDelayAddress(safe).toLowerCase();
-  const rolesAddress = predictRolesAddress(safe).toLowerCase();
+  const delayAddress = predictDelayAddress(safe);
+  const rolesAddress = predictRolesAddress(safe);
 
   return (
     enabledModules.includes(delayAddress) &&
@@ -291,19 +288,27 @@ function evaluateDelayConfig(
 }
 
 function evaluateDelayQueue(nonceResult: string, queueResult: string) {
-  // const { iface } = deployments.delayMastercopy;
-  // const [nonce] = iface.decodeFunctionResult("txNonce", nonceResult);
-  // const [queue] = iface.decodeFunctionResult("queueNonce", queueResult);
-  // return nonce == queue;
   return nonceResult == queueResult;
 }
 
-function extractBalance(allowanceResult: string) {
-  const { iface } = deployments.allowanceSingleton;
+function extractBalance(allowanceResult: string, blockTimestampResult: string) {
+  const { iface } = deployments.rolesMastercopy;
 
-  const [refill, maxBalance, period, balance, timestamp] =
+  const blockTimestamp = BigInt(blockTimestampResult);
+  const [refill, maxBalance, period, balance, timestamp]: bigint[] =
     iface.decodeFunctionResult("allowances", allowanceResult);
 
-  // todo put onchain math heref
-  return balance;
+  assert(typeof refill == "bigint");
+  assert(typeof maxBalance == "bigint");
+  assert(typeof period == "bigint");
+  assert(typeof balance == "bigint");
+  assert(typeof timestamp == "bigint");
+
+  if (period == BigInt(0) || blockTimestamp < timestamp + period) {
+    return balance;
+  }
+
+  const elapsedIntervals = (blockTimestamp - timestamp) / period;
+  const balanceUncapped = balance + refill * elapsedIntervals;
+  return balanceUncapped < maxBalance ? balanceUncapped : maxBalance;
 }

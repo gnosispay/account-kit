@@ -1,4 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
@@ -28,11 +28,14 @@ import {
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
+import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
+import deployments from "../src/deployments";
+import { AbiCoder } from "ethers";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
 
-describe.only("account-query", () => {
+describe("account-query", () => {
   before(async () => {
     await fork(29800000);
   });
@@ -77,7 +80,8 @@ describe.only("account-query", () => {
       safe: ISafe__factory.connect(safeAddress, relayer),
       delay: IDelayModule__factory.connect(delayAddress, relayer),
       roles: IRolesModifier__factory.connect(rolesAddress, relayer),
-      safeAddress: safeAddress,
+      safeAddress,
+      rolesAddress,
       config,
     };
   }
@@ -92,6 +96,40 @@ describe.only("account-query", () => {
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.balance).to.equal(config.amount);
+  });
+
+  it("calculates accrued allowance", async () => {
+    const { owner, safeAddress, roles, config } =
+      await loadFixture(setupAccount);
+
+    const REFILL = 100;
+
+    const timestamp = (await hre.ethers.provider.getBlock("latest"))
+      ?.timestamp as number;
+
+    const transaction = populateAllowanceReconfig(
+      {
+        owner: owner.address,
+        safe: safeAddress,
+      },
+      { period: 1000, refill: REFILL, balance: 0, timestamp }
+    );
+    await owner.sendTransaction(transaction);
+
+    let result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
+    expect(result.balance).to.equal(0);
+
+    // go forward 1200 seconds
+    await mine(3, { interval: 600 });
+
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
+    expect(result.balance).to.equal(REFILL);
   });
 
   it("passes and reflects recent spending on the result", async () => {
@@ -345,7 +383,7 @@ describe.only("account-query", () => {
 
     const transaction = populateAllowanceReconfig(
       { owner: owner.address, safe: safeAddress },
-      { amount: BigInt(0), period: 0 }
+      { refill: 0, period: 0 }
     );
 
     await expect(spender.sendTransaction(transaction)).to.be.reverted;
@@ -365,7 +403,7 @@ async function evaluateAccount(
   { owner, safe }: { owner: string; safe: string },
   config: AccountConfig
 ) {
-  const { to, data } = populateAccountQuery(safe, config);
+  const { to, data } = populateAccountQuery(safe);
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
   return evaluateAccountQuery({ owner, safe }, config, resultData);
 }

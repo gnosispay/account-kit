@@ -1,9 +1,5 @@
-import { AbiCoder, ZeroAddress, ZeroHash } from "ethers";
 import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
-
-import deployments from "../deployments";
-import { typedDataForSafeTransaction } from "../eip712";
-import multisendEncode from "../multisend";
+import { AbiCoder, ZeroAddress, ZeroHash } from "ethers";
 
 import {
   ALLOWANCE_KEY,
@@ -13,11 +9,14 @@ import {
   predictDelayAddress,
   predictRolesAddress,
 } from "./predictModuleAddress";
-
 import {
   forwarderBytecode,
   predictForwarderAddress,
 } from "./predictSingletonAddress";
+import { IERC20__factory } from "../../typechain-types";
+import deployments from "../deployments";
+import { typedDataForSafeTransaction } from "../eip712";
+import multisendEncode from "../multisend";
 
 import {
   AccountConfig,
@@ -28,8 +27,6 @@ import {
   RolesOperator,
   RolesExecutionOptions,
 } from "../types";
-
-import { IERC20__factory } from "../../typechain-types";
 
 export default async function populateAccountSetup(
   { account, chainId, nonce }: ExecutionConfig,

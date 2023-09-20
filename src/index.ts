@@ -3,16 +3,16 @@ import populateAccountQuery, {
   evaluateAccountQuery,
 } from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
-import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
 import populateAllowanceReconfig from "./entrypoints/allowanceReconfig";
-import populateTokenTransfer from "./entrypoints/tokenTransfer";
+import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
 
-import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import {
   predictDelayAddress,
   predictRolesAddress,
 } from "./entrypoints/predictModuleAddress";
+import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import { predictForwarderAddress } from "./entrypoints/predictSingletonAddress";
+import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 export * from "./types";
 

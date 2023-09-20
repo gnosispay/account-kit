@@ -1,7 +1,7 @@
-import deployments from "../deployments";
-import { TransactionData, Transfer } from "../types";
 import { SPENDING_ROLE_KEY, predictRolesAddress } from "./predictModuleAddress";
 import { IERC20__factory } from "../../typechain-types";
+import deployments from "../deployments";
+import { TransactionData, Transfer } from "../types";
 
 export default function populateAllowanceTransfer(
   account: string,

@@ -1,11 +1,11 @@
-import deployments from "../deployments";
-import { AccountAddresses, AllowanceConfig, TransactionData } from "../types";
 import { ALLOWANCE_KEY } from "./predictModuleAddress";
 import { predictForwarderAddress } from "./predictSingletonAddress";
+import deployments from "../deployments";
+import { AccountAddresses, AllowanceConfig, TransactionData } from "../types";
 
 export default function populateAllowanceReconfig(
   { owner, safe }: AccountAddresses,
-  { amount, period }: AllowanceConfig
+  { period, refill, balance, timestamp }: AllowanceConfig
 ): TransactionData {
   const { iface } = deployments.rolesMastercopy;
 
@@ -14,15 +14,17 @@ export default function populateAllowanceReconfig(
     safe,
   });
 
+  const maxBalance = refill;
+
   return {
     to: forwarder,
     data: iface.encodeFunctionData("setAllowance", [
       ALLOWANCE_KEY,
-      amount,
-      amount,
-      amount,
+      balance || 0,
+      maxBalance,
+      refill,
       period,
-      0,
+      timestamp || 0,
     ]),
   };
 }

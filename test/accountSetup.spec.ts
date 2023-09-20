@@ -17,15 +17,14 @@ import {
   predictSafeAddress,
 } from "../src";
 
+import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
 import {
   IDelayModule__factory,
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
 
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
-
-describe.only("account-setup", () => {
+describe("account-setup", () => {
   before(async () => {
     await fork(29800000);
   });

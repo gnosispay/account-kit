@@ -1,11 +1,10 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { expect } from "chai";
 import hre from "hardhat";
 import {
   SinglePurposeForwarder__factory,
   TestContract__factory,
 } from "../typechain-types";
-
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { expect } from "chai";
 
 describe("SinglePurposeForwarder", () => {
   async function setup() {

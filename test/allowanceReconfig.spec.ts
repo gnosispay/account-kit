@@ -11,27 +11,24 @@ import {
   moveERC20,
 } from "./test-helpers/setup";
 import {
-  evaluateAccountQuery,
   populateAccountCreation,
-  populateAccountQuery,
   populateAccountSetup,
   populateAllowanceReconfig,
   predictDelayAddress,
   predictSafeAddress,
   predictRolesAddress,
 } from "../src";
-import { AccountConfig } from "../src/types";
+import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
 import {
   IDelayModule__factory,
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
 
 const PERIOD = 12345;
 const AMOUNT = 76543;
 
-describe.only("allowanceReconfig", () => {
+describe("allowanceReconfig", () => {
   before(async () => {
     await fork(29800000);
   });
@@ -91,7 +88,7 @@ describe.only("allowanceReconfig", () => {
 
     const transaction = populateAllowanceReconfig(
       { owner: owner.address, safe: safeAddress },
-      { amount: 1, period: 1 }
+      { refill: 1, period: 1 }
     );
 
     await owner.sendTransaction(transaction);
@@ -107,7 +104,7 @@ describe.only("allowanceReconfig", () => {
 
     const transaction = populateAllowanceReconfig(
       { owner: owner.address, safe: safeAddress },
-      { amount: 7, period: 7 }
+      { refill: 7, period: 7 }
     );
 
     const rolesAddress = predictRolesAddress(safeAddress);

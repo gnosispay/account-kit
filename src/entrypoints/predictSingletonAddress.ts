@@ -1,7 +1,3 @@
-import {
-  getSingletonFactoryInfo,
-  SingletonFactoryInfo,
-} from "@safe-global/safe-singleton-factory";
 import assert from "assert";
 import {
   AbiCoder,
@@ -11,10 +7,15 @@ import {
   ZeroHash,
 } from "ethers";
 import {
+  getSingletonFactoryInfo,
+  SingletonFactoryInfo,
+} from "@safe-global/safe-singleton-factory";
+
+import { predictRolesAddress } from "./predictModuleAddress";
+import {
   IRolesModifier__factory,
   SinglePurposeForwarder__factory,
 } from "../../typechain-types";
-import { predictRolesAddress } from "./predictModuleAddress";
 
 export function predictForwarderAddress({
   owner,

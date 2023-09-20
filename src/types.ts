@@ -34,8 +34,10 @@ export type AllowanceAddresses = {
 };
 
 export type AllowanceConfig = {
-  amount: bigint | number;
   period: bigint | number;
+  refill: bigint | number;
+  balance?: bigint | number;
+  timestamp?: bigint | number;
 };
 
 export type AccountConfig = {
