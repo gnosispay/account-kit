@@ -4,11 +4,15 @@ import populateAccountQuery, {
 } from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
 import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
+import populateAllowanceReconfig from "./entrypoints/allowanceReconfig";
 import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 import predictSafeAddress from "./entrypoints/predictSafeAddress";
-import { predictDelayAddress } from "./entrypoints/predictModuleAddress";
-import { predictRolesAddress } from "./entrypoints/predictModuleAddress";
+import {
+  predictDelayAddress,
+  predictRolesAddress,
+} from "./entrypoints/predictModuleAddress";
+import { predictForwarderAddress } from "./entrypoints/predictSingletonAddress";
 
 export * from "./types";
 
@@ -17,11 +21,13 @@ export {
   populateAccountCreation,
   populateAccountSetup,
   populateAllowanceTransfer,
+  populateAllowanceReconfig,
   populateTokenTransfer,
   // predict account setup addresses
   predictDelayAddress,
   predictRolesAddress,
   predictSafeAddress,
+  predictForwarderAddress,
   // integrity and status query
   populateAccountQuery,
   evaluateAccountQuery,

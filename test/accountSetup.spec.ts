@@ -12,6 +12,7 @@ import {
   populateAccountCreation,
   populateAccountSetup,
   predictDelayAddress,
+  predictForwarderAddress,
   predictRolesAddress,
   predictSafeAddress,
 } from "../src";
@@ -23,7 +24,6 @@ import {
 } from "../typechain-types";
 
 import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
-import { predictForwarderAddress } from "../src/entrypoints/predictSingletonAddress";
 
 describe.only("account-setup", () => {
   before(async () => {

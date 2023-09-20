@@ -12,14 +12,15 @@ import {
   moveERC20,
 } from "./test-helpers/setup";
 import {
+  evaluateAccountQuery,
   populateAccountCreation,
+  populateAccountQuery,
   populateAccountSetup,
+  populateAllowanceReconfig,
   populateAllowanceTransfer,
   predictDelayAddress,
-  predictSafeAddress,
-  populateAccountQuery,
-  evaluateAccountQuery,
   predictRolesAddress,
+  predictSafeAddress,
 } from "../src";
 import { AccountConfig, AccountIntegrityStatus } from "../src/types";
 import {
@@ -27,8 +28,6 @@ import {
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
-import { predictForwarderAddress } from "../src/entrypoints/predictSingletonAddress";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
@@ -335,7 +334,7 @@ describe.only("account-query", () => {
   });
 
   it("fails when allowance for spender was removed", async () => {
-    const { owner, spender, receiver, roles, safeAddress, config } =
+    const { owner, spender, receiver, safeAddress, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
@@ -344,24 +343,14 @@ describe.only("account-query", () => {
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
-    const transaction = await roles.setAllowance.populateTransaction(
-      ALLOWANCE_KEY,
-      0,
-      0,
-      0,
-      0,
-      0
+    const transaction = populateAllowanceReconfig(
+      { owner: owner.address, safe: safeAddress },
+      { amount: BigInt(0), period: 0 }
     );
-    const forwarder = predictForwarderAddress({
-      owner: owner.address,
-      safe: safeAddress,
-    });
 
-    await expect(spender.sendTransaction({ ...transaction, to: forwarder })).to
-      .be.reverted;
-    await expect(receiver.sendTransaction({ ...transaction, to: forwarder })).to
-      .be.reverted;
-    await owner.sendTransaction({ ...transaction, to: forwarder });
+    await expect(spender.sendTransaction(transaction)).to.be.reverted;
+    await expect(receiver.sendTransaction(transaction)).to.be.reverted;
+    await owner.sendTransaction(transaction);
 
     // integrity fails
     result = await evaluateAccount(

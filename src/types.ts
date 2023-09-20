@@ -22,9 +22,25 @@ export type ExecutionConfig = {
   nonce: bigint | number;
 };
 
+export type AccountAddresses = {
+  owner: string;
+  safe: string;
+};
+
+export type AllowanceAddresses = {
+  owner: string;
+  spender: string;
+  receiver: string;
+};
+
+export type AllowanceConfig = {
+  amount: bigint | number;
+  period: bigint | number;
+};
+
 export type AccountConfig = {
-  owner: string; // the owner of the account
-  //** for roles mod **/
+  owner: string;
+  //** defaults for the allowance **/
   spender: string; // the gnosis signer
   receiver: string; // the settlement safe
   token: string; // the address of the token used for payments
@@ -32,6 +48,12 @@ export type AccountConfig = {
   period: number; // period after which an allowance will be replenished (IN SECONDS)
   //** for delay mod **/
   cooldown: number; // execution delay for owner before he execute transactions (IN SECONDS)
+};
+
+export type Transfer = {
+  token: string;
+  to: string;
+  amount: bigint | number;
 };
 
 export enum AccountIntegrityStatus {
@@ -45,19 +67,6 @@ export enum AccountIntegrityStatus {
   DelayQueueNotEmpty,
   UnexpectedError,
 }
-
-export type Transfer = {
-  token: string;
-  to: string;
-  amount: bigint | number;
-};
-
-export type AllowanceTransfer = {
-  spender: string;
-  token: string;
-  to: string;
-  amount: bigint | number;
-};
 
 export enum RolesParameterType {
   None = 0,
