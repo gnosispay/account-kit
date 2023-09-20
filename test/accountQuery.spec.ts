@@ -11,6 +11,7 @@ import {
   forkReset,
   moveERC20,
 } from "./test-helpers/setup";
+
 import {
   evaluateAccountQuery,
   populateAccountCreation,
@@ -18,10 +19,11 @@ import {
   populateAccountSetup,
   populateAllowanceReconfig,
   populateAllowanceTransfer,
-  predictDelayAddress,
-  predictRolesAddress,
   predictSafeAddress,
 } from "../src";
+import { predictDelayAddress } from "../src/deployers/delay";
+import { predictRolesAddress } from "../src/deployers/roles";
+
 import { AccountConfig, AccountIntegrityStatus } from "../src/types";
 import {
   IDelayModule__factory,
@@ -102,12 +104,15 @@ describe("account-query", () => {
     const timestamp = (await hre.ethers.provider.getBlock("latest"))
       ?.timestamp as number;
 
-    const transaction = populateAllowanceReconfig(
+    const transaction = await populateAllowanceReconfig(
       {
         eoa: eoa.address,
         safe: safeAddress,
+        chainId: 31337,
+        nonce: 0,
       },
-      { period: 1000, refill: REFILL, balance: 0, timestamp }
+      { period: 1000, refill: REFILL, balance: 0, timestamp },
+      (...args) => eoa.signTypedData(...args)
     );
     await eoa.sendTransaction(transaction);
 
@@ -367,33 +372,6 @@ describe("account-query", () => {
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
-  });
-
-  it("fails when allowance for spender was removed", async () => {
-    const { eoa, spender, receiver, safeAddress, config } =
-      await loadFixture(setupAccount);
-
-    let result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-
-    const transaction = populateAllowanceReconfig(
-      { eoa: eoa.address, safe: safeAddress },
-      { refill: 0, period: 0 }
-    );
-
-    await expect(spender.sendTransaction(transaction)).to.be.reverted;
-    await expect(receiver.sendTransaction(transaction)).to.be.reverted;
-    await eoa.sendTransaction(transaction);
-
-    // integrity fails
-    result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
-    expect(result.status).to.equal(AccountIntegrityStatus.RolesMisconfigured);
   });
 });
 

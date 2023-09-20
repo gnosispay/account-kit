@@ -5,29 +5,20 @@ import populateAccountQuery, {
 import populateAccountSetup from "./entrypoints/accountSetup";
 import populateAllowanceReconfig from "./entrypoints/allowanceReconfig";
 import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
-
-import {
-  predictDelayAddress,
-  predictRolesAddress,
-} from "./entrypoints/predictModuleAddress";
 import predictSafeAddress from "./entrypoints/predictSafeAddress";
-import { predictForwarderAddress } from "./entrypoints/predictSingletonAddress";
 import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 export * from "./types";
 
 export {
-  // build and sign, relayer/gelato ready transactions
+  // populate transactions
   populateAccountCreation,
   populateAccountSetup,
   populateAllowanceTransfer,
   populateAllowanceReconfig,
   populateTokenTransfer,
   // predict account setup addresses
-  predictDelayAddress,
-  predictRolesAddress,
   predictSafeAddress,
-  predictForwarderAddress,
   // integrity and status query
   populateAccountQuery,
   evaluateAccountQuery,

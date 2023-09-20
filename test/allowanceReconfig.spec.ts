@@ -10,15 +10,18 @@ import {
   forkReset,
   moveERC20,
 } from "./test-helpers/setup";
+
 import {
   populateAccountCreation,
   populateAccountSetup,
   populateAllowanceReconfig,
-  predictDelayAddress,
   predictSafeAddress,
-  predictRolesAddress,
 } from "../src";
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
+import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
+import { predictDelayAddress } from "../src/deployers/delay";
+import { predictForwarderAddress } from "../src/deployers/forwarder";
+import { predictRolesAddress } from "../src/deployers/roles";
+
 import {
   IDelayModule__factory,
   IRolesModifier__factory,
@@ -78,41 +81,56 @@ describe("allowanceReconfig", () => {
   }
 
   it("correctly reconfigures allowance", async () => {
-    const { eoa, roles, safeAddress } = await loadFixture(setupAccount);
+    const { eoa, relayer, roles, safeAddress } =
+      await loadFixture(setupAccount);
 
-    let allowance = await roles.allowances(ALLOWANCE_KEY);
+    let allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
     expect(allowance.refillInterval).to.not.equal(1);
     expect(allowance.refillAmount).to.not.equal(1);
 
-    const transaction = populateAllowanceReconfig(
-      { eoa: eoa.address, safe: safeAddress },
-      { refill: 1, period: 1 }
+    const transaction = await populateAllowanceReconfig(
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { refill: 1, period: 1 },
+      (...args) => eoa.signTypedData(...args)
     );
 
-    await eoa.sendTransaction(transaction);
+    await relayer.sendTransaction(transaction);
 
-    allowance = await roles.allowances(ALLOWANCE_KEY);
+    allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
     expect(allowance.refillInterval).to.equal(1);
     expect(allowance.refillAmount).to.equal(1);
   });
 
   it("only eoa can reconfigure allowance", async () => {
-    const { eoa, spender, receiver, safeAddress, roles } =
+    const { eoa, spender, relayer, safeAddress, roles } =
       await loadFixture(setupAccount);
 
-    const transaction = populateAllowanceReconfig(
-      { eoa: eoa.address, safe: safeAddress },
-      { refill: 7, period: 7 }
+    let transaction = await populateAllowanceReconfig(
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { refill: 7, period: 7 },
+      (...args) => spender.signTypedData(...args)
+    );
+    await expect(relayer.sendTransaction(transaction)).to.be.reverted;
+
+    transaction = await populateAllowanceReconfig(
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { refill: 7, period: 7 },
+      (...args) => eoa.signTypedData(...args)
     );
 
+    const forwarderAddress = predictForwarderAddress({
+      eoa: eoa.address,
+      safe: safeAddress,
+    });
     const rolesAddress = predictRolesAddress(safeAddress);
-    await expect(spender.sendTransaction(transaction)).to.be.reverted;
-    await expect(receiver.sendTransaction(transaction)).to.be.reverted;
-    await expect(eoa.sendTransaction({ ...transaction, to: rolesAddress })).to
-      .be.reverted;
-    await eoa.sendTransaction(transaction);
+    await expect(
+      relayer.sendTransaction({ ...transaction, to: forwarderAddress })
+    ).to.be.reverted;
+    await expect(relayer.sendTransaction({ ...transaction, to: rolesAddress }))
+      .to.be.reverted;
+    await relayer.sendTransaction(transaction);
 
-    const allowance = await roles.allowances(ALLOWANCE_KEY);
+    const allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
     expect(allowance.refillInterval).to.equal(7);
     expect(allowance.refillAmount).to.equal(7);
   });

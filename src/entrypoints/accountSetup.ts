@@ -1,19 +1,15 @@
-import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
-import { AbiCoder, ZeroAddress, ZeroHash } from "ethers";
+import { AbiCoder, ZeroAddress } from "ethers";
 
-import {
-  ALLOWANCE_KEY,
-  SPENDING_ROLE_KEY,
-  encodeDelaySetUp,
-  encodeRolesSetUp,
-  predictDelayAddress,
-  predictRolesAddress,
-} from "./predictModuleAddress";
-import {
-  forwarderBytecode,
-  predictForwarderAddress,
-} from "./predictSingletonAddress";
 import { IERC20__factory } from "../../typechain-types";
+import { ALLOWANCE_SPENDING_KEY, ROLE_SPENDING_KEY } from "../constants";
+
+import { populateDelayCreation, predictDelayAddress } from "../deployers/delay";
+import {
+  populateForwarderCreation,
+  predictForwarderAddress,
+} from "../deployers/forwarder";
+import { populateRolesCreation, predictRolesAddress } from "../deployers/roles";
+import { populateStubCreation } from "../deployers/stub";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
@@ -76,11 +72,6 @@ function populateSafeTransaction(
 ): SafeTransactionData {
   const abi = AbiCoder.defaultAbiCoder();
 
-  const singletonFactory = {
-    address: getSingletonFactoryInfo(1)?.address as string, // 1 or 100 same
-  };
-  const { moduleProxyFactory } = deployments;
-
   const safe = {
     address: safeAddress,
     iface: deployments.safeMastercopy.iface,
@@ -93,7 +84,7 @@ function populateSafeTransaction(
     address: predictRolesAddress(safe.address),
     iface: deployments.rolesMastercopy.iface,
   };
-  const allowanceAdmin = {
+  const forwarder = {
     address: predictForwarderAddress({ eoa, safe: safe.address }),
   };
 
@@ -122,14 +113,7 @@ function populateSafeTransaction(
     /**
      * DEPLOY AND CONFIG DELAY MODULE
      */
-    {
-      to: moduleProxyFactory.address,
-      data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-        deployments.delayMastercopy.address,
-        encodeDelaySetUp(safe.address),
-        ZeroHash,
-      ]),
-    },
+    populateDelayCreation(safe.address),
     // configure cooldown on delay
     {
       to: delay.address,
@@ -143,18 +127,11 @@ function populateSafeTransaction(
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
      */
-    {
-      to: moduleProxyFactory.address,
-      data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-        deployments.rolesMastercopy.address,
-        encodeRolesSetUp(safe.address),
-        ZeroHash,
-      ]),
-    },
+    populateRolesCreation(safe.address),
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("setAllowance", [
-        ALLOWANCE_KEY,
+        ALLOWANCE_SPENDING_KEY,
         allowance, // balance
         allowance, // maxBalance
         allowance, // refill
@@ -166,21 +143,21 @@ function populateSafeTransaction(
       to: roles.address,
       data: roles.iface.encodeFunctionData("assignRoles", [
         spender,
-        [SPENDING_ROLE_KEY],
+        [ROLE_SPENDING_KEY],
         [true],
       ]),
     },
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("scopeTarget", [
-        SPENDING_ROLE_KEY,
+        ROLE_SPENDING_KEY,
         token,
       ]),
     },
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("scopeFunction", [
-        SPENDING_ROLE_KEY,
+        ROLE_SPENDING_KEY,
         token,
         IERC20__factory.createInterface().getFunction("transfer").selector,
         [
@@ -200,7 +177,7 @@ function populateSafeTransaction(
             parent: 0,
             paramType: RolesParameterType.Static,
             operator: RolesOperator.WithinAllowance,
-            compValue: ALLOWANCE_KEY,
+            compValue: ALLOWANCE_SPENDING_KEY,
           },
         ],
         RolesExecutionOptions.None,
@@ -209,17 +186,16 @@ function populateSafeTransaction(
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("transferOwnership", [
-        allowanceAdmin.address,
+        forwarder.address,
       ]),
     },
     /**
+     * DEPLOY STUB
+     */
+    populateStubCreation(eoa),
+    /**
      * DEPLOY FORWARDER
      */
-    {
-      to: singletonFactory.address,
-      data: `${ZeroHash}${forwarderBytecode({ eoa, safe: safe.address }).slice(
-        2
-      )}`,
-    },
+    populateForwarderCreation({ eoa, safe: safe.address }),
   ]);
 }

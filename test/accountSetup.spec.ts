@@ -11,13 +11,13 @@ import {
 import {
   populateAccountCreation,
   populateAccountSetup,
-  predictDelayAddress,
-  predictForwarderAddress,
-  predictRolesAddress,
   predictSafeAddress,
 } from "../src";
 
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
+import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
+import { predictDelayAddress } from "../src/deployers/delay";
+import { predictForwarderAddress } from "../src/deployers/forwarder";
+import { predictRolesAddress } from "../src/deployers/roles";
 import {
   IDelayModule__factory,
   IRolesModifier__factory,
@@ -157,7 +157,7 @@ describe("account-setup", () => {
       refillTimestamp,
       balance,
       maxBalance,
-    } = await rolesModifier.allowances(ALLOWANCE_KEY);
+    } = await rolesModifier.allowances(ALLOWANCE_SPENDING_KEY);
     expect(refillAmount).to.equal(AMOUNT);
     expect(refillInterval).to.equal(PERIOD);
     expect(refillTimestamp).to.equal(0);

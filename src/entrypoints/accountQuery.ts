@@ -1,15 +1,14 @@
 import assert from "assert";
 import { AbiCoder } from "ethers";
 
-import {
-  ALLOWANCE_KEY,
-  predictDelayAddress,
-  predictRolesAddress,
-} from "./predictModuleAddress";
-import { predictForwarderAddress } from "./predictSingletonAddress";
-import deployments from "../deployments";
+import { ALLOWANCE_SPENDING_KEY } from "../constants";
+import { predictDelayAddress } from "../deployers/delay";
+import { predictForwarderAddress } from "../deployers/forwarder";
+import { predictRolesAddress } from "../deployers/roles";
 
+import deployments from "../deployments";
 import { AccountIntegrityStatus, TransactionData } from "../types";
+import { SinglePurposeForwarder__factory } from "../../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
@@ -30,6 +29,10 @@ export default function populateAccountQuery({
     address: predictRolesAddress(safe.address),
     iface: deployments.rolesMastercopy.iface,
   };
+  // const forwarder = {
+  //   address: predictForwarderAddress({ eoa, safe: safeAddress }),
+  //   iface: SinglePurposeForwarder__factory.createInterface(),
+  // };
   const multicall = deployments.multicall;
 
   const data = multicall.iface.encodeFunctionData("aggregate3", [
@@ -60,7 +63,9 @@ export default function populateAccountQuery({
       {
         target: roles.address,
         allowFailure: true,
-        callData: roles.iface.encodeFunctionData("allowances", [ALLOWANCE_KEY]),
+        callData: roles.iface.encodeFunctionData("allowances", [
+          ALLOWANCE_SPENDING_KEY,
+        ]),
       },
       {
         target: delay.address,
@@ -155,9 +160,7 @@ export function evaluateAccountQuery(
       };
     }
 
-    if (
-      !evaluateRolesConfig({ eoa, safe }, rolesOwnerResult, allowanceResult)
-    ) {
+    if (!evaluateRolesConfig({ eoa, safe }, rolesOwnerResult)) {
       return {
         status: AccountIntegrityStatus.RolesMisconfigured,
         allowance: BigInt(0),
@@ -253,8 +256,7 @@ function evaluateModules({ safe }: { safe: string }, result: string) {
 
 function evaluateRolesConfig(
   { eoa, safe }: { eoa: string; safe: string },
-  rolesOwnerResult: string,
-  allowanceResult: string
+  rolesOwnerResult: string
 ) {
   const abi = AbiCoder.defaultAbiCoder();
   const { iface } = deployments.rolesMastercopy;
@@ -262,16 +264,7 @@ function evaluateRolesConfig(
   const [rolesOwner] = abi.decode(["address"], rolesOwnerResult);
   const forwarder = predictForwarderAddress({ eoa, safe });
 
-  const [refill, maxBalance, period, balance, timestamp] =
-    iface.decodeFunctionResult("allowances", allowanceResult);
-
-  assert(typeof refill == "bigint");
-  assert(typeof maxBalance == "bigint");
-  assert(typeof period == "bigint");
-  assert(typeof balance == "bigint");
-  assert(typeof timestamp == "bigint");
-
-  return rolesOwner === forwarder && period > 0 && refill > 0;
+  return rolesOwner === forwarder;
 }
 
 function evaluateDelayConfig(
