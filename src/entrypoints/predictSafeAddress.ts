@@ -9,7 +9,7 @@ export const SALT_NONCE = BigInt(
 );
 
 export default function predictSafeAddress(
-  owner: string,
+  eoa: string,
   saltNonce: bigint = SALT_NONCE
 ): string {
   const { address: factory } = deployments.safeProxyFactory;
@@ -18,10 +18,7 @@ export default function predictSafeAddress(
   const abi = AbiCoder.defaultAbiCoder();
 
   const salt = keccak256(
-    concat([
-      keccak256(initializer(owner)),
-      abi.encode(["uint256"], [saltNonce]),
-    ])
+    concat([keccak256(initializer(eoa)), abi.encode(["uint256"], [saltNonce])])
   );
 
   const deploymentData = concat([

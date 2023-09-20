@@ -50,29 +50,26 @@ export async function moveERC20(
 
 export function createAccountConfig({
   // for allowance
-  owner,
   spender,
   receiver,
   token = GNO,
-  amount = 1000000,
-  period = 60 * 24, // in minutes, 1 day
+  allowance = 1000000,
+  period = 60 * 60 * 24, // in seconds, 1 day
   // for delay
-  cooldown = 20, // in minutes, 20 minutes
+  cooldown = 60 * 20, // in seconds, 20 minutes
 }: {
-  owner: string;
   spender: string;
   receiver: string;
   token?: string;
-  amount?: number | bigint;
+  allowance?: number | bigint;
   period?: number;
   cooldown?: number;
 }): AccountConfig {
   return {
-    owner,
     spender,
     receiver,
     token,
-    amount,
+    allowance,
     period,
     cooldown,
   };

@@ -4,11 +4,11 @@ import deployments from "../deployments";
 import { TransactionData, Transfer } from "../types";
 
 export default function populateAllowanceTransfer(
-  account: string,
+  { safe }: { safe: string },
   { token, to, amount }: Transfer
 ): TransactionData {
   const { iface } = deployments.rolesMastercopy;
-  const address = predictRolesAddress(account);
+  const address = predictRolesAddress(safe);
 
   return {
     to: address,

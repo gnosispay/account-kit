@@ -1,5 +1,5 @@
 import assert from "assert";
-import { AbiCoder, getAddress } from "ethers";
+import { AbiCoder } from "ethers";
 
 import {
   ALLOWANCE_KEY,
@@ -13,14 +13,16 @@ import { AccountIntegrityStatus, TransactionData } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
-export default function populateAccountQuery(account: string): TransactionData {
+export default function populateAccountQuery(
+  safeAddress: string
+): TransactionData {
   const safe = {
-    address: account,
+    address: safeAddress,
     iface: deployments.safeMastercopy.iface,
   };
 
   const delay = {
-    address: predictDelayAddress(account),
+    address: predictDelayAddress(safeAddress),
     iface: deployments.delayMastercopy.iface,
   };
   const roles = {
@@ -97,7 +99,7 @@ export default function populateAccountQuery(account: string): TransactionData {
 }
 
 export function evaluateAccountQuery(
-  { owner, safe }: { owner: string; safe: string },
+  { eoa, safe }: { eoa: string; safe: string },
   { spender, cooldown }: { spender: string; cooldown: bigint | number },
   functionResult: string
 ): {
@@ -137,8 +139,8 @@ export function evaluateAccountQuery(
     }
 
     if (
-      !evaluateOwners(ownersResult, thresholdResult, spender) ||
-      !evaluateModules({ owner, safe }, modulesResult)
+      !evaluateOwners({ spender }, ownersResult, thresholdResult) ||
+      !evaluateModules({ safe }, modulesResult)
     ) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
@@ -154,7 +156,7 @@ export function evaluateAccountQuery(
     }
 
     if (
-      !evaluateRolesConfig({ owner, safe }, rolesOwnerResult, allowanceResult)
+      !evaluateRolesConfig({ eoa, safe }, rolesOwnerResult, allowanceResult)
     ) {
       return {
         status: AccountIntegrityStatus.RolesMisconfigured,
@@ -175,7 +177,11 @@ export function evaluateAccountQuery(
     }
 
     if (
-      !evaluateDelayConfig(delayOwnerResult, txCooldownResult, safe, cooldown)
+      !evaluateDelayConfig(
+        { safe, cooldown },
+        delayOwnerResult,
+        txCooldownResult
+      )
     ) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
@@ -203,9 +209,9 @@ export function evaluateAccountQuery(
 }
 
 function evaluateOwners(
+  { spender }: { spender: string },
   ownersResult: string,
-  thresholdResult: string,
-  spender: string
+  thresholdResult: string
 ) {
   if (BigInt(thresholdResult) !== BigInt(2)) {
     return false;
@@ -224,10 +230,7 @@ function evaluateOwners(
   );
 }
 
-function evaluateModules(
-  { owner, safe }: { owner: string; safe: string },
-  result: string
-) {
+function evaluateModules({ safe }: { safe: string }, result: string) {
   const { iface } = deployments.safeMastercopy;
 
   let [enabledModules]: string[][] = iface.decodeFunctionResult(
@@ -249,7 +252,7 @@ function evaluateModules(
 }
 
 function evaluateRolesConfig(
-  { owner, safe }: { owner: string; safe: string },
+  { eoa, safe }: { eoa: string; safe: string },
   rolesOwnerResult: string,
   allowanceResult: string
 ) {
@@ -257,7 +260,7 @@ function evaluateRolesConfig(
   const { iface } = deployments.rolesMastercopy;
 
   const [rolesOwner] = abi.decode(["address"], rolesOwnerResult);
-  const forwarder = predictForwarderAddress({ owner, safe });
+  const forwarder = predictForwarderAddress({ eoa, safe });
 
   const [refill, maxBalance, period, balance, timestamp] =
     iface.decodeFunctionResult("allowances", allowanceResult);
@@ -272,10 +275,9 @@ function evaluateRolesConfig(
 }
 
 function evaluateDelayConfig(
+  { safe, cooldown }: { safe: string; cooldown: bigint | number },
   ownerResult: string,
-  cooldownResult: string,
-  safe: string,
-  cooldown: bigint | number
+  cooldownResult: string
 ) {
   const abi = AbiCoder.defaultAbiCoder();
   const [owner] = abi.decode(["address"], ownerResult);

@@ -16,21 +16,19 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
-export type ExecutionConfig = {
-  account: string;
-  chainId: bigint | number;
-  nonce: bigint | number;
+export type Transfer = {
+  token: string;
+  to: string;
+  amount: bigint | number;
 };
 
-export type AccountAddresses = {
-  owner: string;
-  safe: string;
-};
-
-export type AllowanceAddresses = {
-  owner: string;
-  spender: string;
-  receiver: string;
+export type AccountConfig = {
+  spender: string; // the gnosis signer
+  receiver: string; // the settlement safe
+  token: string; // the address of the token used for payments
+  allowance: bigint | number; // the allowance amount granted to spender
+  period: number; // period, in seconds, after allowance will be replenished
+  cooldown: number; // delay, in seconds, for eoa before he can unilaterally execute transactions
 };
 
 export type AllowanceConfig = {
@@ -38,24 +36,6 @@ export type AllowanceConfig = {
   refill: bigint | number;
   balance?: bigint | number;
   timestamp?: bigint | number;
-};
-
-export type AccountConfig = {
-  owner: string;
-  //** defaults for the allowance **/
-  spender: string; // the gnosis signer
-  receiver: string; // the settlement safe
-  token: string; // the address of the token used for payments
-  amount: bigint | number; // the allowance amount granted to spender
-  period: number; // period after which an allowance will be replenished (IN SECONDS)
-  //** for delay mod **/
-  cooldown: number; // execution delay for owner before he execute transactions (IN SECONDS)
-};
-
-export type Transfer = {
-  token: string;
-  to: string;
-  amount: bigint | number;
 };
 
 export enum AccountIntegrityStatus {

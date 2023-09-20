@@ -9,20 +9,26 @@ import {
 
 import deployments from "../deployments";
 
-export function predictRolesAddress(account: string): string {
+// the role allowed to spend the allowance
+export const SPENDING_ROLE_KEY = keccak256(toUtf8Bytes("SPENDING_ROLE"));
+
+// the actual allowanced consumed by the role
+export const ALLOWANCE_KEY = keccak256(toUtf8Bytes("ALLOWANCE"));
+
+export function predictRolesAddress(safe: string): string {
   const mastercopy = deployments.rolesMastercopy.address;
-  return predictModuleAddress(mastercopy, encodeRolesSetUp(account));
+  return predictModuleAddress(mastercopy, encodeRolesSetUp(safe));
 }
 
-export function predictDelayAddress(account: string): string {
+export function predictDelayAddress(safe: string): string {
   const mastercopy = deployments.delayMastercopy.address;
-  return predictModuleAddress(mastercopy, encodeDelaySetUp(account));
+  return predictModuleAddress(mastercopy, encodeDelaySetUp(safe));
 }
 
-export function encodeDelaySetUp(safeAddress: string) {
+export function encodeDelaySetUp(safe: string) {
   const initializer = AbiCoder.defaultAbiCoder().encode(
     ["address", "address", "address", "uint256", "uint256"],
-    [safeAddress, safeAddress, safeAddress, 0, 0]
+    [safe, safe, safe, 0, 0]
   );
 
   return deployments.delayMastercopy.iface.encodeFunctionData("setUp", [
@@ -30,22 +36,16 @@ export function encodeDelaySetUp(safeAddress: string) {
   ]);
 }
 
-export function encodeRolesSetUp(safeAddress: string) {
+export function encodeRolesSetUp(safe: string) {
   const initializer = AbiCoder.defaultAbiCoder().encode(
     ["address", "address", "address"],
-    [safeAddress, safeAddress, safeAddress]
+    [safe, safe, safe]
   );
 
   return deployments.rolesMastercopy.iface.encodeFunctionData("setUp", [
     initializer,
   ]);
 }
-
-// the role allowed to spend the allowance
-export const SPENDING_ROLE_KEY = keccak256(toUtf8Bytes("SPENDING_ROLE"));
-
-// the actual allowanced consumed by the role
-export const ALLOWANCE_KEY = keccak256(toUtf8Bytes("ALLOWANCE"));
 
 function predictModuleAddress(mastercopy: string, encodedSetUpData: string) {
   const factory = deployments.moduleProxyFactory.address;

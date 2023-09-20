@@ -30,27 +30,26 @@ describe("allowance-tranfer", () => {
   });
 
   async function createAccount() {
-    const [owner, spender, receiver, other] = await hre.ethers.getSigners();
+    const [eoa, spender, receiver, other] = await hre.ethers.getSigners();
 
-    const safeAddress = predictSafeAddress(owner.address);
-    const createTransaction = populateAccountCreation(owner.address);
+    const safeAddress = predictSafeAddress(eoa.address);
+    const createTransaction = populateAccountCreation(eoa.address);
 
     await other.sendTransaction(createTransaction);
 
     await moveERC20(GNO_WHALE, safeAddress, GNO);
 
     const config = createAccountConfig({
-      owner: owner.address,
       spender: spender.address,
       receiver: receiver.address,
-      amount: 1000,
       token: GNO,
+      allowance: 1000,
     });
 
     const setupTransaction = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      (domain, types, message) => eoa.signTypedData(domain, types, message)
     );
 
     await other.sendTransaction(setupTransaction);
@@ -58,7 +57,7 @@ describe("allowance-tranfer", () => {
     const safe = ISafe__factory.connect(safeAddress, hre.ethers.provider);
 
     return {
-      owner,
+      eoa,
       spender,
       receiver,
       other,
@@ -76,11 +75,14 @@ describe("allowance-tranfer", () => {
     const to = receiver.address;
     const amount = 10;
 
-    const transaction = await populateAllowanceTransfer(safeAddress, {
-      token,
-      to,
-      amount,
-    });
+    const transaction = await populateAllowanceTransfer(
+      { safe: safeAddress },
+      {
+        token,
+        to,
+        amount,
+      }
+    );
 
     await expect(other.sendTransaction(transaction)).to.be.reverted;
 
@@ -102,11 +104,14 @@ describe("allowance-tranfer", () => {
     const to = receiver.address;
     const amount = 10;
 
-    const transaction = await populateAllowanceTransfer(safeAddress, {
-      token,
-      to,
-      amount,
-    });
+    const transaction = await populateAllowanceTransfer(
+      { safe: safeAddress },
+      {
+        token,
+        to,
+        amount,
+      }
+    );
 
     await expect(other.sendTransaction(transaction)).to.be.reverted;
 
@@ -127,17 +132,23 @@ describe("allowance-tranfer", () => {
     const token = GNO;
     const amount = 10;
 
-    const transactionToOther = await populateAllowanceTransfer(safeAddress, {
-      token,
-      to: other.address,
-      amount,
-    });
+    const transactionToOther = await populateAllowanceTransfer(
+      { safe: safeAddress },
+      {
+        token,
+        to: other.address,
+        amount,
+      }
+    );
 
-    const transactionToReceiver = await populateAllowanceTransfer(safeAddress, {
-      token,
-      to: receiver.address,
-      amount,
-    });
+    const transactionToReceiver = await populateAllowanceTransfer(
+      { safe: safeAddress },
+      {
+        token,
+        to: receiver.address,
+        amount,
+      }
+    );
 
     // since we don't provide signature, the spender must be the sender:
     await expect(spender.sendTransaction(transactionToOther)).to.be.reverted;
@@ -160,11 +171,14 @@ describe("allowance-tranfer", () => {
     const to = "0x0000000000000000000000000000000000000003";
     const amount = 2000;
 
-    const transaction = await populateAllowanceTransfer(safeAddress, {
-      token,
-      to,
-      amount,
-    });
+    const transaction = await populateAllowanceTransfer(
+      { safe: safeAddress },
+      {
+        token,
+        to,
+        amount,
+      }
+    );
 
     expect(await gno.balanceOf(to)).to.be.equal(0);
 

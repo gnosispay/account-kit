@@ -34,22 +34,22 @@ describe("account-setup", () => {
   });
 
   async function createAccount() {
-    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
+    const [eoa, spender, receiver, relayer] = await hre.ethers.getSigners();
 
-    const transaction = populateAccountCreation(owner.address);
+    const transaction = populateAccountCreation(eoa.address);
 
-    const safeAddress = predictSafeAddress(owner.address);
+    const safeAddress = predictSafeAddress(eoa.address);
     const rolesAddress = predictRolesAddress(safeAddress);
     const delayAddress = predictDelayAddress(safeAddress);
     const forwarderAddress = predictForwarderAddress({
-      owner: owner.address,
+      eoa: eoa.address,
       safe: safeAddress,
     });
 
     await relayer.sendTransaction(transaction);
 
     return {
-      owner,
+      eoa,
       spender,
       receiver,
       relayer,
@@ -71,7 +71,7 @@ describe("account-setup", () => {
 
   it("setup deploys and enables two mods", async () => {
     const {
-      owner,
+      eoa,
       spender,
       receiver,
       relayer,
@@ -82,7 +82,6 @@ describe("account-setup", () => {
 
     const provider = hre.ethers.provider;
     const config = createAccountConfig({
-      owner: owner.address,
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -92,9 +91,9 @@ describe("account-setup", () => {
     expect(delayAddress).to.not.equal(rolesAddress);
 
     const transaction = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      (...args) => eoa.signTypedData(...args)
     );
 
     expect(await provider.getCode(forwarderAddress)).to.equal("0x");
@@ -114,7 +113,7 @@ describe("account-setup", () => {
 
   it("setup correctly configures Roles", async () => {
     const {
-      owner,
+      eoa,
       spender,
       receiver,
       relayer,
@@ -129,27 +128,26 @@ describe("account-setup", () => {
     const AMOUNT = 123;
 
     const account = createAccountConfig({
-      owner: owner.address,
       spender: spender.address,
       receiver: receiver.address,
       period: PERIOD,
       token: GNO,
-      amount: AMOUNT,
+      allowance: AMOUNT,
     });
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     const transaction = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
       account,
-      (...args) => owner.signTypedData(...args)
+      (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
     expect(await rolesModifier.owner()).to.equal(forwarderAddress);
 
-    expect(await rolesModifier.isModuleEnabled(owner.address)).to.be.false;
+    expect(await rolesModifier.isModuleEnabled(eoa.address)).to.be.false;
     expect(await rolesModifier.isModuleEnabled(spender.address)).to.be.true;
     expect(await rolesModifier.isModuleEnabled(receiver.address)).to.be.false;
 
@@ -168,7 +166,7 @@ describe("account-setup", () => {
   });
 
   it("setup correctly configures Delay", async () => {
-    const { owner, spender, receiver, relayer, safe, delayModule } =
+    const { eoa, spender, receiver, relayer, safe, delayModule } =
       await loadFixture(createAccount);
 
     const safeAddress = await safe.getAddress();
@@ -176,23 +174,22 @@ describe("account-setup", () => {
     const COOLDOWN = 9999;
 
     const account = createAccountConfig({
-      owner: owner.address,
       spender: spender.address,
       receiver: receiver.address,
       cooldown: COOLDOWN,
     });
 
     const transaction = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
       account,
-      (...args) => owner.signTypedData(...args)
+      (...args) => eoa.signTypedData(...args)
     );
 
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
 
-    expect(await delayModule.isModuleEnabled(owner.address)).to.be.true;
+    expect(await delayModule.isModuleEnabled(eoa.address)).to.be.true;
     expect(await delayModule.isModuleEnabled(spender.address)).to.be.false;
     expect(await delayModule.isModuleEnabled(receiver.address)).to.be.false;
 

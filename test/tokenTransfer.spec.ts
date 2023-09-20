@@ -46,7 +46,7 @@ describe("token-transfer", () => {
     const balance = await gno.balanceOf(safeAddress);
 
     const transaction = await populateTokenTransfer(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { safe: safeAddress, chainId: 31337, nonce: 0 },
       {
         token: GNO,
         to: AddressThree,

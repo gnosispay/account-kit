@@ -18,20 +18,20 @@ import {
 } from "../../typechain-types";
 
 export function predictForwarderAddress({
-  owner,
+  eoa,
   safe,
 }: {
-  owner: string;
+  eoa: string;
   safe: string;
 }) {
-  return predictSingletonAddress(forwarderBytecode({ owner, safe }));
+  return predictSingletonAddress(forwarderBytecode({ eoa, safe }));
 }
 
 export function forwarderBytecode({
-  owner,
+  eoa,
   safe,
 }: {
-  owner: string;
+  eoa: string;
   safe: string;
 }) {
   const selector =
@@ -44,7 +44,7 @@ export function forwarderBytecode({
     SinglePurposeForwarder__factory.bytecode,
     AbiCoder.defaultAbiCoder().encode(
       ["address", "address", "bytes4"],
-      [owner, predictRolesAddress(safe), selector]
+      [eoa, predictRolesAddress(safe), selector]
     ),
   ]);
 }

@@ -5,7 +5,7 @@ import deployments from "../deployments";
 import { TransactionData } from "../types";
 
 export default function populateAccountCreation(
-  owner: string,
+  eoa: string,
   seed: bigint = SALT_NONCE
 ): TransactionData {
   const { iface, address: factory } = deployments.safeProxyFactory;
@@ -19,13 +19,13 @@ export default function populateAccountCreation(
      */
     data: iface.encodeFunctionData("createProxyWithNonce", [
       mastercopy,
-      initializer(owner),
+      initializer(eoa),
       seed,
     ]),
   };
 }
 
-export function initializer(owner: string) {
+export function initializer(eoa: string) {
   /*
    * The initializer contains the calldata that invokes the setup
    * function. This is what effectively sets up the proxy's storage
@@ -40,7 +40,7 @@ export function initializer(owner: string) {
 
   const initializer = iface.encodeFunctionData("setup", [
     // owners
-    [owner],
+    [eoa],
     // threshold
     1,
     // to - for setupModules

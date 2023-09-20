@@ -21,7 +21,6 @@ import multisendEncode from "../multisend";
 import {
   AccountConfig,
   SafeTransactionData,
-  ExecutionConfig,
   TransactionData,
   RolesParameterType,
   RolesOperator,
@@ -29,22 +28,24 @@ import {
 } from "../types";
 
 export default async function populateAccountSetup(
-  { account, chainId, nonce }: ExecutionConfig,
+  {
+    eoa,
+    safe,
+    chainId,
+    nonce,
+  }: { eoa: string; safe: string; chainId: number; nonce: number },
   config: AccountConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const safe = {
-    address: account,
-    iface: deployments.safeMastercopy.iface,
-  };
+  const iface = deployments.safeMastercopy.iface;
 
   const { to, data, value, operation } = populateSafeTransaction(
-    safe.address,
+    { eoa, safe },
     config
   );
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    safe.address,
+    safe,
     chainId,
     nonce,
     { to, data, value, operation }
@@ -53,8 +54,8 @@ export default async function populateAccountSetup(
   const signature = await sign(domain, types, message);
 
   return {
-    to: safe.address,
-    data: safe.iface.encodeFunctionData("execTransaction", [
+    to: safe,
+    data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,
@@ -70,8 +71,8 @@ export default async function populateAccountSetup(
 }
 
 function populateSafeTransaction(
-  account: string,
-  { owner, spender, receiver, token, amount, period, cooldown }: AccountConfig
+  { eoa, safe: safeAddress }: { eoa: string; safe: string },
+  { spender, receiver, token, allowance, period, cooldown }: AccountConfig
 ): SafeTransactionData {
   const abi = AbiCoder.defaultAbiCoder();
 
@@ -81,7 +82,7 @@ function populateSafeTransaction(
   const { moduleProxyFactory } = deployments;
 
   const safe = {
-    address: account,
+    address: safeAddress,
     iface: deployments.safeMastercopy.iface,
   };
   const delay = {
@@ -93,7 +94,7 @@ function populateSafeTransaction(
     iface: deployments.rolesMastercopy.iface,
   };
   const allowanceAdmin = {
-    address: predictForwarderAddress({ owner, safe: account }),
+    address: predictForwarderAddress({ eoa, safe: safe.address }),
   };
 
   return multisendEncode([
@@ -137,7 +138,7 @@ function populateSafeTransaction(
     // enable owner on the delay as module
     {
       to: delay.address,
-      data: delay.iface.encodeFunctionData("enableModule", [owner]),
+      data: delay.iface.encodeFunctionData("enableModule", [eoa]),
     },
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
@@ -154,9 +155,9 @@ function populateSafeTransaction(
       to: roles.address,
       data: roles.iface.encodeFunctionData("setAllowance", [
         ALLOWANCE_KEY,
-        amount, // balance
-        amount, // maxBalance
-        amount, // refill
+        allowance, // balance
+        allowance, // maxBalance
+        allowance, // refill
         period,
         0,
       ]),
@@ -216,7 +217,7 @@ function populateSafeTransaction(
      */
     {
       to: singletonFactory.address,
-      data: `${ZeroHash}${forwarderBytecode({ owner, safe: account }).slice(
+      data: `${ZeroHash}${forwarderBytecode({ eoa, safe: safe.address }).slice(
         2
       )}`,
     },

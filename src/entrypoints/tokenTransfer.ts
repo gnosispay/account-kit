@@ -1,29 +1,27 @@
-import { Interface, ZeroAddress } from "ethers";
+import { ZeroAddress } from "ethers";
 
-import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
+import deployments from "../deployments";
+
 import {
-  ExecutionConfig,
   OperationType,
   SafeTransactionData,
   TransactionData,
   Transfer,
 } from "../types";
+import { IERC20__factory } from "../../typechain-types";
 
 export default async function populateTokenTransfer(
-  { account, chainId, nonce }: ExecutionConfig,
+  { safe, chainId, nonce }: { safe: string; chainId: number; nonce: number },
   transfer: Transfer,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const safe = {
-    address: account,
-    iface: deployments.safeMastercopy.iface,
-  };
+  const { iface } = deployments.safeMastercopy;
 
   const { to, value, data, operation } = populateSafeTransaction(transfer);
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    account,
+    safe,
     chainId,
     nonce,
     { to, value, data, operation }
@@ -32,8 +30,8 @@ export default async function populateTokenTransfer(
   const signature = await sign(domain, types, message);
 
   return {
-    to: safe.address,
-    data: safe.iface.encodeFunctionData("execTransaction", [
+    to: safe,
+    data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,
@@ -54,9 +52,7 @@ function populateSafeTransaction({
   to,
   amount,
 }: Transfer): SafeTransactionData {
-  const iface = new Interface([
-    "function transfer(address recipient, uint256 amount)",
-  ]);
+  const iface = IERC20__factory.createInterface();
   return {
     to: token,
     data: iface.encodeFunctionData("transfer", [to, amount]),

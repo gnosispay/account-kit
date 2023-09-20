@@ -28,9 +28,6 @@ import {
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
-import { ALLOWANCE_KEY } from "../src/entrypoints/predictModuleAddress";
-import deployments from "../src/deployments";
-import { AbiCoder } from "ethers";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressOther = "0x0000000000000000000000000000000000000009";
@@ -45,34 +42,33 @@ describe("account-query", () => {
   });
 
   async function setupAccount() {
-    const [owner, spender, receiver, other, relayer] =
+    const [eoa, spender, receiver, other, relayer] =
       await hre.ethers.getSigners();
 
     const config = createAccountConfig({
-      owner: owner.address,
       spender: spender.address,
       receiver: receiver.address,
       period: 7654,
       token: GNO,
-      amount: 123,
+      allowance: 123,
     });
-    const safeAddress = predictSafeAddress(owner.address);
+    const safeAddress = predictSafeAddress(eoa.address);
     const delayAddress = predictDelayAddress(safeAddress);
     const rolesAddress = predictRolesAddress(safeAddress);
     await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);
 
-    const creationTx = populateAccountCreation(owner.address);
+    const creationTx = populateAccountCreation(eoa.address);
     const setupTx = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      (domain, types, message) => eoa.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
 
     return {
-      owner,
+      eoa,
       spender,
       receiver,
       other,
@@ -87,20 +83,19 @@ describe("account-query", () => {
   }
 
   it("passes for a well configured account", async () => {
-    const { owner, safeAddress, config } = await loadFixture(setupAccount);
+    const { eoa, safeAddress, config } = await loadFixture(setupAccount);
 
     const result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.balance).to.equal(config.amount);
+    expect(result.balance).to.equal(config.allowance);
   });
 
   it("calculates accrued allowance", async () => {
-    const { owner, safeAddress, roles, config } =
-      await loadFixture(setupAccount);
+    const { eoa, safeAddress, roles, config } = await loadFixture(setupAccount);
 
     const REFILL = 100;
 
@@ -109,15 +104,15 @@ describe("account-query", () => {
 
     const transaction = populateAllowanceReconfig(
       {
-        owner: owner.address,
+        eoa: eoa.address,
         safe: safeAddress,
       },
       { period: 1000, refill: REFILL, balance: 0, timestamp }
     );
-    await owner.sendTransaction(transaction);
+    await eoa.sendTransaction(transaction);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.balance).to.equal(0);
@@ -126,48 +121,51 @@ describe("account-query", () => {
     await mine(3, { interval: 600 });
 
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.balance).to.equal(REFILL);
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { owner, spender, receiver, safeAddress, config } =
+    const { eoa, spender, receiver, safeAddress, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.balance).to.equal(config.amount);
+    expect(result.balance).to.equal(config.allowance);
 
     const justSpent = 23;
-    const transaction = populateAllowanceTransfer(safeAddress, {
-      token: GNO,
-      to: receiver.address,
-      amount: justSpent,
-    });
+    const transaction = populateAllowanceTransfer(
+      { safe: safeAddress },
+      {
+        token: GNO,
+        to: receiver.address,
+        amount: justSpent,
+      }
+    );
 
     await spender.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.balance).to.equal(Number(config.amount) - justSpent);
+    expect(result.balance).to.equal(Number(config.allowance) - justSpent);
   });
 
   it("fails when there aren't exactly two owners", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+    const { eoa, spender, safe, safeAddress, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
@@ -176,25 +174,25 @@ describe("account-query", () => {
       safe,
       await safe.removeOwner.populateTransaction(
         await spender.getAddress(),
-        await owner.getAddress(),
+        await eoa.getAddress(),
         1
       ),
-      [owner, spender]
+      [eoa, spender]
     );
 
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
   it("fails when threshold is tampered with", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+    const { eoa, spender, safe, safeAddress, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
@@ -203,21 +201,21 @@ describe("account-query", () => {
     await execSafeTransaction(
       safe,
       await safe.changeThreshold.populateTransaction(1),
-      [owner, spender]
+      [eoa, spender]
     );
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
   it("fails when the gnosis signer is not one of the owners", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+    const { eoa, spender, safe, safeAddress, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
@@ -229,19 +227,19 @@ describe("account-query", () => {
     await execSafeTransaction(
       safe,
       await safe.swapOwner.populateTransaction(sentinel, oldSigner, newSigner),
-      [owner, spender]
+      [eoa, spender]
     );
 
     expect(await safe.getOwners()).to.have.length(2);
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
   it("fails when the number of modules enabled is not two", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+    const { eoa, spender, safe, safeAddress, config } =
       await loadFixture(setupAccount);
 
     await execSafeTransaction(
@@ -249,18 +247,18 @@ describe("account-query", () => {
       await safe.enableModule.populateTransaction(
         "0x0000000000000000000000000000000000000009"
       ),
-      [owner, spender]
+      [eoa, spender]
     );
 
     const { status } = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
   it("fails when roles module is not enabled", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+    const { eoa, safe, safeAddress, spender, config } =
       await loadFixture(setupAccount);
 
     const rolesAddress = predictRolesAddress(safeAddress);
@@ -269,18 +267,18 @@ describe("account-query", () => {
     await execSafeTransaction(
       safe,
       await safe.disableModule.populateTransaction(delayAddress, rolesAddress),
-      [owner, spender]
+      [eoa, spender]
     );
 
     const { status } = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
   it("fails when delay module is not enabled", async () => {
-    const { safe, spender, owner, config } = await loadFixture(setupAccount);
+    const { safe, spender, eoa, config } = await loadFixture(setupAccount);
 
     const safeAddress = await safe.getAddress();
     const delayAddress = predictDelayAddress(safeAddress);
@@ -288,28 +286,28 @@ describe("account-query", () => {
     await execSafeTransaction(
       safe,
       await safe.disableModule.populateTransaction(AddressOne, delayAddress),
-      [owner, spender]
+      [eoa, spender]
     );
 
     await execSafeTransaction(
       safe,
       await safe.enableModule.populateTransaction(AddressOther),
-      [owner, spender]
+      [eoa, spender]
     );
 
     const { status } = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
 
   it("fails when the safe is not the owner of delay", async () => {
-    const { safe, safeAddress, delay, owner, spender, config } =
+    const { eoa, safe, safeAddress, delay, spender, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
@@ -319,43 +317,43 @@ describe("account-query", () => {
       await delay.transferOwnership.populateTransaction(
         "0x000000000000000000000000000000000000000f"
       ),
-      [owner, spender]
+      [eoa, spender]
     );
 
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
 
   it("fails when cooldown is too short", async () => {
-    const { safe, delay, safeAddress, owner, spender, config } =
+    const { eoa, safe, delay, safeAddress, spender, config } =
       await loadFixture(setupAccount);
 
     await execSafeTransaction(
       safe,
       await delay.setTxCooldown.populateTransaction(5),
-      [owner, spender]
+      [eoa, spender]
     );
 
     const { status } = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
 
   it("fails when queue is not empty", async () => {
-    const { safeAddress, owner, config } = await loadFixture(setupAccount);
+    const { safeAddress, eoa, config } = await loadFixture(setupAccount);
 
     const delayAddress = predictDelayAddress(safeAddress);
     // owner is configured as module on the delay. connect both here
-    const delay = IDelayModule__factory.connect(delayAddress, owner);
+    const delay = IDelayModule__factory.connect(delayAddress, eoa);
 
     // everything is alright
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
@@ -365,34 +363,34 @@ describe("account-query", () => {
 
     // integrity fails
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
 
   it("fails when allowance for spender was removed", async () => {
-    const { owner, spender, receiver, safeAddress, config } =
+    const { eoa, spender, receiver, safeAddress, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     const transaction = populateAllowanceReconfig(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       { refill: 0, period: 0 }
     );
 
     await expect(spender.sendTransaction(transaction)).to.be.reverted;
     await expect(receiver.sendTransaction(transaction)).to.be.reverted;
-    await owner.sendTransaction(transaction);
+    await eoa.sendTransaction(transaction);
 
     // integrity fails
     result = await evaluateAccount(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.RolesMisconfigured);
@@ -400,10 +398,10 @@ describe("account-query", () => {
 });
 
 async function evaluateAccount(
-  { owner, safe }: { owner: string; safe: string },
+  { eoa, safe }: { eoa: string; safe: string },
   config: AccountConfig
 ) {
   const { to, data } = populateAccountQuery(safe);
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery({ owner, safe }, config, resultData);
+  return evaluateAccountQuery({ eoa, safe }, config, resultData);
 }

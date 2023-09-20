@@ -38,34 +38,33 @@ describe("allowanceReconfig", () => {
   });
 
   async function setupAccount() {
-    const [owner, spender, receiver, other, relayer] =
+    const [eoa, spender, receiver, other, relayer] =
       await hre.ethers.getSigners();
 
     const config = createAccountConfig({
-      owner: owner.address,
       spender: spender.address,
       receiver: receiver.address,
       period: PERIOD,
       token: GNO,
-      amount: AMOUNT,
+      allowance: AMOUNT,
     });
-    const safeAddress = predictSafeAddress(owner.address);
+    const safeAddress = predictSafeAddress(eoa.address);
     const delayAddress = predictDelayAddress(safeAddress);
     const rolesAddress = predictRolesAddress(safeAddress);
     await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);
 
-    const creationTx = populateAccountCreation(owner.address);
+    const creationTx = populateAccountCreation(eoa.address);
     const setupTx = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      (domain, types, message) => eoa.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
 
     return {
-      owner,
+      eoa,
       spender,
       receiver,
       other,
@@ -79,19 +78,18 @@ describe("allowanceReconfig", () => {
   }
 
   it("correctly reconfigures allowance", async () => {
-    const { owner, roles, safeAddress, config } =
-      await loadFixture(setupAccount);
+    const { eoa, roles, safeAddress, config } = await loadFixture(setupAccount);
 
     let allowance = await roles.allowances(ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.not.equal(1);
     expect(allowance.refillAmount).to.not.equal(1);
 
     const transaction = populateAllowanceReconfig(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       { refill: 1, period: 1 }
     );
 
-    await owner.sendTransaction(transaction);
+    await eoa.sendTransaction(transaction);
 
     allowance = await roles.allowances(ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.equal(1);
@@ -99,20 +97,20 @@ describe("allowanceReconfig", () => {
   });
 
   it("only eoa can reconfigure allowance", async () => {
-    const { owner, spender, receiver, safeAddress, roles } =
+    const { eoa, spender, receiver, safeAddress, roles } =
       await loadFixture(setupAccount);
 
     const transaction = populateAllowanceReconfig(
-      { owner: owner.address, safe: safeAddress },
+      { eoa: eoa.address, safe: safeAddress },
       { refill: 7, period: 7 }
     );
 
     const rolesAddress = predictRolesAddress(safeAddress);
     await expect(spender.sendTransaction(transaction)).to.be.reverted;
     await expect(receiver.sendTransaction(transaction)).to.be.reverted;
-    await expect(owner.sendTransaction({ ...transaction, to: rolesAddress })).to
+    await expect(eoa.sendTransaction({ ...transaction, to: rolesAddress })).to
       .be.reverted;
-    await owner.sendTransaction(transaction);
+    await eoa.sendTransaction(transaction);
 
     const allowance = await roles.allowances(ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.equal(7);
