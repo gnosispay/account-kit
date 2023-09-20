@@ -83,7 +83,7 @@ const transaction = await populateAccountSetup(
   (domain, types, message) => eoa.signTypedData(domain, types, message) // eip712 sig
 );
 
-await provider.sendTransaction(transaction);
+await relayer.sendTransaction(transaction);
 ```
 
 ## <a name="allowance-transfer">Allowance Transfer</a>
@@ -114,15 +114,17 @@ await spender.sendTransaction(transaction);
 
 ## <a name="allowance-reconfig">Allowance Reconfig</a>
 
-Generates an adjustment to the RolesMod's available allowance. The generated transaction is unsigned, and can only be sent by the EOA, which is the only account configured to have access to the setAllowance function.
+Generates an adjustment to the RolesMod's available allowance. The generated transaction is to be signed by the EOA, which is the account that has access to the setAllowance function. The resulting transaction is relay ready.
 
 ```js
 import { populateAllowanceReconfig } from "@gnosispay/account-kit";
 
 const eoa : Signer = {};
 const safe = `0x<address>`;
+const chainId = `<number>`;
+const nonce = `<number>`; // current stub nonce
 
-const config: AllowanceConfig = {
+const config : AllowanceConfig = {
   // Duration, in seconds, before a refill occurs
   period: `<number>`,
   /// Amount added to balance after each period elapses.
@@ -133,12 +135,13 @@ const config: AllowanceConfig = {
   timestamp: `<bigint> | undefined`,
 };
 
-const transaction = populateAllowanceReconfig(
-  { eoa: eoa.address, safe },
-  config
+const transaction = await populateAllowanceReconfig(
+  { eoa: eoa.address, safe, chainId, nonce },
+  config,
+  (...args) => eoa.signTypedData(...args) // eip712 sig
 );
 
-await spender.sendTransaction(transaction);
+await relayer.sendTransaction(transaction);
 ```
 
 ## <a name="account-query">Account Query</a>
