@@ -357,22 +357,18 @@ describe.only("account-query", () => {
       safe: safeAddress,
     });
 
-    console.log(forwarder);
-    console.log(await roles.owner());
-    console.log(await hre.ethers.provider.getCode(forwarder));
+    await expect(spender.sendTransaction({ ...transaction, to: forwarder })).to
+      .be.reverted;
+    await expect(receiver.sendTransaction({ ...transaction, to: forwarder })).to
+      .be.reverted;
+    await owner.sendTransaction({ ...transaction, to: forwarder });
 
-    // await expect(spender.sendTransaction({ ...transaction, to: forwarder })).to
-    //   .be.reverted;
-    // await expect(receiver.sendTransaction({ ...transaction, to: forwarder })).to
-    //   .be.reverted;
-    //   await owner.sendTransaction({ ...transaction, to: forwarder });
-
-    //   // integrity fails
-    //   result = await evaluateAccount(
-    //     { owner: owner.address, safe: safeAddress },
-    //     config
-    //   );
-    //   expect(result.status).to.equal(AccountIntegrityStatus.RolesMisconfigured);
+    // integrity fails
+    result = await evaluateAccount(
+      { owner: owner.address, safe: safeAddress },
+      config
+    );
+    expect(result.status).to.equal(AccountIntegrityStatus.RolesMisconfigured);
   });
 });
 

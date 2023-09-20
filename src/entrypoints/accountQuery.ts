@@ -197,7 +197,6 @@ export function evaluateAccountQuery(
       balance: extractBalance(allowanceResult),
     };
   } catch (e) {
-    console.log(e);
     return {
       status: AccountIntegrityStatus.UnexpectedError,
       balance: BigInt(0),

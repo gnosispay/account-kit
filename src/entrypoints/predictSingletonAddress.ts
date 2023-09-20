@@ -3,7 +3,13 @@ import {
   SingletonFactoryInfo,
 } from "@safe-global/safe-singleton-factory";
 import assert from "assert";
-import { AbiCoder, getCreate2Address, keccak256, ZeroHash } from "ethers";
+import {
+  AbiCoder,
+  concat,
+  getCreate2Address,
+  keccak256,
+  ZeroHash,
+} from "ethers";
 import {
   IRolesModifier__factory,
   SinglePurposeForwarder__factory,
@@ -33,15 +39,13 @@ export function forwarderBytecode({
     ).selector;
 
   // encode the creationBytecode
-  return AbiCoder.defaultAbiCoder().encode(
-    ["bytes", "address", "address", "bytes4"],
-    [
-      SinglePurposeForwarder__factory.bytecode,
-      owner,
-      predictRolesAddress(safe),
-      selector,
-    ]
-  );
+  return concat([
+    SinglePurposeForwarder__factory.bytecode,
+    AbiCoder.defaultAbiCoder().encode(
+      ["address", "address", "bytes4"],
+      [owner, predictRolesAddress(safe), selector]
+    ),
+  ]);
 }
 
 /*
