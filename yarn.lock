@@ -885,11 +885,6 @@
   dependencies:
     semver "^7.3.7"
 
-"@safe-global/safe-modules-deployments@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@safe-global/safe-modules-deployments/-/safe-modules-deployments-1.1.0.tgz#e8441d6da17ed4b29a211ecb9b97fadbd7c7ca2b"
-  integrity sha512-UgSH/7Zcv6BJBBqoipKts6SKCPYPau9F1/arndsBYvb5Ayn28Q9cu/yiRbln2iI4VL21SIl9lcO/zRKJKl7QbQ==
-
 "@safe-global/safe-singleton-factory@^1.0.15":
   version "1.0.15"
   resolved "https://registry.yarnpkg.com/@safe-global/safe-singleton-factory/-/safe-singleton-factory-1.0.15.tgz#e25cd3a0ea0cdf6c2682b62c265cb0aa8bf766f0"

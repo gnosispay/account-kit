@@ -5,9 +5,8 @@ import {
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments/";
-import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
+
 import {
-  IAllowanceModule__factory,
   IDelayModule__factory,
   IModuleProxyFactory__factory,
   IMulticall__factory,
@@ -36,11 +35,6 @@ export default {
     address: getFallbackHandlerDeployment({
       version: VERSION,
     })?.defaultAddress as string,
-  },
-  allowanceSingleton: {
-    // 1 and 100 same address
-    address: getAllowanceModuleDeployment()?.networkAddresses[1] as string,
-    iface: IAllowanceModule__factory.createInterface(),
   },
   moduleProxyFactory: {
     // 1 and 100 same address
