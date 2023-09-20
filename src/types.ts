@@ -32,9 +32,13 @@ export type AccountConfig = {
 };
 
 export type AllowanceConfig = {
+  /// Duration, in seconds, before a refill occurs
   period: bigint | number;
+  /// Amount added to balance after each period elapses.
   refill: bigint | number;
+  /// Initial allowance available for use.
   balance?: bigint | number;
+  /// Timestamp when the last refill occurred.
   timestamp?: bigint | number;
 };
 

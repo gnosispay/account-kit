@@ -91,7 +91,7 @@ describe("account-query", () => {
     );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.balance).to.equal(config.allowance);
+    expect(result.allowance).to.equal(config.allowance);
   });
 
   it("calculates accrued allowance", async () => {
@@ -115,7 +115,7 @@ describe("account-query", () => {
       { eoa: eoa.address, safe: safeAddress },
       config
     );
-    expect(result.balance).to.equal(0);
+    expect(result.allowance).to.equal(0);
 
     // go forward 1200 seconds
     await mine(3, { interval: 600 });
@@ -124,7 +124,7 @@ describe("account-query", () => {
       { eoa: eoa.address, safe: safeAddress },
       config
     );
-    expect(result.balance).to.equal(REFILL);
+    expect(result.allowance).to.equal(REFILL);
   });
 
   it("passes and reflects recent spending on the result", async () => {
@@ -137,7 +137,7 @@ describe("account-query", () => {
     );
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.balance).to.equal(config.allowance);
+    expect(result.allowance).to.equal(config.allowance);
 
     const justSpent = 23;
     const transaction = populateAllowanceTransfer(
@@ -157,7 +157,7 @@ describe("account-query", () => {
       config
     );
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.balance).to.equal(Number(config.allowance) - justSpent);
+    expect(result.allowance).to.equal(Number(config.allowance) - justSpent);
   });
 
   it("fails when there aren't exactly two owners", async () => {
@@ -401,7 +401,7 @@ async function evaluateAccount(
   { eoa, safe }: { eoa: string; safe: string },
   config: AccountConfig
 ) {
-  const { to, data } = populateAccountQuery(safe);
+  const { to, data } = populateAccountQuery({ safe });
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
   return evaluateAccountQuery({ eoa, safe }, config, resultData);
 }

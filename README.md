@@ -10,6 +10,7 @@ For each relevant account action, this SDK provides a function that generates tr
 - [Account Setup](#account-setup)
 - [Token Transfer](#token-transfer)
 - [Allowance Transfer](#allowance-transfer)
+- [Allowance Reconfig](#allowance-reconfig)
 - [Account Query](#account-query)
 - [Contributors](#contributors)
 
@@ -20,36 +21,41 @@ Creates a new 1/1 safe.
 ```js
 import { populateAccountCreation } from "@gnosispay/account-kit";
 
-const ownerAddress = `0x<address>`;
-await provider.sendTransaction(populateAccountCreation(ownerAddress));
+const eoa = `0x<address>`; // the owner address
+await provider.sendTransaction(populateAccountCreation(eoa));
 ```
 
 ## <a name="account-setup">Account Setup</a>
 
-Upgrades a 1/1 safe to a Gnosis Pay account.
+Upgrades a 1/1 safe to a Gnosis Pay account. The resulting transaction is relay ready.
 
 ```js
 import { populateAccountSetup } from "@gnosispay/account-kit";
 
-const owner : Signer = {};
-const account = `0x<address>`;
-const chainId = `<number-network-id>`;
-const nonce = `<number-safe-nonce>`;
+const eoa : Signer = {}; // the account owner
+const safe = `0x<address>`;
+const chainId = `<number>`;
+const nonce = `<number>`; // current safe nonce
 
 const config : AccountConfig = {
-  //** allowance mod **/
+  // the gnosis signer
   spender: `0x<address>`,
+   // the settlement safe
+  receiver: `0x<address>`,
+  // token used for payments
   token: `0x<address>`,
-  amount: `<granted to spender>`,
-  period: `<replenish period in minutes>`,
-  //** delay mod **/
-  cooldown: `<execution delay in seconds>`,
+  // the allowance amount granted to spender
+  allowance: `<bigint>`,
+   // allowance refill period in seconds
+  period: `<number>`,
+  // delay, in seconds, before eoa can rug
+  cooldown: `<number>`,
 };
 
-const transaction = populateAccountSetup(
-  { account, chainId, nonce },
+const transaction = await populateAccountSetup(
+  { eoa, safe, chainId, nonce },
   config,
-  (domain, types, message) => owner.signTypedData(domain, types, message) // eip712 sig
+  (domain, types, message) => eoa.signTypedData(domain, types, message) // eip712 sig
 );
 
 await provider.sendTransaction(transaction);
@@ -62,17 +68,17 @@ Signs a ERC20 token transfer from account. To be used on freshly created account
 ```js
 import { populateTokenTransfer } from "@gnosispay/account-kit";
 
-const owner : Signer = {};
-const account = `0x<address>`;
-const chainId = `<network-id>`;
-const nonce = 0;
+const eoa : Signer = {}; // the account owner
+const safe = `0x<address>`;
+const chainId = `<number>`;
+const nonce = `<number>`; // current safe nonce
 
 const token = `0x<address>`;
 const to = `0x<address>`;
 const amount = `<bigint>`;
 
 const transaction = await populateAccountSetup(
-  { account, chainId, nonce },
+  { safe, chainId, nonce },
   { token, to, amount },
   (domain, types, message) => owner.signTypedData(domain, types, message) // eip712 sig
 );
@@ -82,24 +88,55 @@ await provider.sendTransaction(transaction);
 
 ## <a name="allowance-transfer">Allowance Transfer</a>
 
-Generates an ERC20 token transfer via Allowance module. The generated transaction is unsigned, and must be sent by the configured spender.
+Generates an ERC20 token transfer via the RolesMod's AllowanceSpend Role. The generated transaction is unsigned, and can only be sent by the spender, which is the only account configured on that role.
 
 ```js
 import { populateAllowanceTransfer } from "@gnosispay/account-kit";
 
 const spender: Signer = {};
-const account = `0x<address>`;
+const safe = `0x<address>`;
 
 const token = `0x<address>`;
 const to = `0x<address>`;
 const amount = "<number>";
 
-const transaction = populateAllowanceTransfer(account, {
-  spender: spender.address,
-  token,
-  to,
-  amount,
-});
+const transaction = populateAllowanceTransfer(
+  { safe },
+  {
+    token,
+    to,
+    amount,
+  }
+);
+
+await spender.sendTransaction(transaction);
+```
+
+## <a name="allowance-reconfig">Allowance Reconfig</a>
+
+Generates an adjustment to the RolesMod's available allowance. The generated transaction is unsigned, and can only be sent by the EOA, which is the only account configured to have access to the setAllowance function.
+
+```js
+import { populateAllowanceReconfig } from "@gnosispay/account-kit";
+
+const eoa : Signer = {};
+const safe = `0x<address>`;
+
+const config: AllowanceConfig = {
+  // Duration, in seconds, before a refill occurs
+  period: `<number>`,
+  /// Amount added to balance after each period elapses.
+  refill: `<bigint>`,
+  // [OPTIONAL] Initial allowance available for use.
+  balance: `<bigint> | undefined`,
+  // [OPTIONAL] Timestamp when the last refill occurred.
+  timestamp: `<bigint> | undefined`,
+};
+
+const transaction = populateAllowanceReconfig(
+  { eoa: eoa.address, safe },
+  config
+);
 
 await spender.sendTransaction(transaction);
 ```
@@ -114,17 +151,16 @@ import {
   evaluateAccountQuery,
 } from "@gnosispay/account-kit";
 
-const account = `0x<address>`;
+const eoa = `0x<address>`;
+const safe = `0x<address>`;
 const spender = `0x<address>`;
 const token = `0x<address>`;
-const cooldown = `<configured execution delay in seconds>`;
+const cooldown = `<number>`;
 
-const { to, data } = populateAccountQuery(safe, { spender, token });
-
+const { to, data } = populateAccountQuery({ safe }, { spender, token });
 const functionResult = await provider.send("eth_call", [{ to, data }]);
-
 const result = evaluateAccountQuery(
-  account,
+  { eoa, safe },
   { spender, cooldown },
   functionResult
 );
@@ -133,10 +169,7 @@ const result = evaluateAccountQuery(
  * Returns
  *  {
  *    status: AccountIntegrityStatus
- *    allowance: {
- *      unspent: current allowed amount
- *      nonce: allowance mod nonce
- *    }
+ *    allowance: bigint
  *  }
  *
  */

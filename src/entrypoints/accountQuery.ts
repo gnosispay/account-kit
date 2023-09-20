@@ -13,14 +13,15 @@ import { AccountIntegrityStatus, TransactionData } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
-export default function populateAccountQuery(
-  safeAddress: string
-): TransactionData {
+export default function populateAccountQuery({
+  safe: safeAddress,
+}: {
+  safe: string;
+}): TransactionData {
   const safe = {
     address: safeAddress,
     iface: deployments.safeMastercopy.iface,
   };
-
   const delay = {
     address: predictDelayAddress(safeAddress),
     iface: deployments.delayMastercopy.iface,
@@ -29,7 +30,6 @@ export default function populateAccountQuery(
     address: predictRolesAddress(safe.address),
     iface: deployments.rolesMastercopy.iface,
   };
-
   const multicall = deployments.multicall;
 
   const data = multicall.iface.encodeFunctionData("aggregate3", [
@@ -104,7 +104,7 @@ export function evaluateAccountQuery(
   functionResult: string
 ): {
   status: AccountIntegrityStatus;
-  balance: bigint;
+  allowance: bigint;
 } {
   try {
     const multicall = deployments.multicall.iface;
@@ -134,7 +134,7 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.SafeNotDeployed,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
@@ -144,14 +144,14 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
     if (rolesOwnerSuccess !== true || allowanceSuccess != true) {
       return {
         status: AccountIntegrityStatus.RolesNotDeployed,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
@@ -160,7 +160,7 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.RolesMisconfigured,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
@@ -172,7 +172,7 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.DelayNotDeployed,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
@@ -185,25 +185,25 @@ export function evaluateAccountQuery(
     ) {
       return {
         status: AccountIntegrityStatus.DelayMisconfigured,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
       return {
         status: AccountIntegrityStatus.DelayQueueNotEmpty,
-        balance: BigInt(0),
+        allowance: BigInt(0),
       };
     }
 
     return {
       status: AccountIntegrityStatus.Ok,
-      balance: extractBalance(allowanceResult, blockTimestampResult),
+      allowance: accruedBalance(allowanceResult, blockTimestampResult),
     };
   } catch (e) {
     return {
       status: AccountIntegrityStatus.UnexpectedError,
-      balance: BigInt(0),
+      allowance: BigInt(0),
     };
   }
 }
@@ -293,7 +293,7 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   return nonceResult == queueResult;
 }
 
-function extractBalance(allowanceResult: string, blockTimestampResult: string) {
+function accruedBalance(allowanceResult: string, blockTimestampResult: string) {
   const { iface } = deployments.rolesMastercopy;
 
   const blockTimestamp = BigInt(blockTimestampResult);
