@@ -109,6 +109,28 @@ describe.only("account-setup", () => {
     expect(await spenderChannel.isOwner(spender.address)).to.be.true;
   });
 
+  it("renounces ownership", async () => {
+    const { eoa, spender, receiver, relayer, safe, safeAddress } =
+      await loadFixture(createAccount);
+
+    const config = createAccountConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+    });
+
+    const transaction = await populateAccountSetup(
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      config,
+      (...args) => eoa.signTypedData(...args)
+    );
+
+    await expect(relayer.sendTransaction(transaction)).to.not.be.reverted;
+
+    expect(await safe.getOwners()).to.deep.equal([
+      "0x0000000000000000000000000000000000000002",
+    ]);
+  });
+
   it("setup deploys and enables two mods", async () => {
     const { eoa, spender, receiver, relayer, safe, safeAddress } =
       await loadFixture(createAccount);
@@ -157,7 +179,7 @@ describe.only("account-setup", () => {
     const PERIOD = 7654;
     const AMOUNT = 123;
 
-    const account = createAccountConfig({
+    const config = createAccountConfig({
       spender: spender.address,
       receiver: receiver.address,
       period: PERIOD,
@@ -165,21 +187,27 @@ describe.only("account-setup", () => {
       allowance: AMOUNT,
     });
 
+    const spenderChannelAddress = predictSpenderChannelAddress({
+      eoa: eoa.address,
+      spender: spender.address,
+    });
+
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     const transaction = await populateAccountSetup(
       { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
-      account,
+      config,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
-    // expect(await rolesModifier.owner()).to.equal(forwarderAddress);
 
     expect(await rolesModifier.isModuleEnabled(eoa.address)).to.be.false;
-    expect(await rolesModifier.isModuleEnabled(spender.address)).to.be.true;
+    expect(await rolesModifier.isModuleEnabled(spender.address)).to.be.false;
     expect(await rolesModifier.isModuleEnabled(receiver.address)).to.be.false;
+    expect(await rolesModifier.isModuleEnabled(spenderChannelAddress)).to.be
+      .true;
 
     const {
       refillAmount,
@@ -203,15 +231,19 @@ describe.only("account-setup", () => {
     const delayAddress = await delayModule.getAddress();
     const COOLDOWN = 9999;
 
-    const account = createAccountConfig({
+    const config = createAccountConfig({
       spender: spender.address,
       receiver: receiver.address,
       cooldown: COOLDOWN,
     });
 
+    const ownerChannelAddress = predictOwnerChannelAddress({
+      eoa: eoa.address,
+    });
+
     const transaction = await populateAccountSetup(
       { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
-      account,
+      config,
       (...args) => eoa.signTypedData(...args)
     );
 
@@ -219,9 +251,10 @@ describe.only("account-setup", () => {
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
 
-    expect(await delayModule.isModuleEnabled(eoa.address)).to.be.true;
+    expect(await delayModule.isModuleEnabled(eoa.address)).to.be.false;
     expect(await delayModule.isModuleEnabled(spender.address)).to.be.false;
     expect(await delayModule.isModuleEnabled(receiver.address)).to.be.false;
+    expect(await delayModule.isModuleEnabled(ownerChannelAddress)).to.be.true;
 
     expect(await delayModule.owner()).to.equal(safeAddress);
     expect(await delayModule.txCooldown()).to.equal(9999);

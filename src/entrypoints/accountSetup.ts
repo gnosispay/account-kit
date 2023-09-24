@@ -24,6 +24,9 @@ import {
   predictSpenderChannelAddress,
 } from "../deployers/channel";
 
+const AddressOne = "0x0000000000000000000000000000000000000001";
+const AddressTwo = "0x0000000000000000000000000000000000000002";
+
 export default async function populateAccountSetup(
   {
     eoa,
@@ -102,12 +105,13 @@ function populateInitMultisend(
     /**
      * CONFIG SAFE
      */
-    // add the gnosis signer, and set threshold to 2
+    // renounce ownership
     {
       to: account.address,
-      data: account.iface.encodeFunctionData("addOwnerWithThreshold", [
-        spender,
-        2,
+      data: account.iface.encodeFunctionData("swapOwner", [
+        AddressOne,
+        eoa,
+        AddressTwo,
       ]),
     },
     // enable roles as module on safe
@@ -132,7 +136,9 @@ function populateInitMultisend(
     // enable owner on the delay as module
     {
       to: delay.address,
-      data: delay.iface.encodeFunctionData("enableModule", [eoa]),
+      data: delay.iface.encodeFunctionData("enableModule", [
+        ownerChannel.address,
+      ]),
     },
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
@@ -152,7 +158,7 @@ function populateInitMultisend(
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("assignRoles", [
-        spender,
+        spenderChannel.address,
         [ROLE_SPENDING_KEY],
         [true],
       ]),
