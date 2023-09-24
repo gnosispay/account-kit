@@ -4,12 +4,7 @@ import { IERC20__factory } from "../../typechain-types";
 import { ALLOWANCE_SPENDING_KEY, ROLE_SPENDING_KEY } from "../constants";
 
 import { populateDelayCreation, predictDelayAddress } from "../deployers/delay";
-import {
-  populateForwarderCreation,
-  predictForwarderAddress,
-} from "../deployers/forwarder";
 import { populateRolesCreation, predictRolesAddress } from "../deployers/roles";
-import { populateStubCreation } from "../deployers/stub";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
@@ -22,6 +17,12 @@ import {
   RolesOperator,
   RolesExecutionOptions,
 } from "../types";
+import {
+  populateOwnerChannelCreation,
+  populateSpenderChannelCreation,
+  predictOwnerChannelAddress,
+  predictSpenderChannelAddress,
+} from "../deployers/channel";
 
 export default async function populateAccountSetup(
   {
@@ -35,7 +36,7 @@ export default async function populateAccountSetup(
 ): Promise<TransactionData> {
   const iface = deployments.safeMastercopy.iface;
 
-  const { to, data, value, operation } = populateSafeTransaction(
+  const { to, data, value, operation } = populateInitMultisend(
     { eoa, safe },
     config
   );
@@ -66,54 +67,63 @@ export default async function populateAccountSetup(
   };
 }
 
-function populateSafeTransaction(
+function populateInitMultisend(
   { eoa, safe: safeAddress }: { eoa: string; safe: string },
   { spender, receiver, token, allowance, period, cooldown }: AccountConfig
 ): SafeTransactionData {
   const abi = AbiCoder.defaultAbiCoder();
 
-  const safe = {
+  const account = {
     address: safeAddress,
     iface: deployments.safeMastercopy.iface,
   };
   const delay = {
-    address: predictDelayAddress(safe.address),
+    address: predictDelayAddress(safeAddress),
     iface: deployments.delayMastercopy.iface,
   };
   const roles = {
-    address: predictRolesAddress(safe.address),
+    address: predictRolesAddress(safeAddress),
     iface: deployments.rolesMastercopy.iface,
   };
-  const forwarder = {
-    address: predictForwarderAddress({ eoa, safe: safe.address }),
+
+  const ownerChannel = {
+    address: predictOwnerChannelAddress({ eoa }),
+    iface: deployments.safeMastercopy.iface,
+  };
+
+  const spenderChannel = {
+    address: predictSpenderChannelAddress({ eoa, spender }),
+    iface: deployments.safeMastercopy.iface,
   };
 
   return multisendEncode([
+    populateOwnerChannelCreation({ eoa }),
+    populateSpenderChannelCreation({ eoa, spender }),
     /**
      * CONFIG SAFE
      */
     // add the gnosis signer, and set threshold to 2
     {
-      to: safe.address,
-      data: safe.iface.encodeFunctionData("addOwnerWithThreshold", [
+      to: account.address,
+      data: account.iface.encodeFunctionData("addOwnerWithThreshold", [
         spender,
         2,
       ]),
     },
     // enable roles as module on safe
     {
-      to: safe.address,
-      data: safe.iface.encodeFunctionData("enableModule", [roles.address]),
+      to: account.address,
+      data: account.iface.encodeFunctionData("enableModule", [roles.address]),
     },
     // enable delay as module on safe
     {
-      to: safe.address,
-      data: safe.iface.encodeFunctionData("enableModule", [delay.address]),
+      to: account.address,
+      data: account.iface.encodeFunctionData("enableModule", [delay.address]),
     },
     /**
      * DEPLOY AND CONFIG DELAY MODULE
      */
-    populateDelayCreation(safe.address),
+    populateDelayCreation(account.address),
     // configure cooldown on delay
     {
       to: delay.address,
@@ -127,7 +137,7 @@ function populateSafeTransaction(
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
      */
-    populateRolesCreation(safe.address),
+    populateRolesCreation(account.address),
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("setAllowance", [
@@ -183,19 +193,5 @@ function populateSafeTransaction(
         RolesExecutionOptions.None,
       ]),
     },
-    {
-      to: roles.address,
-      data: roles.iface.encodeFunctionData("transferOwnership", [
-        forwarder.address,
-      ]),
-    },
-    /**
-     * DEPLOY STUB
-     */
-    populateStubCreation(eoa),
-    /**
-     * DEPLOY FORWARDER
-     */
-    populateForwarderCreation({ eoa, safe: safe.address }),
   ]);
 }

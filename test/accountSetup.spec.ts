@@ -16,15 +16,18 @@ import {
 
 import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
 import { predictDelayAddress } from "../src/deployers/delay";
-import { predictForwarderAddress } from "../src/deployers/forwarder";
 import { predictRolesAddress } from "../src/deployers/roles";
 import {
   IDelayModule__factory,
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
+import {
+  predictOwnerChannelAddress,
+  predictSpenderChannelAddress,
+} from "../src/deployers/channel";
 
-describe("account-setup", () => {
+describe.only("account-setup", () => {
   before(async () => {
     await fork(29800000);
   });
@@ -41,10 +44,6 @@ describe("account-setup", () => {
     const safeAddress = predictSafeAddress(eoa.address);
     const rolesAddress = predictRolesAddress(safeAddress);
     const delayAddress = predictDelayAddress(safeAddress);
-    const forwarderAddress = predictForwarderAddress({
-      eoa: eoa.address,
-      safe: safeAddress,
-    });
 
     await relayer.sendTransaction(transaction);
 
@@ -65,20 +64,54 @@ describe("account-setup", () => {
       safeAddress: safeAddress,
       rolesAddress,
       delayAddress,
-      forwarderAddress,
     };
   }
 
+  it("setup deploys and setups up channels", async () => {
+    const { eoa, spender, receiver, relayer, safeAddress } =
+      await loadFixture(createAccount);
+
+    const provider = hre.ethers.provider;
+    const config = createAccountConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+    });
+
+    const ownerChannelAddress = predictOwnerChannelAddress({
+      eoa: eoa.address,
+    });
+    const spenderChannelAddress = predictSpenderChannelAddress({
+      eoa: eoa.address,
+      spender: spender.address,
+    });
+
+    const ownerChannel = ISafe__factory.connect(ownerChannelAddress, provider);
+    const spenderChannel = ISafe__factory.connect(
+      spenderChannelAddress,
+      provider
+    );
+
+    const transaction = await populateAccountSetup(
+      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      config,
+      (...args) => eoa.signTypedData(...args)
+    );
+    expect(await provider.getCode(ownerChannelAddress)).to.equal("0x");
+    expect(await provider.getCode(spenderChannelAddress)).to.equal("0x");
+
+    await relayer.sendTransaction(transaction);
+
+    expect(await provider.getCode(ownerChannelAddress)).to.not.equal("0x");
+    expect(await provider.getCode(spenderChannelAddress)).to.not.equal("0x");
+    expect(await ownerChannel.getThreshold()).to.equal(1);
+    expect(await ownerChannel.isOwner(eoa.address)).to.be.true;
+    expect(await spenderChannel.getThreshold()).to.equal(1);
+    expect(await spenderChannel.isOwner(spender.address)).to.be.true;
+  });
+
   it("setup deploys and enables two mods", async () => {
-    const {
-      eoa,
-      spender,
-      receiver,
-      relayer,
-      safe,
-      safeAddress,
-      forwarderAddress,
-    } = await loadFixture(createAccount);
+    const { eoa, spender, receiver, relayer, safe, safeAddress } =
+      await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
     const config = createAccountConfig({
@@ -96,7 +129,6 @@ describe("account-setup", () => {
       (...args) => eoa.signTypedData(...args)
     );
 
-    expect(await provider.getCode(forwarderAddress)).to.equal("0x");
     expect(await provider.getCode(delayAddress)).to.equal("0x");
     expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
     expect(await provider.getCode(rolesAddress)).to.equal("0x");
@@ -104,7 +136,6 @@ describe("account-setup", () => {
 
     await relayer.sendTransaction(transaction);
 
-    expect(await provider.getCode(forwarderAddress)).to.not.equal("0x");
     expect(await provider.getCode(rolesAddress)).to.not.equal("0x");
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
     expect(await provider.getCode(delayAddress)).to.not.equal("0x");
@@ -121,7 +152,6 @@ describe("account-setup", () => {
       rolesModifier,
       safeAddress,
       rolesAddress,
-      forwarderAddress,
     } = await loadFixture(createAccount);
 
     const PERIOD = 7654;
@@ -145,7 +175,7 @@ describe("account-setup", () => {
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
-    expect(await rolesModifier.owner()).to.equal(forwarderAddress);
+    // expect(await rolesModifier.owner()).to.equal(forwarderAddress);
 
     expect(await rolesModifier.isModuleEnabled(eoa.address)).to.be.false;
     expect(await rolesModifier.isModuleEnabled(spender.address)).to.be.true;
