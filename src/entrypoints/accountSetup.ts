@@ -94,9 +94,7 @@ function populateInitMultisend(
   };
 
   const forwarderAddress = predictForwarderAddress({ safe: safeAddress });
-
   const ownerChannelAddress = predictOwnerChannelAddress({ eoa });
-
   const spenderChannelAddress = predictSpenderChannelAddress({ eoa, spender });
 
   return multisendEncode([

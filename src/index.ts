@@ -3,7 +3,10 @@ import populateAccountQuery, {
   evaluateAccountQuery,
 } from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
-import populateAllowanceReconfig from "./entrypoints/allowanceReconfig";
+import {
+  populateLimitEnqueue,
+  populateLimitExecute,
+} from "./entrypoints/limit";
 import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
 import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import populateTokenTransfer from "./entrypoints/tokenTransfer";
@@ -15,7 +18,8 @@ export {
   populateAccountCreation,
   populateAccountSetup,
   populateAllowanceTransfer,
-  populateAllowanceReconfig,
+  populateLimitEnqueue,
+  populateLimitExecute,
   populateTokenTransfer,
   // predict account setup addresses
   predictSafeAddress,

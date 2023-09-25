@@ -29,7 +29,7 @@ import {
 } from "../src/deployers/channel";
 import { predictForwarderAddress } from "../src/deployers/forwarder";
 
-describe.only("account-setup", () => {
+describe("account-setup", () => {
   before(async () => {
     await fork(29800000);
   });
