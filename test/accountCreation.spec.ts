@@ -1,9 +1,20 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { fork, forkReset } from "./test-helpers/setup";
-import { populateAccountCreation, predictSafeAddress } from "../src";
-import { ISafe__factory } from "../typechain-types";
+import {
+  GNO,
+  GNO_WHALE,
+  fork,
+  forkReset,
+  moveERC20,
+} from "./test-helpers/setup";
+import {
+  populateAccountCreation,
+  populateTransfer,
+  predictSafeAddress,
+} from "../src";
+import { IERC20__factory, ISafe__factory } from "../typechain-types";
 
 describe("account-creation", () => {
   before(async () => {
@@ -21,8 +32,14 @@ describe("account-creation", () => {
     expect(predictSafeAddress(owner)).to.equal(account);
   });
 
+  async function setup() {
+    const [owner, , , relayer] = await hre.ethers.getSigners();
+
+    return { owner, relayer };
+  }
+
   it("sets up a 1/1 safe", async () => {
-    const [owner, , , other] = await hre.ethers.getSigners();
+    const { owner, relayer } = await loadFixture(setup);
 
     const predictedSafeAddress = predictSafeAddress(owner.address);
 
@@ -32,7 +49,7 @@ describe("account-creation", () => {
     );
 
     const accountCreationTransaction = populateAccountCreation(owner.address);
-    await other.sendTransaction(accountCreationTransaction);
+    await relayer.sendTransaction(accountCreationTransaction);
 
     // account deployed
     expect(
@@ -44,6 +61,38 @@ describe("account-creation", () => {
       hre.ethers.provider
     );
     expect(await safe.isOwner(owner.address)).to.be.true;
-    expect(await safe.isOwner(other.address)).to.be.false;
+    expect(await safe.isOwner(relayer.address)).to.be.false;
+  });
+
+  it("correctly transfer an ERC20 from a fresh safe", async () => {
+    const { owner, relayer } = await loadFixture(setup);
+
+    const safeAddress = predictSafeAddress(owner.address);
+    await relayer.sendTransaction(populateAccountCreation(owner.address));
+
+    await moveERC20(GNO_WHALE, safeAddress, GNO);
+
+    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
+
+    const AddressThree = "0x0000000000000000000000000000000000000003";
+    const balance = await gno.balanceOf(safeAddress);
+
+    const transaction = await populateTransfer(
+      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      {
+        token: GNO,
+        to: AddressThree,
+        amount: balance,
+      },
+      (domain, types, message) => owner.signTypedData(domain, types, message)
+    );
+
+    expect(await gno.balanceOf(safeAddress)).to.be.equal(balance);
+    expect(await gno.balanceOf(AddressThree)).to.equal(0);
+
+    await relayer.sendTransaction(transaction);
+
+    expect(await gno.balanceOf(safeAddress)).to.equal(0);
+    expect(await gno.balanceOf(AddressThree)).to.be.equal(balance);
   });
 });

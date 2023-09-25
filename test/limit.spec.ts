@@ -15,7 +15,7 @@ import {
   populateAccountCreation,
   populateAccountSetup,
   populateLimitEnqueue,
-  populateLimitExecute,
+  populateLimitDispatch,
   predictSafeAddress,
 } from "../src";
 import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
@@ -94,7 +94,7 @@ describe("limit", () => {
       (...args) => eoa.signTypedData(...args)
     );
 
-    const executeTx = populateLimitExecute(
+    const executeTx = populateLimitDispatch(
       { safe: safeAddress },
       { refill: 1, period: 1 }
     );
@@ -136,7 +136,7 @@ describe("limit", () => {
 
     await mine(2, { interval: 120 });
 
-    const executeTx = populateLimitExecute(
+    const executeTx = populateLimitDispatch(
       { safe: safeAddress },
       { refill: 7, period: 7 }
     );

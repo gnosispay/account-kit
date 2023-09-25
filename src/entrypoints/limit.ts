@@ -62,7 +62,7 @@ export async function populateLimitEnqueue(
   };
 }
 
-export function populateLimitExecute(
+export function populateLimitDispatch(
   { safe }: { safe: string },
   { balance, refill, period, timestamp }: AllowanceConfig
 ): TransactionData {

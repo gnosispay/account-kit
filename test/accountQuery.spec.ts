@@ -18,7 +18,7 @@ import {
   populateAccountQuery,
   populateAccountSetup,
   populateLimitEnqueue,
-  populateLimitExecute,
+  populateLimitDispatch,
   populateSpend,
   predictSafeAddress,
 } from "../src";
@@ -122,7 +122,7 @@ describe("account-query", () => {
     // go forward3 minutes
     await mine(3, { interval: 60 });
 
-    const limitExecuteTx = await populateLimitExecute(
+    const limitExecuteTx = await populateLimitDispatch(
       { safe: safeAddress },
       { period: 1000, refill: REFILL, balance: 0, timestamp }
     );

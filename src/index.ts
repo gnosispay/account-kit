@@ -1,27 +1,27 @@
-import populateAccountCreation from "./entrypoints/accountCreation";
+import populateAccountCreation, {
+  populateTransfer,
+} from "./entrypoints/accountCreation";
 import populateAccountQuery, {
   evaluateAccountQuery,
 } from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
 import {
   populateLimitEnqueue,
-  populateLimitExecute,
+  populateLimitDispatch,
 } from "./entrypoints/limit";
 import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import populateSpend from "./entrypoints/spend";
-import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 export * from "./types";
 
 export {
   // populate transactions
   populateAccountCreation,
-  populateTokenTransfer,
   populateAccountSetup,
+  populateTransfer,
   populateSpend,
   populateLimitEnqueue,
-  populateLimitExecute,
-
+  populateLimitDispatch,
   // predict account setup addresses
   predictSafeAddress,
   // integrity and status query
