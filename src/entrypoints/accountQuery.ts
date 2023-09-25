@@ -8,7 +8,6 @@ import { predictRolesAddress } from "../deployers/roles";
 
 import deployments from "../deployments";
 import { AccountIntegrityStatus, TransactionData } from "../types";
-import { SinglePurposeForwarder__factory } from "../../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
@@ -160,7 +159,7 @@ export function evaluateAccountQuery(
       };
     }
 
-    if (!evaluateRolesConfig({ eoa, safe }, rolesOwnerResult)) {
+    if (!evaluateRolesConfig({ safe }, rolesOwnerResult)) {
       return {
         status: AccountIntegrityStatus.RolesMisconfigured,
         allowance: BigInt(0),
@@ -255,14 +254,13 @@ function evaluateModules({ safe }: { safe: string }, result: string) {
 }
 
 function evaluateRolesConfig(
-  { eoa, safe }: { eoa: string; safe: string },
+  { safe }: { safe: string },
   rolesOwnerResult: string
 ) {
   const abi = AbiCoder.defaultAbiCoder();
-  const { iface } = deployments.rolesMastercopy;
 
   const [rolesOwner] = abi.decode(["address"], rolesOwnerResult);
-  const forwarder = predictForwarderAddress({ eoa, safe });
+  const forwarder = predictForwarderAddress({ safe });
 
   return rolesOwner === forwarder;
 }

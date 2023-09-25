@@ -23,6 +23,10 @@ import {
   predictOwnerChannelAddress,
   predictSpenderChannelAddress,
 } from "../deployers/channel";
+import {
+  populateForwarderCreation,
+  predictForwarderAddress,
+} from "../deployers/forwarder";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressTwo = "0x0000000000000000000000000000000000000002";
@@ -89,19 +93,13 @@ function populateInitMultisend(
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const ownerChannel = {
-    address: predictOwnerChannelAddress({ eoa }),
-    iface: deployments.safeMastercopy.iface,
-  };
+  const forwarderAddress = predictForwarderAddress({ safe: safeAddress });
 
-  const spenderChannel = {
-    address: predictSpenderChannelAddress({ eoa, spender }),
-    iface: deployments.safeMastercopy.iface,
-  };
+  const ownerChannelAddress = predictOwnerChannelAddress({ eoa });
+
+  const spenderChannelAddress = predictSpenderChannelAddress({ eoa, spender });
 
   return multisendEncode([
-    populateOwnerChannelCreation({ eoa }),
-    populateSpenderChannelCreation({ eoa, spender }),
     /**
      * CONFIG SAFE
      */
@@ -137,7 +135,7 @@ function populateInitMultisend(
     {
       to: delay.address,
       data: delay.iface.encodeFunctionData("enableModule", [
-        ownerChannel.address,
+        ownerChannelAddress,
       ]),
     },
     /**
@@ -158,7 +156,7 @@ function populateInitMultisend(
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("assignRoles", [
-        spenderChannel.address,
+        spenderChannelAddress,
         [ROLE_SPENDING_KEY],
         [true],
       ]),
@@ -199,5 +197,15 @@ function populateInitMultisend(
         RolesExecutionOptions.None,
       ]),
     },
+    {
+      to: roles.address,
+      data: roles.iface.encodeFunctionData("transferOwnership", [
+        forwarderAddress,
+      ]),
+    },
+    // Deploy Misc
+    populateForwarderCreation({ safe: safeAddress }),
+    populateOwnerChannelCreation({ eoa }),
+    populateSpenderChannelCreation({ eoa, spender }),
   ]);
 }

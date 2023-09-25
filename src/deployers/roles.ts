@@ -25,9 +25,13 @@ export function populateRolesCreation(safe: string): TransactionData {
 }
 
 function encodeSetUp(safe: string) {
+  const owner = safe;
+  const avatar = safe;
+  const target = safe;
+
   const initializer = AbiCoder.defaultAbiCoder().encode(
     ["address", "address", "address"],
-    [safe, safe, safe]
+    [owner, avatar, target]
   );
 
   return deployments.rolesMastercopy.iface.encodeFunctionData("setUp", [

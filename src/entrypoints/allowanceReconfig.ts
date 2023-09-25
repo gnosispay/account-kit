@@ -25,7 +25,6 @@ export default async function populateAllowanceReconfig(
 ): Promise<TransactionData> {
   const stub = predictStubAddress(eoa);
   const forwarder = predictForwarderAddress({
-    eoa,
     safe,
   });
 

@@ -4,40 +4,31 @@ import { AbiCoder, concat, ZeroHash } from "ethers";
 import { predictSingletonAddress } from "./__singleton";
 import { predictRolesAddress } from "./roles";
 
-import { predictStubAddress } from "./stub";
 import {
   IRolesModifier__factory,
   SinglePurposeForwarder__factory,
 } from "../../typechain-types";
 import { TransactionData } from "../types";
 
-export function predictForwarderAddress({
-  eoa,
-  safe,
-}: {
-  eoa: string;
-  safe: string;
-}) {
-  return predictSingletonAddress(creationBytecode(eoa, safe));
+export function predictForwarderAddress({ safe }: { safe: string }) {
+  return predictSingletonAddress(creationBytecode(safe));
 }
 
 export function populateForwarderCreation({
-  eoa,
   safe,
 }: {
-  eoa: string;
   safe: string;
 }): TransactionData {
   const factory = getSingletonFactoryInfo(1)?.address as string; // 1 or 100 same
 
   return {
     to: factory,
-    data: `${ZeroHash}${creationBytecode(eoa, safe).slice(2)}`,
+    data: `${ZeroHash}${creationBytecode(safe).slice(2)}`,
   };
 }
 
-function creationBytecode(eoa: string, safe: string) {
-  const from = predictStubAddress(eoa);
+function creationBytecode(safe: string) {
+  const from = safe;
   const to = predictRolesAddress(safe);
   const selector =
     IRolesModifier__factory.createInterface().getFunction(
