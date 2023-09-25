@@ -3,7 +3,18 @@ import { AbiCoder, ZeroAddress } from "ethers";
 import { IERC20__factory } from "../../typechain-types";
 import { ALLOWANCE_SPENDING_KEY, ROLE_SPENDING_KEY } from "../constants";
 
+import { SENTINEL } from "../deployers/__safe";
+import {
+  populateOwnerChannelCreation,
+  populateSpenderChannelCreation,
+  predictOwnerChannelAddress,
+  predictSpenderChannelAddress,
+} from "../deployers/channel";
 import { populateDelayCreation, predictDelayAddress } from "../deployers/delay";
+import {
+  populateForwarderCreation,
+  predictForwarderAddress,
+} from "../deployers/forwarder";
 import { populateRolesCreation, predictRolesAddress } from "../deployers/roles";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
@@ -17,18 +28,7 @@ import {
   RolesOperator,
   RolesExecutionOptions,
 } from "../types";
-import {
-  populateOwnerChannelCreation,
-  populateSpenderChannelCreation,
-  predictOwnerChannelAddress,
-  predictSpenderChannelAddress,
-} from "../deployers/channel";
-import {
-  populateForwarderCreation,
-  predictForwarderAddress,
-} from "../deployers/forwarder";
 
-const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressTwo = "0x0000000000000000000000000000000000000002";
 
 export default async function populateAccountSetup(
@@ -75,27 +75,27 @@ export default async function populateAccountSetup(
 }
 
 function populateInitMultisend(
-  { eoa, safe: safeAddress }: { eoa: string; safe: string },
+  { eoa, safe }: { eoa: string; safe: string },
   { spender, receiver, token, allowance, period, cooldown }: AccountConfig
 ): SafeTransactionData {
   const abi = AbiCoder.defaultAbiCoder();
 
   const account = {
-    address: safeAddress,
+    address: safe,
     iface: deployments.safeMastercopy.iface,
   };
   const delay = {
-    address: predictDelayAddress(safeAddress),
+    address: predictDelayAddress(safe),
     iface: deployments.delayMastercopy.iface,
   };
   const roles = {
-    address: predictRolesAddress(safeAddress),
+    address: predictRolesAddress(safe),
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const forwarderAddress = predictForwarderAddress({ safe: safeAddress });
-  const ownerChannelAddress = predictOwnerChannelAddress({ eoa });
-  const spenderChannelAddress = predictSpenderChannelAddress({ eoa, spender });
+  const forwarderAddress = predictForwarderAddress({ safe });
+  const ownerChannelAddress = predictOwnerChannelAddress({ eoa, safe });
+  const spenderChannelAddress = predictSpenderChannelAddress({ safe, spender });
 
   return multisendEncode([
     /**
@@ -105,7 +105,7 @@ function populateInitMultisend(
     {
       to: account.address,
       data: account.iface.encodeFunctionData("swapOwner", [
-        AddressOne,
+        SENTINEL,
         eoa,
         AddressTwo,
       ]),
@@ -202,8 +202,8 @@ function populateInitMultisend(
       ]),
     },
     // Deploy Misc
-    populateForwarderCreation({ safe: safeAddress }),
-    populateOwnerChannelCreation({ eoa }),
-    populateSpenderChannelCreation({ eoa, spender }),
+    populateForwarderCreation({ safe }),
+    populateOwnerChannelCreation({ eoa, safe }),
+    populateSpenderChannelCreation({ safe, spender }),
   ]);
 }

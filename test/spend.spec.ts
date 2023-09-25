@@ -14,13 +14,13 @@ import {
 import {
   populateAccountCreation,
   populateAccountSetup,
-  populateAllowanceTransfer,
+  populateSpend,
   predictSafeAddress,
 } from "../src";
 
 import { IERC20__factory, ISafe__factory } from "../typechain-types";
 
-describe("allowance-tranfer", () => {
+describe("spend", () => {
   before(async () => {
     await fork(29800000);
   });
@@ -30,7 +30,8 @@ describe("allowance-tranfer", () => {
   });
 
   async function createAccount() {
-    const [eoa, spender, receiver, other] = await hre.ethers.getSigners();
+    const [eoa, spender, receiver, other, relayer] =
+      await hre.ethers.getSigners();
 
     const safeAddress = predictSafeAddress(eoa.address);
     const createTransaction = populateAccountCreation(eoa.address);
@@ -61,11 +62,12 @@ describe("allowance-tranfer", () => {
       spender,
       receiver,
       other,
+      relayer,
       safe,
     };
   }
 
-  it("transfer using allowance and spender", async () => {
+  it("enforces configured spender as signer on spend tx", async () => {
     const { safe, spender, receiver, other } = await loadFixture(createAccount);
 
     const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
@@ -75,55 +77,34 @@ describe("allowance-tranfer", () => {
     const to = receiver.address;
     const amount = 10;
 
-    const transaction = await populateAllowanceTransfer(
-      { safe: safeAddress },
+    const spendSignedByOther = await populateSpend(
+      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
       {
         token,
         to,
         amount,
-      }
+      },
+      (...args) => other.signTypedData(...args)
     );
-
-    await expect(other.sendTransaction(transaction)).to.be.reverted;
-
-    expect(await gno.balanceOf(to)).to.be.equal(0);
-
-    // only spender can execute the allowance transfer
-    await spender.sendTransaction(transaction);
-
-    expect(await gno.balanceOf(to)).to.be.equal(amount);
-  });
-
-  it("only spender can trigger an allowance transfer", async () => {
-    const { safe, spender, receiver, other } = await loadFixture(createAccount);
-
-    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
-    const safeAddress = await safe.getAddress();
-
-    const token = GNO;
-    const to = receiver.address;
-    const amount = 10;
-
-    const transaction = await populateAllowanceTransfer(
-      { safe: safeAddress },
+    const spendSignedBySpender = await populateSpend(
+      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
       {
         token,
         to,
         amount,
-      }
+      },
+      (...args) => spender.signTypedData(...args)
     );
 
-    await expect(other.sendTransaction(transaction)).to.be.reverted;
-
+    await expect(other.sendTransaction(spendSignedByOther)).to.be.reverted;
     expect(await gno.balanceOf(to)).to.be.equal(0);
 
     // only spender can execute the allowance transfer
-    await spender.sendTransaction(transaction);
-
+    await spender.sendTransaction(spendSignedBySpender);
     expect(await gno.balanceOf(to)).to.be.equal(amount);
   });
 
-  it("only receiver can receive an allowance transfer", async () => {
+  it("enforces configured receiver as to on spend tx", async () => {
     const { safe, spender, receiver, other } = await loadFixture(createAccount);
 
     const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
@@ -132,56 +113,55 @@ describe("allowance-tranfer", () => {
     const token = GNO;
     const amount = 10;
 
-    const transactionToOther = await populateAllowanceTransfer(
-      { safe: safeAddress },
+    const txToOther = await populateSpend(
+      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
       {
         token,
         to: other.address,
         amount,
-      }
+      },
+      (...args) => spender.signTypedData(...args)
     );
 
-    const transactionToReceiver = await populateAllowanceTransfer(
-      { safe: safeAddress },
+    const txToReceiver = await populateSpend(
+      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
       {
         token,
         to: receiver.address,
         amount,
-      }
+      },
+      (...args) => spender.signTypedData(...args)
     );
 
     // since we don't provide signature, the spender must be the sender:
-    await expect(spender.sendTransaction(transactionToOther)).to.be.reverted;
-
+    await expect(spender.sendTransaction(txToOther)).to.be.reverted;
     expect(await gno.balanceOf(receiver.address)).to.be.equal(0);
 
     // only spender can execute the allowance transfer
-    await spender.sendTransaction(transactionToReceiver);
-
+    await spender.sendTransaction(txToReceiver);
     expect(await gno.balanceOf(receiver.address)).to.be.equal(amount);
   });
 
-  it("transfer overusing allowance fails", async () => {
-    const { safe, spender } = await loadFixture(createAccount);
+  it("spend overusing allowance fails", async () => {
+    const { safe, spender, receiver } = await loadFixture(createAccount);
 
     const safeAddress = await safe.getAddress();
     const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
 
     const token = GNO;
-    const to = "0x0000000000000000000000000000000000000003";
     const amount = 2000;
 
-    const transaction = await populateAllowanceTransfer(
-      { safe: safeAddress },
+    const txToReceiver = await populateSpend(
+      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
       {
         token,
-        to,
+        to: receiver.address,
         amount,
-      }
+      },
+      (...args) => spender.signTypedData(...args)
     );
 
-    expect(await gno.balanceOf(to)).to.be.equal(0);
-
-    await expect(spender.sendTransaction(transaction)).to.be.reverted;
+    expect(await gno.balanceOf(receiver.address)).to.be.equal(0);
+    await expect(spender.sendTransaction(txToReceiver)).to.be.reverted;
   });
 });

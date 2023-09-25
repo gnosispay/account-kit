@@ -20,7 +20,6 @@ import {
 } from "../src";
 import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
 import { predictDelayAddress } from "../src/deployers/delay";
-import { predictForwarderAddress } from "../src/deployers/forwarder";
 import { predictRolesAddress } from "../src/deployers/roles";
 
 import {
@@ -102,15 +101,14 @@ describe("limit", () => {
 
     await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
 
+    allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
     expect(allowance.refillInterval).to.equal(12345);
     expect(allowance.refillAmount).to.equal(76543);
 
     // is reverted before cooldown
     await expect(relayer.sendTransaction(executeTx)).to.be.reverted;
-
     await mine(2, { interval: 120 });
-
-    // works afterward
+    // works after cooldown
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
     allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);

@@ -15,7 +15,12 @@ import {
 } from "../src";
 
 import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
+import {
+  predictOwnerChannelAddress,
+  predictSpenderChannelAddress,
+} from "../src/deployers/channel";
 import { predictDelayAddress } from "../src/deployers/delay";
+import { predictForwarderAddress } from "../src/deployers/forwarder";
 import { predictRolesAddress } from "../src/deployers/roles";
 import {
   IDelayModule__factory,
@@ -23,11 +28,6 @@ import {
   ISafe__factory,
   SinglePurposeForwarder__factory,
 } from "../typechain-types";
-import {
-  predictOwnerChannelAddress,
-  predictSpenderChannelAddress,
-} from "../src/deployers/channel";
-import { predictForwarderAddress } from "../src/deployers/forwarder";
 
 describe("account-setup", () => {
   before(async () => {
@@ -111,9 +111,10 @@ describe("account-setup", () => {
 
     const ownerChannelAddress = predictOwnerChannelAddress({
       eoa: eoa.address,
+      safe: safeAddress,
     });
     const spenderChannelAddress = predictSpenderChannelAddress({
-      eoa: eoa.address,
+      safe: safeAddress,
       spender: spender.address,
     });
 
@@ -224,7 +225,7 @@ describe("account-setup", () => {
     });
 
     const spenderChannelAddress = predictSpenderChannelAddress({
-      eoa: eoa.address,
+      safe: safeAddress,
       spender: spender.address,
     });
 
@@ -274,6 +275,7 @@ describe("account-setup", () => {
 
     const ownerChannelAddress = predictOwnerChannelAddress({
       eoa: eoa.address,
+      safe: safeAddress,
     });
 
     const transaction = await populateAccountSetup(

@@ -1,5 +1,8 @@
 import { ZeroAddress } from "ethers";
+
 import { ALLOWANCE_SPENDING_KEY } from "../constants";
+import { predictOwnerChannelAddress } from "../deployers/channel";
+import { predictDelayAddress } from "../deployers/delay";
 import { predictForwarderAddress } from "../deployers/forwarder";
 
 import deployments from "../deployments";
@@ -11,21 +14,19 @@ import {
   SafeTransactionData,
   TransactionData,
 } from "../types";
-import { predictOwnerChannelAddress } from "../deployers/channel";
-import { predictDelayAddress } from "../deployers/delay";
 
 export async function populateLimitEnqueue(
   {
-    eoa,
     safe,
+    eoa,
     chainId,
     nonce,
-  }: { eoa: string; safe: string; chainId: number; nonce: number },
+  }: { safe: string; eoa: string; chainId: number; nonce: number },
   config: AllowanceConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
-    address: predictOwnerChannelAddress({ eoa }),
+    address: predictOwnerChannelAddress({ eoa, safe }),
     iface: deployments.safeMastercopy.iface,
   };
 

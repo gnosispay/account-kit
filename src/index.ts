@@ -7,8 +7,8 @@ import {
   populateLimitEnqueue,
   populateLimitExecute,
 } from "./entrypoints/limit";
-import populateAllowanceTransfer from "./entrypoints/allowanceTransfer";
 import predictSafeAddress from "./entrypoints/predictSafeAddress";
+import populateSpend from "./entrypoints/spend";
 import populateTokenTransfer from "./entrypoints/tokenTransfer";
 
 export * from "./types";
@@ -16,11 +16,12 @@ export * from "./types";
 export {
   // populate transactions
   populateAccountCreation,
+  populateTokenTransfer,
   populateAccountSetup,
-  populateAllowanceTransfer,
+  populateSpend,
   populateLimitEnqueue,
   populateLimitExecute,
-  populateTokenTransfer,
+
   // predict account setup addresses
   predictSafeAddress,
   // integrity and status query

@@ -3,40 +3,48 @@ import { predictSafeAddress, populateSafeCreation } from "./__safe";
 
 import { TransactionData } from "../types";
 
-const ownerChannelSaltNonce = (eoa: string) =>
-  BigInt(keccak256(toUtf8Bytes(`OWNER_CHANNEL_SALT_NONCE-${eoa}`)));
+const ownerChannelSaltNonce = (safe: string) =>
+  BigInt(keccak256(toUtf8Bytes(`OWNER_CHANNEL_SALT_NONCE-${safe}`)));
 
-const spenderChannelSaltNonce = (eoa: string) =>
-  BigInt(keccak256(toUtf8Bytes(`SPENDER_CHANNEL_SALT_NONCE-${eoa}`)));
+const spenderChannelSaltNonce = (safe: string) =>
+  BigInt(keccak256(toUtf8Bytes(`SPENDER_CHANNEL_SALT_NONCE-${safe}`)));
 
-export function predictOwnerChannelAddress({ eoa }: { eoa: string }): string {
-  return predictSafeAddress(eoa, ownerChannelSaltNonce(eoa));
+export function predictOwnerChannelAddress({
+  eoa,
+  safe,
+}: {
+  eoa: string;
+  safe: string;
+}): string {
+  return predictSafeAddress(eoa, ownerChannelSaltNonce(safe));
 }
 
 export function predictSpenderChannelAddress({
-  eoa,
+  safe,
   spender,
 }: {
-  eoa: string;
+  safe: string;
   spender: string;
 }): string {
-  return predictSafeAddress(spender, spenderChannelSaltNonce(eoa));
+  return predictSafeAddress(spender, spenderChannelSaltNonce(safe));
 }
 
 export function populateOwnerChannelCreation({
   eoa,
+  safe,
 }: {
   eoa: string;
+  safe: string;
 }): TransactionData {
-  return populateSafeCreation(eoa, ownerChannelSaltNonce(eoa));
+  return populateSafeCreation(eoa, ownerChannelSaltNonce(safe));
 }
 
 export function populateSpenderChannelCreation({
-  eoa,
+  safe,
   spender,
 }: {
-  eoa: string;
+  safe: string;
   spender: string;
 }): TransactionData {
-  return populateSafeCreation(spender, spenderChannelSaltNonce(eoa));
+  return populateSafeCreation(spender, spenderChannelSaltNonce(safe));
 }

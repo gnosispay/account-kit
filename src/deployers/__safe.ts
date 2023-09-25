@@ -9,6 +9,8 @@ import {
 import deployments, { proxyCreationBytecode } from "../deployments";
 import { TransactionData } from "../types";
 
+export const SENTINEL = "0x0000000000000000000000000000000000000001";
+
 export function populateSafeCreation(
   owner: string,
   seed: bigint

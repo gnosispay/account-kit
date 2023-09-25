@@ -28,10 +28,7 @@ export default function populateAccountQuery({
     address: predictRolesAddress(safe.address),
     iface: deployments.rolesMastercopy.iface,
   };
-  // const forwarder = {
-  //   address: predictForwarderAddress({ eoa, safe: safeAddress }),
-  //   iface: SinglePurposeForwarder__factory.createInterface(),
-  // };
+
   const multicall = deployments.multicall;
 
   const data = multicall.iface.encodeFunctionData("aggregate3", [
@@ -103,8 +100,8 @@ export default function populateAccountQuery({
 }
 
 export function evaluateAccountQuery(
-  { eoa, safe }: { eoa: string; safe: string },
-  { spender, cooldown }: { spender: string; cooldown: bigint | number },
+  { safe }: { safe: string },
+  { cooldown }: { cooldown: bigint | number },
   functionResult: string
 ): {
   status: AccountIntegrityStatus;
@@ -143,7 +140,7 @@ export function evaluateAccountQuery(
     }
 
     if (
-      !evaluateOwners({ spender }, ownersResult, thresholdResult) ||
+      !evaluateOwners(ownersResult, thresholdResult) ||
       !evaluateModules({ safe }, modulesResult)
     ) {
       return {
@@ -210,12 +207,8 @@ export function evaluateAccountQuery(
   }
 }
 
-function evaluateOwners(
-  { spender }: { spender: string },
-  ownersResult: string,
-  thresholdResult: string
-) {
-  if (BigInt(thresholdResult) !== BigInt(2)) {
+function evaluateOwners(ownersResult: string, thresholdResult: string) {
+  if (BigInt(thresholdResult) !== BigInt(1)) {
     return false;
   }
 
@@ -227,8 +220,8 @@ function evaluateOwners(
   );
 
   return (
-    owners.length == 2 &&
-    owners.map((m: string) => m.toLowerCase()).includes(spender.toLowerCase())
+    owners.length == 1 &&
+    owners[0] === "0x0000000000000000000000000000000000000002"
   );
 }
 
