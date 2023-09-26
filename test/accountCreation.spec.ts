@@ -11,8 +11,8 @@ import {
 } from "./test-helpers/setup";
 import {
   populateAccountCreation,
-  populateTransfer,
-  predictSafeAddress,
+  populateDirectTransfer,
+  predictAccountAddress,
 } from "../src";
 import { IERC20__factory, ISafe__factory } from "../typechain-types";
 
@@ -29,7 +29,7 @@ describe("account-creation", () => {
     const owner = "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd";
     const account = "0xa2F31c16B55a9392E515273D7F35cb8aA1F0a3D6";
 
-    expect(predictSafeAddress(owner)).to.equal(account);
+    expect(predictAccountAddress(owner)).to.equal(account);
   });
 
   async function setup() {
@@ -41,7 +41,7 @@ describe("account-creation", () => {
   it("sets up a 1/1 safe", async () => {
     const { owner, relayer } = await loadFixture(setup);
 
-    const predictedSafeAddress = predictSafeAddress(owner.address);
+    const predictedSafeAddress = predictAccountAddress(owner.address);
 
     // account not deployed
     expect(await hre.ethers.provider.getCode(predictedSafeAddress)).to.equal(
@@ -67,7 +67,7 @@ describe("account-creation", () => {
   it("correctly transfer an ERC20 from a fresh safe", async () => {
     const { owner, relayer } = await loadFixture(setup);
 
-    const safeAddress = predictSafeAddress(owner.address);
+    const safeAddress = predictAccountAddress(owner.address);
     await relayer.sendTransaction(populateAccountCreation(owner.address));
 
     await moveERC20(GNO_WHALE, safeAddress, GNO);
@@ -77,7 +77,7 @@ describe("account-creation", () => {
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = await gno.balanceOf(safeAddress);
 
-    const transaction = await populateTransfer(
+    const transaction = await populateDirectTransfer(
       { safe: safeAddress, chainId: 31337, nonce: 0 },
       {
         token: GNO,

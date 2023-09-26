@@ -11,7 +11,7 @@ import {
 import {
   populateAccountCreation,
   populateAccountSetup,
-  predictSafeAddress,
+  predictAccountAddress,
 } from "../src";
 
 import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
@@ -43,7 +43,7 @@ describe("account-setup", () => {
 
     const transaction = populateAccountCreation(eoa.address);
 
-    const safeAddress = predictSafeAddress(eoa.address);
+    const safeAddress = predictAccountAddress(eoa.address);
     const rolesAddress = predictRolesAddress(safeAddress);
     const delayAddress = predictDelayAddress(safeAddress);
 

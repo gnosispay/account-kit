@@ -20,7 +20,7 @@ import {
   populateLimitEnqueue,
   populateLimitDispatch,
   populateSpend,
-  predictSafeAddress,
+  predictAccountAddress,
 } from "../src";
 import { predictDelayAddress } from "../src/deployers/delay";
 import { predictRolesAddress } from "../src/deployers/roles";
@@ -56,7 +56,7 @@ describe("account-query", () => {
       allowance: 123,
       cooldown: 120, // 120 seconds
     });
-    const safeAddress = predictSafeAddress(eoa.address);
+    const safeAddress = predictAccountAddress(eoa.address);
     const delayAddress = predictDelayAddress(safeAddress);
     const rolesAddress = predictRolesAddress(safeAddress);
     await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);

@@ -1,5 +1,6 @@
 import populateAccountCreation, {
-  populateTransfer,
+  predictAccountAddress,
+  populateDirectTransfer,
 } from "./entrypoints/accountCreation";
 import populateAccountQuery, {
   evaluateAccountQuery,
@@ -9,8 +10,10 @@ import {
   populateLimitEnqueue,
   populateLimitDispatch,
 } from "./entrypoints/limit";
-import predictSafeAddress from "./entrypoints/predictSafeAddress";
 import populateSpend from "./entrypoints/spend";
+
+function populateExecEnqueue() {}
+function populateExecDispatch() {}
 
 export * from "./types";
 
@@ -18,12 +21,14 @@ export {
   // populate transactions
   populateAccountCreation,
   populateAccountSetup,
-  populateTransfer,
+  populateDirectTransfer,
   populateSpend,
   populateLimitEnqueue,
   populateLimitDispatch,
+  populateExecEnqueue,
+  populateExecDispatch,
   // predict account setup addresses
-  predictSafeAddress,
+  predictAccountAddress,
   // integrity and status query
   populateAccountQuery,
   evaluateAccountQuery,

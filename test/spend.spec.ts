@@ -15,7 +15,7 @@ import {
   populateAccountCreation,
   populateAccountSetup,
   populateSpend,
-  predictSafeAddress,
+  predictAccountAddress,
 } from "../src";
 
 import { IERC20__factory, ISafe__factory } from "../typechain-types";
@@ -33,7 +33,7 @@ describe("spend", () => {
     const [eoa, spender, receiver, other, relayer] =
       await hre.ethers.getSigners();
 
-    const safeAddress = predictSafeAddress(eoa.address);
+    const safeAddress = predictAccountAddress(eoa.address);
     const createTransaction = populateAccountCreation(eoa.address);
 
     await other.sendTransaction(createTransaction);
