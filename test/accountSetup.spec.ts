@@ -39,32 +39,32 @@ describe("account-setup", () => {
   });
 
   async function createAccount() {
-    const [eoa, spender, receiver, relayer] = await hre.ethers.getSigners();
+    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
-    const transaction = populateAccountCreation(eoa.address);
+    const transaction = populateAccountCreation(owner.address);
 
-    const safeAddress = predictAccountAddress(eoa.address);
-    const rolesAddress = predictRolesAddress(safeAddress);
-    const delayAddress = predictDelayAddress(safeAddress);
+    const account = predictAccountAddress(owner.address);
+    const rolesAddress = predictRolesAddress(account);
+    const delayAddress = predictDelayAddress(account);
 
     await relayer.sendTransaction(transaction);
 
     return {
-      eoa,
+      account,
+      owner,
       spender,
       receiver,
       relayer,
-      safe: ISafe__factory.connect(safeAddress, hre.ethers.provider),
+      safe: ISafe__factory.connect(account, hre.ethers.provider),
       roles: IRolesModifier__factory.connect(rolesAddress, hre.ethers.provider),
       delay: IDelayModule__factory.connect(delayAddress, hre.ethers.provider),
-      safeAddress,
       rolesAddress,
       delayAddress,
     };
   }
 
   it("deploys forwarder", async () => {
-    const { eoa, spender, receiver, relayer, safeAddress, roles } =
+    const { account, owner, spender, receiver, relayer, roles } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
@@ -73,16 +73,16 @@ describe("account-setup", () => {
       receiver: receiver.address,
     });
 
-    const forwarderAddresss = predictForwarderAddress(safeAddress);
+    const forwarderAddresss = predictForwarderAddress(account);
     const forwarder = SinglePurposeForwarder__factory.connect(
       forwarderAddresss,
       hre.ethers.provider
     );
 
     const transaction = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
     expect(await provider.getCode(forwarderAddresss)).to.equal("0x");
 
@@ -90,7 +90,7 @@ describe("account-setup", () => {
 
     expect(await provider.getCode(forwarderAddresss)).to.not.equal("0x");
 
-    expect(await forwarder.from()).to.equal(safeAddress);
+    expect(await forwarder.from()).to.equal(account);
     expect(await forwarder.to()).to.equal(await roles.getAddress());
     expect(await forwarder.selector()).to.equal(
       roles.interface.getFunction("setAllowance").selector
@@ -98,7 +98,7 @@ describe("account-setup", () => {
   });
 
   it("deploys the owner and spender channels", async () => {
-    const { eoa, spender, receiver, relayer, safeAddress } =
+    const { account, owner, spender, receiver, relayer } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
@@ -108,11 +108,11 @@ describe("account-setup", () => {
     });
 
     const ownerChannelAddress = predictOwnerChannelAddress({
-      account: safeAddress,
-      owner: eoa.address,
+      account,
+      owner: owner.address,
     });
     const spenderChannelAddress = predictSpenderChannelAddress({
-      account: safeAddress,
+      account,
       spender: spender.address,
     });
 
@@ -123,9 +123,9 @@ describe("account-setup", () => {
     );
 
     const transaction = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
     expect(await provider.getCode(ownerChannelAddress)).to.equal("0x");
     expect(await provider.getCode(spenderChannelAddress)).to.equal("0x");
@@ -135,13 +135,13 @@ describe("account-setup", () => {
     expect(await provider.getCode(ownerChannelAddress)).to.not.equal("0x");
     expect(await provider.getCode(spenderChannelAddress)).to.not.equal("0x");
     expect(await ownerChannel.getThreshold()).to.equal(1);
-    expect(await ownerChannel.isOwner(eoa.address)).to.be.true;
+    expect(await ownerChannel.isOwner(owner.address)).to.be.true;
     expect(await spenderChannel.getThreshold()).to.equal(1);
     expect(await spenderChannel.isOwner(spender.address)).to.be.true;
   });
 
   it("renounces account ownership", async () => {
-    const { eoa, spender, receiver, relayer, safe, safeAddress } =
+    const { account, owner, spender, receiver, relayer, safe } =
       await loadFixture(createAccount);
 
     const config = createAccountConfig({
@@ -150,9 +150,9 @@ describe("account-setup", () => {
     });
 
     const transaction = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
 
     await expect(relayer.sendTransaction(transaction)).to.not.be.reverted;
@@ -163,7 +163,7 @@ describe("account-setup", () => {
   });
 
   it("deploys and enables two mods", async () => {
-    const { eoa, spender, receiver, relayer, safe, safeAddress } =
+    const { account, owner, spender, receiver, relayer, safe } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
@@ -172,14 +172,14 @@ describe("account-setup", () => {
       receiver: receiver.address,
     });
 
-    const delayAddress = predictDelayAddress(safeAddress);
-    const rolesAddress = predictRolesAddress(safeAddress);
+    const delayAddress = predictDelayAddress(account);
+    const rolesAddress = predictRolesAddress(account);
     expect(delayAddress).to.not.equal(rolesAddress);
 
     const transaction = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
 
     expect(await provider.getCode(delayAddress)).to.equal("0x");
@@ -197,13 +197,13 @@ describe("account-setup", () => {
 
   it("correctly configures Roles", async () => {
     const {
-      eoa,
+      account,
+      owner,
       spender,
       receiver,
       relayer,
       safe,
       roles,
-      safeAddress,
       rolesAddress,
     } = await loadFixture(createAccount);
 
@@ -218,24 +218,24 @@ describe("account-setup", () => {
       allowance: AMOUNT,
     });
 
-    const forwarderAddress = predictForwarderAddress(safeAddress);
+    const forwarderAddress = predictForwarderAddress(account);
 
     const spenderChannelAddress = predictSpenderChannelAddress({
-      account: safeAddress,
+      account,
       spender: spender.address,
     });
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     const transaction = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
-    expect(await roles.isModuleEnabled(eoa.address)).to.be.false;
+    expect(await roles.isModuleEnabled(owner.address)).to.be.false;
     expect(await roles.isModuleEnabled(spender.address)).to.be.false;
     expect(await roles.isModuleEnabled(spenderChannelAddress)).to.be.true;
     expect(await roles.owner()).to.equal(forwarderAddress);
@@ -256,10 +256,9 @@ describe("account-setup", () => {
   });
 
   it("correctly configures Delay", async () => {
-    const { eoa, spender, receiver, relayer, safe, delay } =
+    const { account, owner, spender, receiver, relayer, safe, delay } =
       await loadFixture(createAccount);
 
-    const safeAddress = await safe.getAddress();
     const delayAddress = await delay.getAddress();
     const COOLDOWN = 9999;
 
@@ -270,26 +269,26 @@ describe("account-setup", () => {
     });
 
     const ownerChannelAddress = predictOwnerChannelAddress({
-      account: safeAddress,
-      owner: eoa.address,
+      account,
+      owner: owner.address,
     });
 
     const transaction = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
 
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
 
-    expect(await delay.isModuleEnabled(eoa.address)).to.be.false;
+    expect(await delay.isModuleEnabled(owner.address)).to.be.false;
     expect(await delay.isModuleEnabled(spender.address)).to.be.false;
     expect(await delay.isModuleEnabled(receiver.address)).to.be.false;
     expect(await delay.isModuleEnabled(ownerChannelAddress)).to.be.true;
 
-    expect(await delay.owner()).to.equal(safeAddress);
+    expect(await delay.owner()).to.equal(account);
     expect(await delay.txCooldown()).to.equal(9999);
     expect(await delay.queueNonce()).to.equal(await delay.txNonce());
   });
