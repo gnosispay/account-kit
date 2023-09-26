@@ -20,7 +20,7 @@ export default async function populateSpend(
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
-    address: predictSpenderChannelAddress({ safe: account, spender }),
+    address: predictSpenderChannelAddress({ account, spender }),
     iface: deployments.safeMastercopy.iface,
   };
   const { to, value = 0, data } = populateSpendTransaction(account, transfer);

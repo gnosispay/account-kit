@@ -94,12 +94,12 @@ function populateInitMultisend(
 
   const forwarderAddress = predictForwarderAddress(account);
   const ownerChannelAddress = predictOwnerChannelAddress({
-    eoa: owner,
-    safe: account,
+    owner,
+    account,
   });
   const spenderChannelAddress = predictSpenderChannelAddress({
     spender,
-    safe: account,
+    account,
   });
 
   return multisendEncode([
@@ -208,7 +208,7 @@ function populateInitMultisend(
     },
     // Deploy Misc
     populateForwarderCreation(account),
-    populateOwnerChannelCreation({ eoa: owner, safe: account }),
-    populateSpenderChannelCreation({ spender, safe: account }),
+    populateOwnerChannelCreation({ owner, account }),
+    populateSpenderChannelCreation({ spender, account }),
   ]);
 }

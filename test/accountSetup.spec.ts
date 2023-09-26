@@ -108,11 +108,11 @@ describe("account-setup", () => {
     });
 
     const ownerChannelAddress = predictOwnerChannelAddress({
-      eoa: eoa.address,
-      safe: safeAddress,
+      account: safeAddress,
+      owner: eoa.address,
     });
     const spenderChannelAddress = predictSpenderChannelAddress({
-      safe: safeAddress,
+      account: safeAddress,
       spender: spender.address,
     });
 
@@ -221,7 +221,7 @@ describe("account-setup", () => {
     const forwarderAddress = predictForwarderAddress(safeAddress);
 
     const spenderChannelAddress = predictSpenderChannelAddress({
-      safe: safeAddress,
+      account: safeAddress,
       spender: spender.address,
     });
 
@@ -270,8 +270,8 @@ describe("account-setup", () => {
     });
 
     const ownerChannelAddress = predictOwnerChannelAddress({
-      eoa: eoa.address,
-      safe: safeAddress,
+      account: safeAddress,
+      owner: eoa.address,
     });
 
     const transaction = await populateAccountSetup(

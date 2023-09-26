@@ -21,7 +21,7 @@ export async function populateExecEnqueue(
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
-    address: predictOwnerChannelAddress({ eoa: owner, safe: account }),
+    address: predictOwnerChannelAddress({ account, owner }),
     iface: deployments.safeMastercopy.iface,
   };
 

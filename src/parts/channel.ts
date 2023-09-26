@@ -10,41 +10,41 @@ const spenderChannelSaltNonce = (safe: string) =>
   BigInt(keccak256(toUtf8Bytes(`SPENDER_CHANNEL_SALT_NONCE-${safe}`)));
 
 export function predictOwnerChannelAddress({
-  eoa,
-  safe,
+  account,
+  owner,
 }: {
-  eoa: string;
-  safe: string;
+  account: string;
+  owner: string;
 }): string {
-  return _predictSafeAddress(eoa, ownerChannelSaltNonce(safe));
+  return _predictSafeAddress(owner, ownerChannelSaltNonce(account));
 }
 
 export function predictSpenderChannelAddress({
+  account,
   spender,
-  safe,
 }: {
+  account: string;
   spender: string;
-  safe: string;
 }): string {
-  return _predictSafeAddress(spender, spenderChannelSaltNonce(safe));
+  return _predictSafeAddress(spender, spenderChannelSaltNonce(account));
 }
 
 export function populateOwnerChannelCreation({
-  eoa,
-  safe,
+  account,
+  owner,
 }: {
-  eoa: string;
-  safe: string;
+  account: string;
+  owner: string;
 }): TransactionData {
-  return _populateSafeCreation(eoa, ownerChannelSaltNonce(safe));
+  return _populateSafeCreation(owner, ownerChannelSaltNonce(account));
 }
 
 export function populateSpenderChannelCreation({
-  safe,
+  account,
   spender,
 }: {
-  safe: string;
+  account: string;
   spender: string;
 }): TransactionData {
-  return _populateSafeCreation(spender, spenderChannelSaltNonce(safe));
+  return _populateSafeCreation(spender, spenderChannelSaltNonce(account));
 }
