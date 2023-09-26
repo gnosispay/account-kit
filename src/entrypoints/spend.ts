@@ -6,12 +6,7 @@ import { predictRolesAddress } from "../deployers/roles";
 
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
-import {
-  OperationType,
-  SafeTransactionData,
-  TransactionData,
-  Transfer,
-} from "../types";
+import { OperationType, TransactionData, Transfer } from "../types";
 
 export default async function populateSpend(
   {
@@ -27,16 +22,13 @@ export default async function populateSpend(
     address: predictSpenderChannelAddress({ safe, spender }),
     iface: deployments.safeMastercopy.iface,
   };
-  const { to, value, data, operation } = populateInnerTransaction(
-    { safe },
-    transfer
-  );
+  const { to, value = 0, data } = populateSpendTransaction({ safe }, transfer);
 
   const { domain, types, message } = typedDataForSafeTransaction(
     channel.address,
     chainId,
     nonce,
-    { to, value, data, operation }
+    { to, value, data, operation: OperationType.Call }
   );
 
   const signature = await sign(domain, types, message);
@@ -47,7 +39,7 @@ export default async function populateSpend(
       to,
       value,
       data,
-      operation,
+      OperationType.Call,
       0,
       0,
       0,
@@ -59,10 +51,10 @@ export default async function populateSpend(
   };
 }
 
-function populateInnerTransaction(
+function populateSpendTransaction(
   { safe }: { safe: string },
   { token, to, amount }: Transfer
-): SafeTransactionData {
+): TransactionData {
   const roles = {
     address: predictRolesAddress(safe),
     iface: deployments.rolesMastercopy.iface,
@@ -82,6 +74,5 @@ function populateInnerTransaction(
       true, // shouldRevert
     ]),
     value: 0,
-    operation: OperationType.Call,
   };
 }

@@ -1,4 +1,4 @@
-import { ZeroAddress } from "ethers";
+import { AddressLike, BigNumberish, BytesLike, ZeroAddress } from "ethers";
 
 import { ALLOWANCE_SPENDING_KEY } from "../constants";
 import { predictOwnerChannelAddress } from "../deployers/channel";
@@ -8,12 +8,7 @@ import { predictForwarderAddress } from "../deployers/forwarder";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 
-import {
-  AllowanceConfig,
-  OperationType,
-  SafeTransactionData,
-  TransactionData,
-} from "../types";
+import { AllowanceConfig, OperationType, TransactionData } from "../types";
 
 export async function populateLimitEnqueue(
   {
@@ -30,16 +25,13 @@ export async function populateLimitEnqueue(
     iface: deployments.safeMastercopy.iface,
   };
 
-  const { to, value, data, operation } = populateInnerTransaction(
-    { safe },
-    config
-  );
+  const { to, value = 0, data } = enqueueTransaction(safe, config);
 
   const { domain, types, message } = typedDataForSafeTransaction(
     channel.address,
     chainId,
     nonce,
-    { to, value, data, operation }
+    { to, value, data, operation: OperationType.Call }
   );
 
   const signature = await sign(domain, types, message);
@@ -50,7 +42,7 @@ export async function populateLimitEnqueue(
       to,
       value,
       data,
-      operation,
+      OperationType.Call,
       0,
       0,
       0,
@@ -64,65 +56,69 @@ export async function populateLimitEnqueue(
 
 export function populateLimitDispatch(
   { safe }: { safe: string },
-  { balance, refill, period, timestamp }: AllowanceConfig
+  config: AllowanceConfig
+): TransactionData {
+  return dispatchTransaction(safe, config);
+}
+
+function enqueueTransaction(
+  safe: string,
+  config: AllowanceConfig
 ): TransactionData {
   const delay = {
     address: predictDelayAddress(safe),
     iface: deployments.delayMastercopy.iface,
   };
-  const forwarder = {
-    address: predictForwarderAddress({ safe }),
-    iface: deployments.rolesMastercopy.iface,
-  };
 
   return {
     to: delay.address,
-    data: delay.iface.encodeFunctionData("executeNextTx", [
-      forwarder.address,
-      0,
-      forwarder.iface.encodeFunctionData("setAllowance", [
-        ALLOWANCE_SPENDING_KEY,
-        balance || 0,
-        refill, // maxBalance
-        refill, // refill
-        period,
-        timestamp || 0,
-      ]),
-      OperationType.Call,
-    ]),
+    data: delay.iface.encodeFunctionData(
+      "execTransactionFromModule",
+      setAllowanceArgs(safe, config)
+    ),
     value: 0,
   };
 }
 
-function populateInnerTransaction(
-  { safe }: { safe: string },
-  { balance, refill, period, timestamp }: AllowanceConfig
-): SafeTransactionData {
+function dispatchTransaction(
+  safe: string,
+  config: AllowanceConfig
+): TransactionData {
   const delay = {
     address: predictDelayAddress(safe),
     iface: deployments.delayMastercopy.iface,
   };
-  const forwarder = {
-    address: predictForwarderAddress({ safe }),
-    iface: deployments.rolesMastercopy.iface,
-  };
 
   return {
     to: delay.address,
-    data: delay.iface.encodeFunctionData("execTransactionFromModule", [
-      forwarder.address,
-      0,
-      forwarder.iface.encodeFunctionData("setAllowance", [
-        ALLOWANCE_SPENDING_KEY,
-        balance || 0,
-        refill, // maxBalance
-        refill, // refill
-        period,
-        timestamp || 0,
-      ]),
-      OperationType.Call,
-    ]),
+    data: delay.iface.encodeFunctionData(
+      "executeNextTx",
+      setAllowanceArgs(safe, config)
+    ),
     value: 0,
+  };
+}
+
+function setAllowanceArgs(
+  safe: string,
+  { balance, refill, period, timestamp }: AllowanceConfig
+): [AddressLike, BigNumberish, BytesLike, BigNumberish] {
+  const address = predictForwarderAddress({ safe });
+  const iface = deployments.rolesMastercopy.iface;
+
+  const { to, value, data, operation } = {
+    to: address,
+    value: 0,
+    data: iface.encodeFunctionData("setAllowance", [
+      ALLOWANCE_SPENDING_KEY,
+      balance || 0,
+      refill, // maxBalance
+      refill, // refill
+      period,
+      timestamp || 0,
+    ]),
     operation: OperationType.Call,
   };
+
+  return [to, value, data, operation];
 }
