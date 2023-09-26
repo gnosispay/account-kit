@@ -20,11 +20,11 @@ export {
   populateAccountCreation,
   populateAccountSetup,
   populateDirectTransfer,
-  populateSpend,
-  populateLimitEnqueue,
-  populateLimitDispatch,
   populateExecEnqueue,
   populateExecDispatch,
+  populateLimitEnqueue,
+  populateLimitDispatch,
+  populateSpend,
   // predict account setup addresses
   predictAccountAddress,
   // integrity, status and info query
