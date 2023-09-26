@@ -1,15 +1,21 @@
-import { AddressLike, BigNumberish, BytesLike, ZeroAddress } from "ethers";
+import { ZeroAddress } from "ethers";
 
 import { ALLOWANCE_SPENDING_KEY } from "../constants";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import {
-  predictDelayAddress,
+  populateDelayDispatch,
+  populateDelayEnqueue,
   predictForwarderAddress,
   predictOwnerChannelAddress,
 } from "../parts";
 
-import { AllowanceConfig, OperationType, TransactionData } from "../types";
+import {
+  AllowanceConfig,
+  OperationType,
+  SafeTransactionData,
+  TransactionData,
+} from "../types";
 
 export async function populateLimitEnqueue(
   {
@@ -26,7 +32,11 @@ export async function populateLimitEnqueue(
     iface: deployments.safeMastercopy.iface,
   };
 
-  const { to, value = 0, data } = enqueueTransaction(safe, config);
+  const {
+    to,
+    value = 0,
+    data,
+  } = populateDelayEnqueue(safe, populateSetAllowance(safe, config));
 
   const { domain, types, message } = typedDataForSafeTransaction(
     channel.address,
@@ -59,55 +69,17 @@ export function populateLimitDispatch(
   { safe }: { safe: string },
   config: AllowanceConfig
 ): TransactionData {
-  return dispatchTransaction(safe, config);
+  return populateDelayDispatch(safe, populateSetAllowance(safe, config));
 }
 
-function enqueueTransaction(
-  safe: string,
-  config: AllowanceConfig
-): TransactionData {
-  const delay = {
-    address: predictDelayAddress(safe),
-    iface: deployments.delayMastercopy.iface,
-  };
-
-  return {
-    to: delay.address,
-    data: delay.iface.encodeFunctionData(
-      "execTransactionFromModule",
-      setAllowanceArgs(safe, config)
-    ),
-    value: 0,
-  };
-}
-
-function dispatchTransaction(
-  safe: string,
-  config: AllowanceConfig
-): TransactionData {
-  const delay = {
-    address: predictDelayAddress(safe),
-    iface: deployments.delayMastercopy.iface,
-  };
-
-  return {
-    to: delay.address,
-    data: delay.iface.encodeFunctionData(
-      "executeNextTx",
-      setAllowanceArgs(safe, config)
-    ),
-    value: 0,
-  };
-}
-
-function setAllowanceArgs(
+function populateSetAllowance(
   safe: string,
   { balance, refill, period, timestamp }: AllowanceConfig
-): [AddressLike, BigNumberish, BytesLike, BigNumberish] {
+): SafeTransactionData {
   const address = predictForwarderAddress({ safe });
   const iface = deployments.rolesMastercopy.iface;
 
-  const { to, value, data, operation } = {
+  return {
     to: address,
     value: 0,
     data: iface.encodeFunctionData("setAllowance", [
@@ -120,6 +92,4 @@ function setAllowanceArgs(
     ]),
     operation: OperationType.Call,
   };
-
-  return [to, value, data, operation];
 }

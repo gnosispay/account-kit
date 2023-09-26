@@ -7,7 +7,12 @@ import {
   predictSpenderChannelAddress,
 } from "./channel";
 
-import { populateDelayCreation, predictDelayAddress } from "./delay";
+import {
+  populateDelayCreation,
+  populateDelayDispatch,
+  populateDelayEnqueue,
+  predictDelayAddress,
+} from "./delay";
 
 import {
   populateForwarderCreation,
@@ -20,6 +25,8 @@ export {
   _populateSafeCreation,
   _predictSafeAddress,
   populateDelayCreation,
+  populateDelayDispatch,
+  populateDelayEnqueue,
   populateForwarderCreation,
   populateOwnerChannelCreation,
   populateRolesCreation,
