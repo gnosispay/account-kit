@@ -1,12 +1,10 @@
 import { ZeroAddress } from "ethers";
 
-import { populateSafeCreation, predictSafeAddress } from "../deployers/__safe";
-
+import { IERC20__factory } from "../../typechain-types";
 import { ACCOUNT_SALT_NONCE } from "../constants";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
-
-import { IERC20__factory } from "../../typechain-types";
+import { _populateSafeCreation, _predictSafeAddress } from "../parts";
 
 import { OperationType, TransactionData, Transfer } from "../types";
 
@@ -14,14 +12,14 @@ export function predictAccountAddress(
   eoa: string,
   saltNonce: bigint = ACCOUNT_SALT_NONCE
 ): string {
-  return predictSafeAddress(eoa, saltNonce);
+  return _predictSafeAddress(eoa, saltNonce);
 }
 
 export default function populateAccountCreation(
   eoa: string,
   seed: bigint = ACCOUNT_SALT_NONCE
 ): TransactionData {
-  return populateSafeCreation(eoa, seed);
+  return _populateSafeCreation(eoa, seed);
 }
 
 export async function populateDirectTransfer(

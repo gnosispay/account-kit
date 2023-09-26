@@ -1,11 +1,11 @@
 import { AbiCoder, ZeroHash } from "ethers";
 
-import { predictZodiacModAddress } from "./__zodiacMod";
+import { _predictZodiacModAddress } from "./_zodiacMod";
 import deployments from "../deployments";
 import { TransactionData } from "../types";
 
 export function predictRolesAddress(safe: string): string {
-  return predictZodiacModAddress(
+  return _predictZodiacModAddress(
     deployments.rolesMastercopy.address,
     encodeSetUp(safe)
   );

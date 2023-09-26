@@ -1,32 +1,34 @@
 import { AbiCoder, ZeroAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
-import { ALLOWANCE_SPENDING_KEY, ROLE_SPENDING_KEY } from "../constants";
-
-import { SENTINEL } from "../deployers/__safe";
 import {
-  populateOwnerChannelCreation,
-  populateSpenderChannelCreation,
-  predictOwnerChannelAddress,
-  predictSpenderChannelAddress,
-} from "../deployers/channel";
-import { populateDelayCreation, predictDelayAddress } from "../deployers/delay";
-import {
-  populateForwarderCreation,
-  predictForwarderAddress,
-} from "../deployers/forwarder";
-import { populateRolesCreation, predictRolesAddress } from "../deployers/roles";
+  ALLOWANCE_SPENDING_KEY,
+  ROLE_SPENDING_KEY,
+  SENTINEL,
+} from "../constants";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
+import {
+  populateDelayCreation,
+  populateForwarderCreation,
+  populateOwnerChannelCreation,
+  populateRolesCreation,
+  populateSpenderChannelCreation,
+  predictDelayAddress,
+  predictForwarderAddress,
+  predictOwnerChannelAddress,
+  predictRolesAddress,
+  predictSpenderChannelAddress,
+} from "../parts";
 
 import {
   AccountConfig,
+  RolesExecutionOptions,
+  RolesOperator,
+  RolesParameterType,
   SafeTransactionData,
   TransactionData,
-  RolesParameterType,
-  RolesOperator,
-  RolesExecutionOptions,
 } from "../types";
 
 const AddressTwo = "0x0000000000000000000000000000000000000002";

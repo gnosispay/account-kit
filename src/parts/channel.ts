@@ -1,5 +1,5 @@
 import { keccak256, toUtf8Bytes } from "ethers";
-import { predictSafeAddress, populateSafeCreation } from "./__safe";
+import { _predictSafeAddress, _populateSafeCreation } from "./_safe";
 
 import { TransactionData } from "../types";
 
@@ -16,7 +16,7 @@ export function predictOwnerChannelAddress({
   eoa: string;
   safe: string;
 }): string {
-  return predictSafeAddress(eoa, ownerChannelSaltNonce(safe));
+  return _predictSafeAddress(eoa, ownerChannelSaltNonce(safe));
 }
 
 export function predictSpenderChannelAddress({
@@ -26,7 +26,7 @@ export function predictSpenderChannelAddress({
   safe: string;
   spender: string;
 }): string {
-  return predictSafeAddress(spender, spenderChannelSaltNonce(safe));
+  return _predictSafeAddress(spender, spenderChannelSaltNonce(safe));
 }
 
 export function populateOwnerChannelCreation({
@@ -36,7 +36,7 @@ export function populateOwnerChannelCreation({
   eoa: string;
   safe: string;
 }): TransactionData {
-  return populateSafeCreation(eoa, ownerChannelSaltNonce(safe));
+  return _populateSafeCreation(eoa, ownerChannelSaltNonce(safe));
 }
 
 export function populateSpenderChannelCreation({
@@ -46,5 +46,5 @@ export function populateSpenderChannelCreation({
   safe: string;
   spender: string;
 }): TransactionData {
-  return populateSafeCreation(spender, spenderChannelSaltNonce(safe));
+  return _populateSafeCreation(spender, spenderChannelSaltNonce(safe));
 }

@@ -2,11 +2,13 @@ import assert from "assert";
 import { AbiCoder } from "ethers";
 
 import { ALLOWANCE_SPENDING_KEY } from "../constants";
-import { predictDelayAddress } from "../deployers/delay";
-import { predictForwarderAddress } from "../deployers/forwarder";
-import { predictRolesAddress } from "../deployers/roles";
-
 import deployments from "../deployments";
+import {
+  predictDelayAddress,
+  predictForwarderAddress,
+  predictRolesAddress,
+} from "../parts";
+
 import { AccountIntegrityStatus, TransactionData } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";

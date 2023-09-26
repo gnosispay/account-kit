@@ -7,7 +7,10 @@ import {
 
 import deployments from "../deployments";
 
-export function predictZodiacModAddress(mastercopy: string, setUpData: string) {
+export function _predictZodiacModAddress(
+  mastercopy: string,
+  setUpData: string
+) {
   const factory = deployments.moduleProxyFactory.address;
   const saltNonce = ZeroHash;
 

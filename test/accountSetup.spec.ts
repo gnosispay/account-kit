@@ -18,10 +18,10 @@ import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
 import {
   predictOwnerChannelAddress,
   predictSpenderChannelAddress,
-} from "../src/deployers/channel";
-import { predictDelayAddress } from "../src/deployers/delay";
-import { predictForwarderAddress } from "../src/deployers/forwarder";
-import { predictRolesAddress } from "../src/deployers/roles";
+} from "../src/parts/channel";
+import { predictDelayAddress } from "../src/parts/delay";
+import { predictForwarderAddress } from "../src/parts/forwarder";
+import { predictRolesAddress } from "../src/parts/roles";
 import {
   IDelayModule__factory,
   IRolesModifier__factory,

@@ -9,9 +9,28 @@ import {
 import deployments, { proxyCreationBytecode } from "../deployments";
 import { TransactionData } from "../types";
 
-export const SENTINEL = "0x0000000000000000000000000000000000000001";
+export function _predictSafeAddress(owner: string, saltNonce: bigint): string {
+  const { address: factory } = deployments.safeProxyFactory;
+  const { address: mastercopy } = deployments.safeMastercopy;
 
-export function populateSafeCreation(
+  const abi = AbiCoder.defaultAbiCoder();
+
+  const salt = keccak256(
+    concat([
+      keccak256(safeInitializer(owner)),
+      abi.encode(["uint256"], [saltNonce]),
+    ])
+  );
+
+  const deploymentData = concat([
+    proxyCreationBytecode,
+    abi.encode(["address"], [mastercopy]),
+  ]);
+
+  return getCreate2Address(factory, salt, keccak256(deploymentData));
+}
+
+export function _populateSafeCreation(
   owner: string,
   seed: bigint
 ): TransactionData {
@@ -65,25 +84,4 @@ export function safeInitializer(owner: string) {
   ]);
 
   return initializer;
-}
-
-export function predictSafeAddress(owner: string, saltNonce: bigint): string {
-  const { address: factory } = deployments.safeProxyFactory;
-  const { address: mastercopy } = deployments.safeMastercopy;
-
-  const abi = AbiCoder.defaultAbiCoder();
-
-  const salt = keccak256(
-    concat([
-      keccak256(safeInitializer(owner)),
-      abi.encode(["uint256"], [saltNonce]),
-    ])
-  );
-
-  const deploymentData = concat([
-    proxyCreationBytecode,
-    abi.encode(["address"], [mastercopy]),
-  ]);
-
-  return getCreate2Address(factory, salt, keccak256(deploymentData));
 }

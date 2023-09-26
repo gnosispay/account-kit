@@ -22,8 +22,8 @@ import {
   populateSpend,
   predictAccountAddress,
 } from "../src";
-import { predictDelayAddress } from "../src/deployers/delay";
-import { predictRolesAddress } from "../src/deployers/roles";
+import { predictDelayAddress } from "../src/parts/delay";
+import { predictRolesAddress } from "../src/parts/roles";
 
 import { AccountConfig, AccountIntegrityStatus } from "../src/types";
 import {

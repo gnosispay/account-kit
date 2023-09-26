@@ -1,13 +1,15 @@
 import { AddressLike, BigNumberish, BytesLike, ZeroAddress } from "ethers";
 
 import { ALLOWANCE_SPENDING_KEY } from "../constants";
-import { predictOwnerChannelAddress } from "../deployers/channel";
-import { predictDelayAddress } from "../deployers/delay";
-import { predictForwarderAddress } from "../deployers/forwarder";
 
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 
+import {
+  predictDelayAddress,
+  predictForwarderAddress,
+  predictOwnerChannelAddress,
+} from "../parts";
 import { AllowanceConfig, OperationType, TransactionData } from "../types";
 
 export async function populateLimitEnqueue(

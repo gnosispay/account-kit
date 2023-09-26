@@ -1,17 +1,28 @@
-import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
-import { AbiCoder, concat, ZeroHash } from "ethers";
+import {
+  AbiCoder,
+  concat,
+  getCreate2Address,
+  keccak256,
+  ZeroHash,
+} from "ethers";
 
-import { predictSingletonAddress } from "./__singleton";
 import { predictRolesAddress } from "./roles";
 
 import {
   IRolesModifier__factory,
   SinglePurposeForwarder__factory,
 } from "../../typechain-types";
+import deployments from "../deployments";
 import { TransactionData } from "../types";
 
 export function predictForwarderAddress({ safe }: { safe: string }) {
-  return predictSingletonAddress(creationBytecode(safe));
+  const salt = ZeroHash;
+
+  return getCreate2Address(
+    deployments.singletonFactory.address,
+    salt,
+    keccak256(creationBytecode(safe))
+  );
 }
 
 export function populateForwarderCreation({
@@ -19,10 +30,8 @@ export function populateForwarderCreation({
 }: {
   safe: string;
 }): TransactionData {
-  const factory = getSingletonFactoryInfo(1)?.address as string; // 1 or 100 same
-
   return {
-    to: factory,
+    to: deployments.singletonFactory.address,
     data: `${ZeroHash}${creationBytecode(safe).slice(2)}`,
   };
 }

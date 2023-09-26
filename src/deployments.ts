@@ -6,6 +6,7 @@ import {
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments/";
 
+import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 import {
   IDelayModule__factory,
   IModuleProxyFactory__factory,
@@ -59,6 +60,9 @@ export default {
   multicall: {
     address: "0xcA11bde05977b3631167028862bE2a173976CA11",
     iface: IMulticall__factory.createInterface(),
+  },
+  singletonFactory: {
+    address: getSingletonFactoryInfo(1)?.address as string,
   },
 };
 

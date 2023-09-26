@@ -19,8 +19,8 @@ import {
   predictAccountAddress,
 } from "../src";
 import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
-import { predictDelayAddress } from "../src/deployers/delay";
-import { predictRolesAddress } from "../src/deployers/roles";
+import { predictDelayAddress } from "../src/parts/delay";
+import { predictRolesAddress } from "../src/parts/roles";
 
 import {
   IDelayModule__factory,
