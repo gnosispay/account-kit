@@ -42,7 +42,7 @@ describe("limit", () => {
   });
 
   async function setupAccount() {
-    const [eoa, spender, receiver, relayer] = await hre.ethers.getSigners();
+    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
     const config = createAccountConfig({
       spender: spender.address,
@@ -52,49 +52,48 @@ describe("limit", () => {
       allowance: AMOUNT,
       cooldown: COOLDOWN,
     });
-    const safeAddress = predictAccountAddress(eoa.address);
-    const delayAddress = predictDelayAddress(safeAddress);
-    const rolesAddress = predictRolesAddress(safeAddress);
-    await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);
+    const account = predictAccountAddress(owner.address);
+    const delayAddress = predictDelayAddress(account);
+    const rolesAddress = predictRolesAddress(account);
+    await moveERC20(GNO_WHALE, account, GNO, 2000);
 
-    const creationTx = populateAccountCreation(eoa.address);
+    const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => eoa.signTypedData(domain, types, message)
+      (domain, types, message) => owner.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
 
     return {
-      eoa,
+      account,
+      owner,
       spender,
       receiver,
       relayer,
-      safe: ISafe__factory.connect(safeAddress, relayer),
+      safe: ISafe__factory.connect(account, relayer),
       delay: IDelayModule__factory.connect(delayAddress, relayer),
       roles: IRolesModifier__factory.connect(rolesAddress, relayer),
-      safeAddress,
       config,
     };
   }
 
   it("sets allowance", async () => {
-    const { eoa, relayer, roles, safeAddress } =
-      await loadFixture(setupAccount);
+    const { account, owner, relayer, roles } = await loadFixture(setupAccount);
 
     let allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
     expect(allowance.refillInterval).to.equal(12345);
     expect(allowance.refillAmount).to.equal(76543);
 
     const enqueueTx = await populateLimitEnqueue(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { refill: 1, period: 1 },
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
 
-    const executeTx = populateLimitDispatch(safeAddress, {
+    const executeTx = populateLimitDispatch(account, {
       refill: 1,
       period: 1,
     });
@@ -117,26 +116,26 @@ describe("limit", () => {
   });
 
   it("only eoa can set allowance", async () => {
-    const { eoa, spender, relayer, safeAddress, roles } =
+    const { account, owner, spender, relayer, roles } =
       await loadFixture(setupAccount);
 
     let enqueueTx = await populateLimitEnqueue(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { refill: 7, period: 7 },
       (...args) => spender.signTypedData(...args)
     );
     await expect(relayer.sendTransaction(enqueueTx)).to.be.reverted;
 
     enqueueTx = await populateLimitEnqueue(
-      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { refill: 7, period: 7 },
-      (...args) => eoa.signTypedData(...args)
+      (...args) => owner.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueueTx);
 
     await mine(2, { interval: 120 });
 
-    const executeTx = populateLimitDispatch(safeAddress, {
+    const executeTx = populateLimitDispatch(account, {
       refill: 7,
       period: 7,
     });
