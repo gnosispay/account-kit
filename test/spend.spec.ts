@@ -9,7 +9,7 @@ import {
   fork,
   forkReset,
   moveERC20,
-} from "./test-helpers/setup";
+} from "./setup";
 
 import {
   populateAccountCreation,

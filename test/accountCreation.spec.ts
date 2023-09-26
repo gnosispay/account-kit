@@ -2,13 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import {
-  GNO,
-  GNO_WHALE,
-  fork,
-  forkReset,
-  moveERC20,
-} from "./test-helpers/setup";
+import { GNO, GNO_WHALE, fork, forkReset, moveERC20 } from "./setup";
 import {
   populateAccountCreation,
   populateDirectTransfer,
