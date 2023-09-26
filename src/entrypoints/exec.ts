@@ -12,25 +12,23 @@ import { OperationType, TransactionData } from "../types";
 
 export async function populateExecEnqueue(
   {
-    safe,
-    eoa,
+    account,
+    owner,
     chainId,
     nonce,
-  }: { safe: string; eoa: string; chainId: number; nonce: number },
+  }: { account: string; owner: string; chainId: number; nonce: number },
   transaction: TransactionData,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
-    address: predictOwnerChannelAddress({ eoa, safe }),
+    address: predictOwnerChannelAddress({ eoa: owner, safe: account }),
     iface: deployments.safeMastercopy.iface,
   };
 
-  const { to, value = 0, data } = populateDelayEnqueue(safe, transaction);
+  const { to, value = 0, data } = populateDelayEnqueue(account, transaction);
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    channel.address,
-    chainId,
-    nonce,
+    { safe: channel.address, chainId, nonce },
     { to, value, data, operation: OperationType.Call }
   );
 
@@ -54,8 +52,8 @@ export async function populateExecEnqueue(
 }
 
 export function populateExecDispatch(
-  { safe }: { safe: string },
+  account: string,
   transaction: TransactionData
 ): TransactionData {
-  return populateDelayDispatch(safe, transaction);
+  return populateDelayDispatch(account, transaction);
 }

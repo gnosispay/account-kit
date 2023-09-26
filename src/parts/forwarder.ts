@@ -15,7 +15,7 @@ import {
 import deployments from "../deployments";
 import { TransactionData } from "../types";
 
-export function predictForwarderAddress({ safe }: { safe: string }) {
+export function predictForwarderAddress(safe: string) {
   const salt = ZeroHash;
 
   return getCreate2Address(
@@ -25,11 +25,7 @@ export function predictForwarderAddress({ safe }: { safe: string }) {
   );
 }
 
-export function populateForwarderCreation({
-  safe,
-}: {
-  safe: string;
-}): TransactionData {
+export function populateForwarderCreation(safe: string): TransactionData {
   return {
     to: deployments.singletonFactory.address,
     data: `${ZeroHash}${creationBytecode(safe).slice(2)}`,

@@ -78,7 +78,7 @@ describe("account-creation", () => {
     const balance = await gno.balanceOf(safeAddress);
 
     const transaction = await populateDirectTransfer(
-      { safe: safeAddress, chainId: 31337, nonce: 0 },
+      { account: safeAddress, chainId: 31337, nonce: 0 },
       {
         token: GNO,
         to: AddressThree,

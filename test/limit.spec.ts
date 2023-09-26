@@ -59,7 +59,7 @@ describe("limit", () => {
 
     const creationTx = populateAccountCreation(eoa.address);
     const setupTx = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (domain, types, message) => eoa.signTypedData(domain, types, message)
     );
@@ -89,15 +89,15 @@ describe("limit", () => {
     expect(allowance.refillAmount).to.equal(76543);
 
     const enqueueTx = await populateLimitEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       { refill: 1, period: 1 },
       (...args) => eoa.signTypedData(...args)
     );
 
-    const executeTx = populateLimitDispatch(
-      { safe: safeAddress },
-      { refill: 1, period: 1 }
-    );
+    const executeTx = populateLimitDispatch(safeAddress, {
+      refill: 1,
+      period: 1,
+    });
 
     await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
 
@@ -121,14 +121,14 @@ describe("limit", () => {
       await loadFixture(setupAccount);
 
     let enqueueTx = await populateLimitEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       { refill: 7, period: 7 },
       (...args) => spender.signTypedData(...args)
     );
     await expect(relayer.sendTransaction(enqueueTx)).to.be.reverted;
 
     enqueueTx = await populateLimitEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       { refill: 7, period: 7 },
       (...args) => eoa.signTypedData(...args)
     );
@@ -136,10 +136,10 @@ describe("limit", () => {
 
     await mine(2, { interval: 120 });
 
-    const executeTx = populateLimitDispatch(
-      { safe: safeAddress },
-      { refill: 7, period: 7 }
-    );
+    const executeTx = populateLimitDispatch(safeAddress, {
+      refill: 7,
+      period: 7,
+    });
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
     const allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);

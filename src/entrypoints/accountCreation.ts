@@ -9,26 +9,28 @@ import { _populateSafeCreation, _predictSafeAddress } from "../parts";
 import { OperationType, TransactionData, Transfer } from "../types";
 
 export function predictAccountAddress(
-  eoa: string,
+  owner: string,
   saltNonce: bigint = ACCOUNT_SALT_NONCE
 ): string {
-  return _predictSafeAddress(eoa, saltNonce);
+  return _predictSafeAddress(owner, saltNonce);
 }
 
 export default function populateAccountCreation(
-  eoa: string,
+  owner: string,
   seed: bigint = ACCOUNT_SALT_NONCE
 ): TransactionData {
-  return _populateSafeCreation(eoa, seed);
+  return _populateSafeCreation(owner, seed);
 }
 
 export async function populateDirectTransfer(
-  { safe, chainId, nonce }: { safe: string; chainId: number; nonce: number },
+  {
+    account,
+    chainId,
+    nonce,
+  }: { account: string; chainId: number; nonce: number },
   transfer: Transfer,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const { iface } = deployments.safeMastercopy;
-
   const { to, value, data, operation } = {
     to: transfer.token,
     data: IERC20__factory.createInterface().encodeFunctionData("transfer", [
@@ -40,16 +42,15 @@ export async function populateDirectTransfer(
   };
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    safe,
-    chainId,
-    nonce,
+    { safe: account, chainId, nonce },
     { to, value, data, operation }
   );
 
   const signature = await sign(domain, types, message);
 
+  const { iface } = deployments.safeMastercopy;
   return {
-    to: safe,
+    to: account,
     data: iface.encodeFunctionData("execTransaction", [
       to,
       value,

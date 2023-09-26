@@ -11,24 +11,22 @@ import { OperationType, TransactionData, Transfer } from "../types";
 
 export default async function populateSpend(
   {
-    safe,
+    account,
     spender,
     chainId,
     nonce,
-  }: { safe: string; spender: string; chainId: number; nonce: number },
+  }: { account: string; spender: string; chainId: number; nonce: number },
   transfer: Transfer,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
-    address: predictSpenderChannelAddress({ safe, spender }),
+    address: predictSpenderChannelAddress({ safe: account, spender }),
     iface: deployments.safeMastercopy.iface,
   };
-  const { to, value = 0, data } = populateSpendTransaction({ safe }, transfer);
+  const { to, value = 0, data } = populateSpendTransaction(account, transfer);
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    channel.address,
-    chainId,
-    nonce,
+    { safe: channel.address, chainId, nonce },
     { to, value, data, operation: OperationType.Call }
   );
 
@@ -52,11 +50,11 @@ export default async function populateSpend(
 }
 
 function populateSpendTransaction(
-  { safe }: { safe: string },
+  account: string,
   { token, to, amount }: Transfer
 ): TransactionData {
   const roles = {
-    address: predictRolesAddress(safe),
+    address: predictRolesAddress(account),
     iface: deployments.rolesMastercopy.iface,
   };
 

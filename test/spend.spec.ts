@@ -48,7 +48,7 @@ describe("spend", () => {
     });
 
     const setupTransaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (domain, types, message) => eoa.signTypedData(domain, types, message)
     );
@@ -78,7 +78,12 @@ describe("spend", () => {
     const amount = 10;
 
     const spendSignedByOther = await populateSpend(
-      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        account: safeAddress,
+        spender: spender.address,
+        chainId: 31337,
+        nonce: 0,
+      },
       {
         token,
         to,
@@ -87,7 +92,12 @@ describe("spend", () => {
       (...args) => other.signTypedData(...args)
     );
     const spendSignedBySpender = await populateSpend(
-      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        account: safeAddress,
+        spender: spender.address,
+        chainId: 31337,
+        nonce: 0,
+      },
       {
         token,
         to,
@@ -114,7 +124,12 @@ describe("spend", () => {
     const amount = 10;
 
     const txToOther = await populateSpend(
-      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        account: safeAddress,
+        spender: spender.address,
+        chainId: 31337,
+        nonce: 0,
+      },
       {
         token,
         to: other.address,
@@ -124,7 +139,12 @@ describe("spend", () => {
     );
 
     const txToReceiver = await populateSpend(
-      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        account: safeAddress,
+        spender: spender.address,
+        chainId: 31337,
+        nonce: 0,
+      },
       {
         token,
         to: receiver.address,
@@ -152,7 +172,12 @@ describe("spend", () => {
     const amount = 2000;
 
     const txToReceiver = await populateSpend(
-      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        account: safeAddress,
+        spender: spender.address,
+        chainId: 31337,
+        nonce: 0,
+      },
       {
         token,
         to: receiver.address,

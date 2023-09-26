@@ -20,11 +20,11 @@ export function predictOwnerChannelAddress({
 }
 
 export function predictSpenderChannelAddress({
-  safe,
   spender,
+  safe,
 }: {
-  safe: string;
   spender: string;
+  safe: string;
 }): string {
   return _predictSafeAddress(spender, spenderChannelSaltNonce(safe));
 }

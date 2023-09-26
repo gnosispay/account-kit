@@ -36,32 +36,30 @@ const AddressTwo = "0x0000000000000000000000000000000000000002";
 
 export default async function populateAccountSetup(
   {
-    eoa,
-    safe,
+    account,
+    owner,
     chainId,
     nonce,
-  }: { eoa: string; safe: string; chainId: number; nonce: number },
+  }: { account: string; owner: string; chainId: number; nonce: number },
   config: AccountConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const iface = deployments.safeMastercopy.iface;
+  const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = populateInitMultisend(
-    { eoa, safe },
+    { account, owner },
     config
   );
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    safe,
-    chainId,
-    nonce,
+    { safe: account, chainId, nonce },
     { to, data, value, operation }
   );
 
   const signature = await sign(domain, types, message);
 
   return {
-    to: safe,
+    to: account,
     data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
@@ -78,27 +76,31 @@ export default async function populateAccountSetup(
 }
 
 function populateInitMultisend(
-  { eoa, safe }: { eoa: string; safe: string },
+  { account, owner }: { account: string; owner: string },
   { spender, receiver, token, allowance, period, cooldown }: AccountConfig
 ): SafeTransactionData {
   const abi = AbiCoder.defaultAbiCoder();
 
-  const account = {
-    address: safe,
-    iface: deployments.safeMastercopy.iface,
-  };
+  const { iface } = deployments.safeMastercopy;
+
   const delay = {
-    address: predictDelayAddress(safe),
+    address: predictDelayAddress(account),
     iface: deployments.delayMastercopy.iface,
   };
   const roles = {
-    address: predictRolesAddress(safe),
+    address: predictRolesAddress(account),
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const forwarderAddress = predictForwarderAddress({ safe });
-  const ownerChannelAddress = predictOwnerChannelAddress({ eoa, safe });
-  const spenderChannelAddress = predictSpenderChannelAddress({ safe, spender });
+  const forwarderAddress = predictForwarderAddress(account);
+  const ownerChannelAddress = predictOwnerChannelAddress({
+    eoa: owner,
+    safe: account,
+  });
+  const spenderChannelAddress = predictSpenderChannelAddress({
+    spender,
+    safe: account,
+  });
 
   return multisendEncode([
     /**
@@ -106,27 +108,27 @@ function populateInitMultisend(
      */
     // renounce ownership
     {
-      to: account.address,
-      data: account.iface.encodeFunctionData("swapOwner", [
+      to: account,
+      data: iface.encodeFunctionData("swapOwner", [
         SENTINEL,
-        eoa,
+        owner,
         AddressTwo,
       ]),
     },
     // enable roles as module on safe
     {
-      to: account.address,
-      data: account.iface.encodeFunctionData("enableModule", [roles.address]),
+      to: account,
+      data: iface.encodeFunctionData("enableModule", [roles.address]),
     },
     // enable delay as module on safe
     {
-      to: account.address,
-      data: account.iface.encodeFunctionData("enableModule", [delay.address]),
+      to: account,
+      data: iface.encodeFunctionData("enableModule", [delay.address]),
     },
     /**
      * DEPLOY AND CONFIG DELAY MODULE
      */
-    populateDelayCreation(account.address),
+    populateDelayCreation(account),
     // configure cooldown on delay
     {
       to: delay.address,
@@ -142,7 +144,7 @@ function populateInitMultisend(
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
      */
-    populateRolesCreation(account.address),
+    populateRolesCreation(account),
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("setAllowance", [
@@ -205,8 +207,8 @@ function populateInitMultisend(
       ]),
     },
     // Deploy Misc
-    populateForwarderCreation({ safe }),
-    populateOwnerChannelCreation({ eoa, safe }),
-    populateSpenderChannelCreation({ safe, spender }),
+    populateForwarderCreation(account),
+    populateOwnerChannelCreation({ eoa: owner, safe: account }),
+    populateSpenderChannelCreation({ spender, safe: account }),
   ]);
 }

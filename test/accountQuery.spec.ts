@@ -66,7 +66,7 @@ describe("account-query", () => {
 
     const creationTx = populateAccountCreation(eoa.address);
     const setupTx = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (domain, types, message) => eoa.signTypedData(domain, types, message)
     );
@@ -90,12 +90,9 @@ describe("account-query", () => {
   }
 
   it("passes for a well configured account", async () => {
-    const { eoa, safeAddress, config } = await loadFixture(setupAccount);
+    const { safeAddress, config } = await loadFixture(setupAccount);
 
-    const result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const result = await evaluateAccount(safeAddress, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance).to.equal(config.allowance);
@@ -112,8 +109,8 @@ describe("account-query", () => {
 
     const limitEnqueueTx = await populateLimitEnqueue(
       {
-        eoa: eoa.address,
-        safe: safeAddress,
+        owner: eoa.address,
+        account: safeAddress,
         chainId: 31337,
         nonce: 0,
       },
@@ -125,44 +122,42 @@ describe("account-query", () => {
     // go forward3 minutes
     await mine(3, { interval: 60 });
 
-    const limitExecuteTx = await populateLimitDispatch(
-      { safe: safeAddress },
-      { period: 1000, refill: REFILL, balance: 0, timestamp }
-    );
+    const limitExecuteTx = await populateLimitDispatch(safeAddress, {
+      period: 1000,
+      refill: REFILL,
+      balance: 0,
+      timestamp,
+    });
     await relayer.sendTransaction(limitExecuteTx);
 
-    let result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    let result = await evaluateAccount(safeAddress, config);
     expect(result.allowance).to.equal(0);
 
     // go forward 24 times one houre, one day
     await mine(2, { interval: 1000 });
 
-    result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    result = await evaluateAccount(safeAddress, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance).to.equal(REFILL);
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { eoa, spender, receiver, relayer, safeAddress, config } =
+    const { spender, receiver, relayer, safeAddress, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    let result = await evaluateAccount(safeAddress, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance).to.equal(config.allowance);
 
     const justSpent = 23;
     const transaction = await populateSpend(
-      { safe: safeAddress, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        account: safeAddress,
+        spender: spender.address,
+        chainId: 31337,
+        nonce: 0,
+      },
       {
         token: GNO,
         to: receiver.address,
@@ -174,10 +169,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
-    result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    result = await evaluateAccount(safeAddress, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance).to.equal(Number(config.allowance) - justSpent);
   });
@@ -187,10 +179,7 @@ describe("account-query", () => {
       await loadFixture(setupAccount);
 
     // ACCOUNT starts OK
-    let result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    let result = await evaluateAccount(safeAddress, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     const reconfigTx = await safe.addOwnerWithThreshold.populateTransaction(
@@ -200,32 +189,23 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfigTx,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
     // FAIL: queue not empty
-    result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    result = await evaluateAccount(safeAddress, config);
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
 
     // move 3 minutes forward, cooldown is 2 minutes
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(
-      { safe: safeAddress },
-      reconfigTx
-    );
+    const dispatch = await populateExecDispatch(safeAddress, reconfigTx);
     await relayer.sendTransaction(dispatch);
 
     // FAIL: no renounce ownership
-    result = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    result = await evaluateAccount(safeAddress, config);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when the number of modules enabled is not two", async () => {
@@ -238,23 +218,17 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(
-      { safe: safeAddress },
-      reconfig
-    );
+    const dispatch = await populateExecDispatch(safeAddress, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when roles module is not enabled", async () => {
@@ -271,23 +245,17 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(
-      { safe: safeAddress },
-      reconfig
-    );
+    const dispatch = await populateExecDispatch(safeAddress, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when delay module is not enabled", async () => {
@@ -303,23 +271,17 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(
-      { safe: safeAddress },
-      reconfig
-    );
+    const dispatch = await populateExecDispatch(safeAddress, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when the safe is not the owner of delay", async () => {
@@ -334,27 +296,21 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(
-      { safe: safeAddress },
-      reconfig
-    );
+    const dispatch = await populateExecDispatch(safeAddress, reconfig);
     await relayer.sendTransaction(dispatch);
 
     expect(await delay.owner()).to.equal(
       getAddress("0x000000000000000000000000000000000000000f")
     );
 
-    const { status } = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
   it("fails when cooldown is too short", async () => {
@@ -365,23 +321,17 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(
-      { safe: safeAddress },
-      reconfig
-    );
+    const dispatch = await populateExecDispatch(safeAddress, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
   it("fails when queue is not empty", async () => {
@@ -392,25 +342,22 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecEnqueue(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => eoa.signTypedData(...args)
     );
     await relayer.sendTransaction(enqueue);
 
-    const { status } = await evaluateAccount(
-      { eoa: eoa.address, safe: safeAddress },
-      config
-    );
+    const { status } = await evaluateAccount(safeAddress, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
 });
 
-async function evaluateAccount(
-  { safe }: { eoa: string; safe: string },
-  config: AccountConfig
-) {
-  const { to, data } = populateAccountQuery({ safe });
+async function evaluateAccount(account: string, config: AccountConfig) {
+  const { to, data } = populateAccountQuery(account);
   const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery({ safe }, config, resultData);
+  return evaluateAccountQuery(
+    { account, cooldown: config.cooldown },
+    resultData
+  );
 }

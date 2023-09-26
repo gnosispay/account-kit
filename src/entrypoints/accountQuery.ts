@@ -13,21 +13,14 @@ import { AccountIntegrityStatus, TransactionData } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
-export default function populateAccountQuery({
-  safe: safeAddress,
-}: {
-  safe: string;
-}): TransactionData {
-  const safe = {
-    address: safeAddress,
-    iface: deployments.safeMastercopy.iface,
-  };
+export default function populateAccountQuery(account: string): TransactionData {
+  const { iface } = deployments.safeMastercopy;
   const delay = {
-    address: predictDelayAddress(safeAddress),
+    address: predictDelayAddress(account),
     iface: deployments.delayMastercopy.iface,
   };
   const roles = {
-    address: predictRolesAddress(safe.address),
+    address: predictRolesAddress(account),
     iface: deployments.rolesMastercopy.iface,
   };
 
@@ -36,19 +29,19 @@ export default function populateAccountQuery({
   const data = multicall.iface.encodeFunctionData("aggregate3", [
     [
       {
-        target: safe.address,
+        target: account,
         allowFailure: true,
-        callData: safe.iface.encodeFunctionData("getOwners"),
+        callData: iface.encodeFunctionData("getOwners"),
       },
       {
-        target: safe.address,
+        target: account,
         allowFailure: true,
-        callData: safe.iface.encodeFunctionData("getThreshold"),
+        callData: iface.encodeFunctionData("getThreshold"),
       },
       {
-        target: safe.address,
+        target: account,
         allowFailure: true,
-        callData: safe.iface.encodeFunctionData("getModulesPaginated", [
+        callData: iface.encodeFunctionData("getModulesPaginated", [
           AddressOne,
           10,
         ]),
@@ -102,8 +95,7 @@ export default function populateAccountQuery({
 }
 
 export function evaluateAccountQuery(
-  { safe }: { safe: string },
-  { cooldown }: { cooldown: bigint | number },
+  { account, cooldown }: { account: string; cooldown: bigint | number },
   functionResult: string
 ): {
   status: AccountIntegrityStatus;
@@ -143,7 +135,7 @@ export function evaluateAccountQuery(
 
     if (
       !evaluateOwners(ownersResult, thresholdResult) ||
-      !evaluateModules({ safe }, modulesResult)
+      !evaluateModules(account, modulesResult)
     ) {
       return {
         status: AccountIntegrityStatus.SafeMisconfigured,
@@ -158,7 +150,7 @@ export function evaluateAccountQuery(
       };
     }
 
-    if (!evaluateRolesConfig({ safe }, rolesOwnerResult)) {
+    if (!evaluateRolesConfig(account, rolesOwnerResult)) {
       return {
         status: AccountIntegrityStatus.RolesMisconfigured,
         allowance: BigInt(0),
@@ -179,7 +171,8 @@ export function evaluateAccountQuery(
 
     if (
       !evaluateDelayConfig(
-        { safe, cooldown },
+        account,
+        cooldown,
         delayOwnerResult,
         txCooldownResult
       )
@@ -227,7 +220,7 @@ function evaluateOwners(ownersResult: string, thresholdResult: string) {
   );
 }
 
-function evaluateModules({ safe }: { safe: string }, result: string) {
+function evaluateModules(safe: string, result: string) {
   const { iface } = deployments.safeMastercopy;
 
   const [enabledModules]: string[][] = iface.decodeFunctionResult(
@@ -248,20 +241,18 @@ function evaluateModules({ safe }: { safe: string }, result: string) {
   );
 }
 
-function evaluateRolesConfig(
-  { safe }: { safe: string },
-  rolesOwnerResult: string
-) {
+function evaluateRolesConfig(safe: string, rolesOwnerResult: string) {
   const abi = AbiCoder.defaultAbiCoder();
 
   const [rolesOwner] = abi.decode(["address"], rolesOwnerResult);
-  const forwarder = predictForwarderAddress({ safe });
+  const forwarder = predictForwarderAddress(safe);
 
   return rolesOwner === forwarder;
 }
 
 function evaluateDelayConfig(
-  { safe, cooldown }: { safe: string; cooldown: bigint | number },
+  safe: string,
+  cooldown: bigint | number,
   ownerResult: string,
   cooldownResult: string
 ) {
@@ -271,7 +262,7 @@ function evaluateDelayConfig(
   // check that the safe is the owner of the delay mod
   return (
     owner.toLowerCase() == safe.toLowerCase() &&
-    BigInt(cooldownResult) >= cooldown
+    BigInt(cooldownResult) >= BigInt(cooldown)
   );
 }
 

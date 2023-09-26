@@ -73,16 +73,14 @@ describe("account-setup", () => {
       receiver: receiver.address,
     });
 
-    const forwarderAddresss = predictForwarderAddress({
-      safe: safeAddress,
-    });
+    const forwarderAddresss = predictForwarderAddress(safeAddress);
     const forwarder = SinglePurposeForwarder__factory.connect(
       forwarderAddresss,
       hre.ethers.provider
     );
 
     const transaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => eoa.signTypedData(...args)
     );
@@ -125,7 +123,7 @@ describe("account-setup", () => {
     );
 
     const transaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => eoa.signTypedData(...args)
     );
@@ -152,7 +150,7 @@ describe("account-setup", () => {
     });
 
     const transaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => eoa.signTypedData(...args)
     );
@@ -179,7 +177,7 @@ describe("account-setup", () => {
     expect(delayAddress).to.not.equal(rolesAddress);
 
     const transaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => eoa.signTypedData(...args)
     );
@@ -220,9 +218,7 @@ describe("account-setup", () => {
       allowance: AMOUNT,
     });
 
-    const forwarderAddress = predictForwarderAddress({
-      safe: safeAddress,
-    });
+    const forwarderAddress = predictForwarderAddress(safeAddress);
 
     const spenderChannelAddress = predictSpenderChannelAddress({
       safe: safeAddress,
@@ -232,7 +228,7 @@ describe("account-setup", () => {
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     const transaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => eoa.signTypedData(...args)
     );
@@ -279,7 +275,7 @@ describe("account-setup", () => {
     });
 
     const transaction = await populateAccountSetup(
-      { eoa: eoa.address, safe: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: eoa.address, account: safeAddress, chainId: 31337, nonce: 0 },
       config,
       (...args) => eoa.signTypedData(...args)
     );
