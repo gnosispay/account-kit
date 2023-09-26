@@ -1,30 +1,23 @@
 import { ZeroAddress } from "ethers";
 
-import { ALLOWANCE_SPENDING_KEY } from "../constants";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import {
   populateDelayDispatch,
   populateDelayEnqueue,
-  predictForwarderAddress,
   predictOwnerChannelAddress,
 } from "../parts";
 
-import {
-  AllowanceConfig,
-  DelayTransactionData,
-  OperationType,
-  TransactionData,
-} from "../types";
+import { DelayTransactionData, OperationType, TransactionData } from "../types";
 
-export async function populateLimitEnqueue(
+export async function populateExecEnqueue(
   {
     safe,
     eoa,
     chainId,
     nonce,
   }: { safe: string; eoa: string; chainId: number; nonce: number },
-  config: AllowanceConfig,
+  transaction: DelayTransactionData,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
@@ -32,11 +25,7 @@ export async function populateLimitEnqueue(
     iface: deployments.safeMastercopy.iface,
   };
 
-  const {
-    to,
-    value = 0,
-    data,
-  } = populateDelayEnqueue(safe, populateSetAllowance(safe, config));
+  const { to, value = 0, data } = populateDelayEnqueue(safe, transaction);
 
   const { domain, types, message } = typedDataForSafeTransaction(
     channel.address,
@@ -65,31 +54,9 @@ export async function populateLimitEnqueue(
   };
 }
 
-export function populateLimitDispatch(
+export function populateExecDispatch(
   { safe }: { safe: string },
-  config: AllowanceConfig
+  transaction: DelayTransactionData
 ): TransactionData {
-  return populateDelayDispatch(safe, populateSetAllowance(safe, config));
-}
-
-function populateSetAllowance(
-  safe: string,
-  { balance, refill, period, timestamp }: AllowanceConfig
-): DelayTransactionData {
-  const address = predictForwarderAddress({ safe });
-  const iface = deployments.rolesMastercopy.iface;
-
-  return {
-    to: address,
-    value: 0,
-    data: iface.encodeFunctionData("setAllowance", [
-      ALLOWANCE_SPENDING_KEY,
-      balance || 0,
-      refill, // maxBalance
-      refill, // refill
-      period,
-      timestamp || 0,
-    ]),
-    operation: OperationType.Call,
-  };
+  return populateDelayDispatch(safe, transaction);
 }

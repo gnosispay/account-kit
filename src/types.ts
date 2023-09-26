@@ -16,6 +16,13 @@ export interface SafeTransactionData {
   operation: OperationType;
 }
 
+export interface DelayTransactionData {
+  to: string;
+  value: bigint | number;
+  data: string;
+  operation: OperationType;
+}
+
 export type Transfer = {
   token: string;
   to: string;
