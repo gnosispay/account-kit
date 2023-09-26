@@ -3,7 +3,7 @@ import { AbiCoder, ZeroHash } from "ethers";
 import { _predictZodiacModAddress } from "./_zodiacMod";
 
 import deployments from "../deployments";
-import { DelayTransactionData, TransactionData } from "../types";
+import { OperationType, TransactionData } from "../types";
 
 export function predictDelayAddress(safe: string): string {
   return _predictZodiacModAddress(
@@ -27,7 +27,7 @@ export function populateDelayCreation(safe: string): TransactionData {
 
 export function populateDelayEnqueue(
   safe: string,
-  { to, value, data, operation }: DelayTransactionData
+  { to, value, data }: TransactionData
 ): TransactionData {
   const delay = {
     address: predictDelayAddress(safe),
@@ -38,17 +38,16 @@ export function populateDelayEnqueue(
     to: delay.address,
     data: delay.iface.encodeFunctionData("execTransactionFromModule", [
       to,
-      value,
+      value || 0,
       data,
-      operation,
+      OperationType.Call,
     ]),
-    value: 0,
   };
 }
 
 export function populateDelayDispatch(
   safe: string,
-  { to, value, data, operation }: DelayTransactionData
+  { to, value, data }: TransactionData
 ): TransactionData {
   const delay = {
     address: predictDelayAddress(safe),
@@ -59,11 +58,10 @@ export function populateDelayDispatch(
     to: delay.address,
     data: delay.iface.encodeFunctionData("executeNextTx", [
       to,
-      value,
+      value || 0,
       data,
-      operation,
+      OperationType.Call,
     ]),
-    value: 0,
   };
 }
 

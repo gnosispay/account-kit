@@ -10,12 +10,7 @@ import {
   predictOwnerChannelAddress,
 } from "../parts";
 
-import {
-  AllowanceConfig,
-  DelayTransactionData,
-  OperationType,
-  TransactionData,
-} from "../types";
+import { AllowanceConfig, OperationType, TransactionData } from "../types";
 
 export async function populateLimitEnqueue(
   {
@@ -75,13 +70,12 @@ export function populateLimitDispatch(
 function populateSetAllowance(
   safe: string,
   { balance, refill, period, timestamp }: AllowanceConfig
-): DelayTransactionData {
+): TransactionData {
   const address = predictForwarderAddress({ safe });
   const iface = deployments.rolesMastercopy.iface;
 
   return {
     to: address,
-    value: 0,
     data: iface.encodeFunctionData("setAllowance", [
       ALLOWANCE_SPENDING_KEY,
       balance || 0,
@@ -90,6 +84,5 @@ function populateSetAllowance(
       period,
       timestamp || 0,
     ]),
-    operation: OperationType.Call,
   };
 }

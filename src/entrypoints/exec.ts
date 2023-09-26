@@ -8,7 +8,7 @@ import {
   predictOwnerChannelAddress,
 } from "../parts";
 
-import { DelayTransactionData, OperationType, TransactionData } from "../types";
+import { OperationType, TransactionData } from "../types";
 
 export async function populateExecEnqueue(
   {
@@ -17,7 +17,7 @@ export async function populateExecEnqueue(
     chainId,
     nonce,
   }: { safe: string; eoa: string; chainId: number; nonce: number },
-  transaction: DelayTransactionData,
+  transaction: TransactionData,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const channel = {
@@ -56,7 +56,7 @@ export async function populateExecEnqueue(
 
 export function populateExecDispatch(
   { safe }: { safe: string },
-  transaction: DelayTransactionData
+  transaction: TransactionData
 ): TransactionData {
   return populateDelayDispatch(safe, transaction);
 }

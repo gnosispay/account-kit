@@ -48,7 +48,6 @@ export default async function populateSpend(
       ZeroAddress,
       signature,
     ]),
-    value: 0,
   };
 }
 
@@ -74,6 +73,5 @@ function populateSpendTransaction(
       ROLE_SPENDING_KEY,
       true, // shouldRevert
     ]),
-    value: 0,
   };
 }
