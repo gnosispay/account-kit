@@ -55,7 +55,6 @@ export function createAccountConfig({
   token = GNO,
   allowance = 1000000,
   period = 60 * 60 * 24, // in seconds, 1 day
-  // for delay
   cooldown = 60 * 20, // in seconds, 20 minutes
 }: {
   spender: string;

@@ -6,14 +6,55 @@ import deployments from "../deployments";
 import {
   predictDelayAddress,
   predictForwarderAddress,
+  predictOwnerChannelAddress,
   predictRolesAddress,
+  predictSpenderChannelAddress,
 } from "../parts";
 
 import { AccountIntegrityStatus, TransactionData } from "../types";
 
-const AddressOne = "0x0000000000000000000000000000000000000001";
+type Result = {
+  status: AccountIntegrityStatus;
+  allowance: {
+    balance: bigint;
+  };
+  nonces: {
+    account: bigint;
+    owner: bigint;
+    spender: bigint;
+  };
+};
 
-export default function populateAccountQuery(account: string): TransactionData {
+const AddressOne = "0x0000000000000000000000000000000000000001";
+const empty = {
+  allowance: { balance: BigInt(0) },
+  nonces: { account: BigInt(0), owner: BigInt(0), spender: BigInt(0) },
+};
+
+export default async function accountQuery(
+  {
+    account,
+    owner,
+    spender,
+    cooldown,
+  }: {
+    account: string;
+    owner: string;
+    spender: string;
+    cooldown: number;
+  },
+  doEthCall: (request: TransactionData) => Promise<string>
+): Promise<Result> {
+  const request = createRequest(account, owner, spender);
+  const resultData = await doEthCall(request);
+  return evaluateResult(account, cooldown, resultData);
+}
+
+function createRequest(
+  account: string,
+  owner: string,
+  spender: string
+): TransactionData {
   const { iface } = deployments.safeMastercopy;
   const delay = {
     address: predictDelayAddress(account),
@@ -85,6 +126,21 @@ export default function populateAccountQuery(account: string): TransactionData {
           "getCurrentBlockTimestamp"
         ),
       },
+      {
+        target: account,
+        allowFailure: true,
+        callData: iface.encodeFunctionData("nonce"),
+      },
+      {
+        target: predictOwnerChannelAddress({ account, owner }),
+        allowFailure: true,
+        callData: iface.encodeFunctionData("nonce"),
+      },
+      {
+        target: predictSpenderChannelAddress({ account, spender }),
+        allowFailure: true,
+        callData: iface.encodeFunctionData("nonce"),
+      },
     ],
   ]);
 
@@ -94,19 +150,17 @@ export default function populateAccountQuery(account: string): TransactionData {
   };
 }
 
-export function evaluateAccountQuery(
-  { account, cooldown }: { account: string; cooldown: bigint | number },
-  functionResult: string
-): {
-  status: AccountIntegrityStatus;
-  allowance: bigint;
-} {
+function evaluateResult(
+  account: string,
+  cooldown: number,
+  resultData: string
+): Result {
   try {
     const multicall = deployments.multicall.iface;
 
     const [aggregate3Result] = multicall.decodeFunctionResult(
       "aggregate3",
-      functionResult
+      resultData
     );
 
     const [
@@ -120,6 +174,9 @@ export function evaluateAccountQuery(
       [txNonceSuccess, txNonceResult],
       [queueNonceSuccess, queueNonceResult],
       [, blockTimestampResult],
+      [, accountNonceResult],
+      [, ownerNonceResult],
+      [, spenderNonceResult],
     ] = aggregate3Result;
 
     if (
@@ -128,8 +185,8 @@ export function evaluateAccountQuery(
       modulesSuccess !== true
     ) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.SafeNotDeployed,
-        allowance: BigInt(0),
       };
     }
 
@@ -138,22 +195,22 @@ export function evaluateAccountQuery(
       !evaluateModules(account, modulesResult)
     ) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.SafeMisconfigured,
-        allowance: BigInt(0),
       };
     }
 
     if (rolesOwnerSuccess !== true || allowanceSuccess != true) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.RolesNotDeployed,
-        allowance: BigInt(0),
       };
     }
 
     if (!evaluateRolesConfig(account, rolesOwnerResult)) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.RolesMisconfigured,
-        allowance: BigInt(0),
       };
     }
 
@@ -164,8 +221,8 @@ export function evaluateAccountQuery(
       queueNonceSuccess != true
     ) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.DelayNotDeployed,
-        allowance: BigInt(0),
       };
     }
 
@@ -178,26 +235,34 @@ export function evaluateAccountQuery(
       )
     ) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.DelayMisconfigured,
-        allowance: BigInt(0),
       };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
       return {
+        ...empty,
         status: AccountIntegrityStatus.DelayQueueNotEmpty,
-        allowance: BigInt(0),
       };
     }
 
     return {
+      ...empty,
       status: AccountIntegrityStatus.Ok,
-      allowance: accruedBalance(allowanceResult, blockTimestampResult),
+      allowance: {
+        balance: accruedBalance(allowanceResult, blockTimestampResult),
+      },
+      nonces: {
+        account: BigInt(accountNonceResult),
+        owner: BigInt(ownerNonceResult),
+        spender: BigInt(spenderNonceResult),
+      },
     };
   } catch (e) {
     return {
+      ...empty,
       status: AccountIntegrityStatus.UnexpectedError,
-      allowance: BigInt(0),
     };
   }
 }
@@ -252,7 +317,7 @@ function evaluateRolesConfig(safe: string, rolesOwnerResult: string) {
 
 function evaluateDelayConfig(
   safe: string,
-  cooldown: bigint | number,
+  cooldown: number,
   ownerResult: string,
   cooldownResult: string
 ) {

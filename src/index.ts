@@ -2,9 +2,7 @@ import populateAccountCreation, {
   predictAccountAddress,
   populateDirectTransfer,
 } from "./entrypoints/accountCreation";
-import populateAccountQuery, {
-  evaluateAccountQuery,
-} from "./entrypoints/accountQuery";
+import accountQuery from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
 import {
   populateLimitEnqueue,
@@ -29,7 +27,6 @@ export {
   populateExecDispatch,
   // predict account setup addresses
   predictAccountAddress,
-  // integrity and status query
-  populateAccountQuery,
-  evaluateAccountQuery,
+  // integrity, status and info query
+  accountQuery,
 };

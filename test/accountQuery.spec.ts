@@ -13,14 +13,13 @@ import {
 } from "./test-helpers/setup";
 
 import {
-  evaluateAccountQuery,
   populateAccountCreation,
-  populateAccountQuery,
   populateAccountSetup,
   populateLimitEnqueue,
   populateLimitDispatch,
   populateSpend,
   predictAccountAddress,
+  accountQuery,
 } from "../src";
 import {
   populateExecDispatch,
@@ -87,29 +86,23 @@ describe("account-query", () => {
   }
 
   it("passes for a well configured account", async () => {
-    const { account, config } = await loadFixture(setupAccount);
+    const { account, owner, config } = await loadFixture(setupAccount);
 
-    const result = await evaluateAccount(account, config);
+    const result = await evaluateAccount(account, owner.address, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance).to.equal(config.allowance);
+    expect(result.allowance.balance).to.equal(config.allowance);
   });
 
   it("calculates accrued allowance", async () => {
     const { owner, account, relayer, config } = await loadFixture(setupAccount);
 
     const REFILL = 987;
-
     const timestamp = (await hre.ethers.provider.getBlock("latest"))
       ?.timestamp as number;
 
     const limitEnqueueTx = await populateLimitEnqueue(
-      {
-        owner: owner.address,
-        account,
-        chainId: 31337,
-        nonce: 0,
-      },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { period: 1000, refill: REFILL, balance: 0, timestamp },
       (...args) => owner.signTypedData(...args)
     );
@@ -126,48 +119,41 @@ describe("account-query", () => {
     });
     await relayer.sendTransaction(limitExecuteTx);
 
-    let result = await evaluateAccount(account, config);
-    expect(result.allowance).to.equal(0);
+    let result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(0);
 
     // go forward 24 times one houre, one day
     await mine(2, { interval: 1000 });
 
-    result = await evaluateAccount(account, config);
+    result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance).to.equal(REFILL);
+    expect(result.allowance.balance).to.equal(REFILL);
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { spender, receiver, relayer, account, config } =
+    const { account, owner, spender, receiver, relayer, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(account, config);
+    let result = await evaluateAccount(account, owner.address, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance).to.equal(config.allowance);
+    expect(result.allowance.balance).to.equal(config.allowance);
 
     const justSpent = 23;
     const transaction = await populateSpend(
-      {
-        account,
-        spender: spender.address,
-        chainId: 31337,
-        nonce: 0,
-      },
-      {
-        token: GNO,
-        to: receiver.address,
-        amount: justSpent,
-      },
+      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { token: GNO, to: receiver.address, amount: justSpent },
       (...args) => spender.signTypedData(...args)
     );
 
     await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
-    result = await evaluateAccount(account, config);
+    result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance).to.equal(Number(config.allowance) - justSpent);
+    expect(result.allowance.balance).to.equal(
+      Number(config.allowance) - justSpent
+    );
   });
 
   it("fails when ownership isn't renounced", async () => {
@@ -175,7 +161,7 @@ describe("account-query", () => {
       await loadFixture(setupAccount);
 
     // ACCOUNT starts OK
-    let result = await evaluateAccount(account, config);
+    let result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     const reconfigTx = await safe.addOwnerWithThreshold.populateTransaction(
@@ -192,7 +178,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     // FAIL: queue not empty
-    result = await evaluateAccount(account, config);
+    result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
 
     // move 3 minutes forward, cooldown is 2 minutes
@@ -201,7 +187,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(dispatch);
 
     // FAIL: no renounce ownership
-    result = await evaluateAccount(account, config);
+    result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when the number of modules enabled is not two", async () => {
@@ -224,7 +210,7 @@ describe("account-query", () => {
     const dispatch = await populateExecDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when roles module is not enabled", async () => {
@@ -251,7 +237,7 @@ describe("account-query", () => {
     const dispatch = await populateExecDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when delay module is not enabled", async () => {
@@ -277,7 +263,7 @@ describe("account-query", () => {
     const dispatch = await populateExecDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when the safe is not the owner of delay", async () => {
@@ -306,7 +292,7 @@ describe("account-query", () => {
       getAddress("0x000000000000000000000000000000000000000f")
     );
 
-    const { status } = await evaluateAccount(account, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
   it("fails when cooldown is too short", async () => {
@@ -327,7 +313,7 @@ describe("account-query", () => {
     const dispatch = await populateExecDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
   it("fails when queue is not empty", async () => {
@@ -344,16 +330,18 @@ describe("account-query", () => {
     );
     await relayer.sendTransaction(enqueue);
 
-    const { status } = await evaluateAccount(account, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
 });
 
-async function evaluateAccount(account: string, config: AccountConfig) {
-  const { to, data } = populateAccountQuery(account);
-  const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery(
-    { account, cooldown: config.cooldown },
-    resultData
+async function evaluateAccount(
+  account: string,
+  owner: string,
+  config: AccountConfig
+) {
+  return accountQuery(
+    { account, owner, spender: config.spender, cooldown: config.cooldown },
+    ({ to, data }) => hre.ethers.provider.send("eth_call", [{ to, data }])
   );
 }
