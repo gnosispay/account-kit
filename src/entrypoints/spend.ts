@@ -1,10 +1,11 @@
 import { ZeroAddress } from "ethers";
+
 import { IERC20__factory } from "../../typechain-types";
 import { ROLE_SPENDING_KEY } from "../constants";
+
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
-import { predictSpenderChannelAddress } from "../parts/channel";
-import { predictRolesAddress } from "../parts/roles";
+import { predictRolesAddress, predictSpenderChannelAddress } from "../parts";
 
 import { OperationType, TransactionData, Transfer } from "../types";
 
