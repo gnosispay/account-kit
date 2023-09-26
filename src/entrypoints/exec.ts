@@ -50,7 +50,6 @@ export async function populateExecEnqueue(
       ZeroAddress,
       signature,
     ]),
-    value: 0,
   };
 }
 

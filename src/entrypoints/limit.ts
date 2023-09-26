@@ -2,15 +2,10 @@ import { ZeroAddress } from "ethers";
 
 import { ALLOWANCE_SPENDING_KEY } from "../constants";
 import deployments from "../deployments";
-import { typedDataForSafeTransaction } from "../eip712";
-import {
-  populateDelayDispatch,
-  populateDelayEnqueue,
-  predictForwarderAddress,
-  predictOwnerChannelAddress,
-} from "../parts";
+import { predictForwarderAddress } from "../parts";
 
 import { AllowanceConfig, OperationType, TransactionData } from "../types";
+import { populateExecDispatch, populateExecEnqueue } from "./exec";
 
 export async function populateLimitEnqueue(
   {
@@ -22,52 +17,20 @@ export async function populateLimitEnqueue(
   config: AllowanceConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const channel = {
-    address: predictOwnerChannelAddress({ eoa, safe }),
-    iface: deployments.safeMastercopy.iface,
-  };
+  const transaction = toSetAllowanceTransaction(safe, config);
 
-  const {
-    to,
-    value = 0,
-    data,
-  } = populateDelayEnqueue(safe, populateSetAllowance(safe, config));
-
-  const { domain, types, message } = typedDataForSafeTransaction(
-    channel.address,
-    chainId,
-    nonce,
-    { to, value, data, operation: OperationType.Call }
-  );
-
-  const signature = await sign(domain, types, message);
-
-  return {
-    to: channel.address,
-    data: channel.iface.encodeFunctionData("execTransaction", [
-      to,
-      value,
-      data,
-      OperationType.Call,
-      0,
-      0,
-      0,
-      ZeroAddress,
-      ZeroAddress,
-      signature,
-    ]),
-    value: 0,
-  };
+  return populateExecEnqueue({ safe, eoa, chainId, nonce }, transaction, sign);
 }
 
 export function populateLimitDispatch(
   { safe }: { safe: string },
   config: AllowanceConfig
 ): TransactionData {
-  return populateDelayDispatch(safe, populateSetAllowance(safe, config));
+  const transaction = toSetAllowanceTransaction(safe, config);
+  return populateExecDispatch({ safe }, transaction);
 }
 
-function populateSetAllowance(
+function toSetAllowanceTransaction(
   safe: string,
   { balance, refill, period, timestamp }: AllowanceConfig
 ): TransactionData {
