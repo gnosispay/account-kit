@@ -99,21 +99,21 @@ describe("account-query", () => {
     const refill = 1000;
     const spent = 50;
 
-    const limitEnqueueTx = await populateLimitEnqueue(
+    const enqueue = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { period: oneDay, refill },
       (...args) => owner.signTypedData(...args)
     );
-    await relayer.sendTransaction(limitEnqueueTx);
+    await relayer.sendTransaction(enqueue);
 
     // go forward3 minutes
     await mine(3, { interval: 60 });
 
-    const limitExecuteTx = await populateLimitDispatch(account, {
+    const dispatch = populateLimitDispatch(account, {
       period: oneDay,
       refill,
     });
-    await relayer.sendTransaction(limitExecuteTx);
+    await relayer.sendTransaction(dispatch);
 
     let result = await evaluateAccount(account, owner.address, config);
     expect(result.allowance.balance).to.equal(refill);
@@ -200,7 +200,7 @@ describe("account-query", () => {
 
     // move 3 minutes forward, cooldown is 2 minutes
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecuteDispatch(account, reconfigTx);
+    const dispatch = populateExecuteDispatch(account, reconfigTx);
     await relayer.sendTransaction(dispatch);
 
     // FAIL: no renounce ownership
@@ -224,7 +224,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -251,7 +251,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -277,7 +277,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -302,7 +302,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     expect(await delay.owner()).to.equal(
@@ -327,7 +327,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
