@@ -5,7 +5,7 @@ import hre from "hardhat";
 import {
   GNO,
   GNO_WHALE,
-  createAccountConfig,
+  createSetupConfig,
   fork,
   forkReset,
   moveERC20,
@@ -39,7 +39,7 @@ describe("spend", () => {
 
     await moveERC20(GNO_WHALE, account, GNO);
 
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       token: GNO,

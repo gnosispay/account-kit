@@ -24,7 +24,7 @@ import {
 } from "../parts";
 
 import {
-  AccountConfig,
+  SetupConfig,
   RolesExecutionOptions,
   RolesOperator,
   RolesParameterType,
@@ -41,7 +41,7 @@ export default async function populateAccountSetup(
     chainId,
     nonce,
   }: { account: string; owner: string; chainId: number; nonce: number },
-  config: AccountConfig,
+  config: SetupConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
   const { iface } = deployments.safeMastercopy;
@@ -77,7 +77,13 @@ export default async function populateAccountSetup(
 
 function populateInitMultisend(
   { account, owner }: { account: string; owner: string },
-  { spender, receiver, token, allowance, period, cooldown }: AccountConfig
+  {
+    spender,
+    receiver,
+    token,
+    allowance: { refill, period },
+    delay: { cooldown, expiration },
+  }: SetupConfig
 ): SafeTransactionData {
   const abi = AbiCoder.defaultAbiCoder();
 
@@ -127,12 +133,19 @@ function populateInitMultisend(
     },
     /**
      * DEPLOY AND CONFIG DELAY MODULE
+     * note we deploy delay with 0, 0 as to be as stable as possible
+     * with deployment address prediction. set afeter
      */
     populateDelayCreation(account),
     // configure cooldown on delay
     {
       to: delay.address,
       data: delay.iface.encodeFunctionData("setTxCooldown", [cooldown]),
+    },
+    // configure expiration on delay
+    {
+      to: delay.address,
+      data: delay.iface.encodeFunctionData("setTxExpiration", [expiration]),
     },
     // enable owner on the delay as module
     {
@@ -149,10 +162,15 @@ function populateInitMultisend(
       to: roles.address,
       data: roles.iface.encodeFunctionData("setAllowance", [
         SPENDING_ALLOWANCE_KEY,
-        allowance, // balance
-        allowance, // maxBalance
-        allowance, // refill
+        // balance
+        refill,
+        // maxBalance
+        refill,
+        // refill
+        refill,
+        // period,
         period,
+        // timestamp
         0,
       ]),
     },

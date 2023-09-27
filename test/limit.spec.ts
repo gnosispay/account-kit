@@ -5,7 +5,7 @@ import hre from "hardhat";
 import {
   GNO,
   GNO_WHALE,
-  createAccountConfig,
+  createSetupConfig,
   fork,
   forkReset,
   moveERC20,
@@ -44,7 +44,7 @@ describe("limit", () => {
   async function setupAccount() {
     const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       period: PERIOD,

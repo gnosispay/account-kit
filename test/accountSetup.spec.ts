@@ -2,7 +2,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { GNO, createAccountConfig, fork, forkReset } from "./setup";
+import { GNO, createSetupConfig, fork, forkReset } from "./setup";
 import {
   populateAccountCreation,
   populateAccountSetup,
@@ -63,7 +63,7 @@ describe("account-setup", () => {
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -97,7 +97,7 @@ describe("account-setup", () => {
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -139,7 +139,7 @@ describe("account-setup", () => {
     const { account, owner, spender, receiver, relayer, safe } =
       await loadFixture(createAccount);
 
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -162,7 +162,7 @@ describe("account-setup", () => {
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -205,7 +205,7 @@ describe("account-setup", () => {
     const PERIOD = 7654;
     const AMOUNT = 123;
 
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       period: PERIOD,
@@ -255,12 +255,14 @@ describe("account-setup", () => {
       await loadFixture(createAccount);
 
     const delayAddress = await delay.getAddress();
-    const COOLDOWN = 9999;
+    const COOLDOWN = 60 * 3;
+    const EXPIRATION = 60 * 30;
 
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       cooldown: COOLDOWN,
+      expiration: EXPIRATION,
     });
 
     const ownerChannelAddress = predictOwnerChannelAddress({
@@ -284,7 +286,8 @@ describe("account-setup", () => {
     expect(await delay.isModuleEnabled(ownerChannelAddress)).to.be.true;
 
     expect(await delay.owner()).to.equal(account);
-    expect(await delay.txCooldown()).to.equal(9999);
+    expect(await delay.txCooldown()).to.equal(COOLDOWN);
+    expect(await delay.txExpiration()).to.equal(EXPIRATION);
     expect(await delay.queueNonce()).to.equal(await delay.txNonce());
   });
 });

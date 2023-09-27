@@ -34,7 +34,7 @@ export function populateLimitDispatch(
 
 function populateSetAllowance(
   account: string,
-  { balance, refill, period, timestamp }: AllowanceConfig
+  { refill, period }: AllowanceConfig
 ): TransactionData {
   const address = predictForwarderAddress(account);
   const iface = deployments.rolesMastercopy.iface;
@@ -43,11 +43,11 @@ function populateSetAllowance(
     to: address,
     data: iface.encodeFunctionData("setAllowance", [
       SPENDING_ALLOWANCE_KEY,
-      balance || 0,
+      refill, // balance
       refill, // maxBalance
       refill, // refill
-      period,
-      timestamp || 0,
+      period, // period
+      0, // timestamp
     ]),
   };
 }

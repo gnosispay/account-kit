@@ -22,13 +22,12 @@ export type Transfer = {
   amount: bigint | number;
 };
 
-export type AccountConfig = {
-  spender: string; // the gnosis signer
-  receiver: string; // the settlement safe
-  token: string; // the address of the token used for payments
-  allowance: bigint | number; // the allowance amount granted to spender
-  period: number; // period, in seconds, after allowance will be replenished
-  cooldown: number; // delay, in seconds, for eoa before he can unilaterally execute transactions
+export type SetupConfig = {
+  spender: string; // gnosis signer
+  receiver: string; // settlement safe
+  token: string; // token contract address used for payments
+  allowance: AllowanceConfig;
+  delay: DelayConfig;
 };
 
 export type AllowanceConfig = {
@@ -36,10 +35,13 @@ export type AllowanceConfig = {
   period: bigint | number;
   /// Amount added to balance after each period elapses.
   refill: bigint | number;
-  /// Initial allowance available for use.
-  balance?: bigint | number;
-  /// Timestamp when the last refill occurred.
-  timestamp?: bigint | number;
+};
+
+export type DelayConfig = {
+  /// Duration in seconds that should be required after a transaction is proposed
+  cooldown: number;
+  /// Duration in seconds that a proposed transaction is valid for after cooldown (or 0 if valid forever)
+  expiration: number;
 };
 
 export enum AccountIntegrityStatus {

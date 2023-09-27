@@ -6,7 +6,7 @@ import hre from "hardhat";
 import {
   GNO,
   GNO_WHALE,
-  createAccountConfig,
+  createSetupConfig,
   fork,
   forkReset,
   moveERC20,
@@ -28,7 +28,7 @@ import {
 import { predictDelayAddress } from "../src/parts/delay";
 import { predictRolesAddress } from "../src/parts/roles";
 
-import { AccountConfig, AccountIntegrityStatus } from "../src/types";
+import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
   IDelayModule__factory,
   IRolesModifier__factory,
@@ -49,7 +49,7 @@ describe("account-query", () => {
   async function setupAccount() {
     const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
-    const config = createAccountConfig({
+    const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       period: 60 * 60 * 24, // 86400 seconds one day
@@ -91,19 +91,20 @@ describe("account-query", () => {
     const result = await evaluateAccount(account, owner.address, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance.balance).to.equal(config.allowance);
+    expect(result.allowance.balance).to.equal(123);
   });
 
   it("calculates accrued allowance", async () => {
-    const { owner, account, relayer, config } = await loadFixture(setupAccount);
+    const { account, owner, spender, receiver, relayer, config } =
+      await loadFixture(setupAccount);
 
-    const REFILL = 987;
-    const timestamp = (await hre.ethers.provider.getBlock("latest"))
-      ?.timestamp as number;
+    const oneDay = 60 * 60 * 24;
+    const refill = 1000;
+    const spent = 50;
 
     const limitEnqueueTx = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
-      { period: 1000, refill: REFILL, balance: 0, timestamp },
+      { period: oneDay, refill },
       (...args) => owner.signTypedData(...args)
     );
     await relayer.sendTransaction(limitEnqueueTx);
@@ -112,22 +113,41 @@ describe("account-query", () => {
     await mine(3, { interval: 60 });
 
     const limitExecuteTx = await populateLimitDispatch(account, {
-      period: 1000,
-      refill: REFILL,
-      balance: 0,
-      timestamp,
+      period: oneDay,
+      refill,
     });
     await relayer.sendTransaction(limitExecuteTx);
 
     let result = await evaluateAccount(account, owner.address, config);
-    expect(result.allowance.balance).to.equal(0);
+    expect(result.allowance.balance).to.equal(refill);
 
-    // go forward 24 times one houre, one day
-    await mine(2, { interval: 1000 });
+    const spendTx = await populateSpend(
+      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        token: config.token,
+        to: receiver.address,
+        amount: spent,
+      },
+      (...args) => spender.signTypedData(...args)
+    );
+    await relayer.sendTransaction(spendTx);
 
     result = await evaluateAccount(account, owner.address, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance.balance).to.equal(REFILL);
+    expect(result.allowance.balance).to.equal(refill - spent);
+
+    // go forward 12 hours
+    await mine(13, { interval: 60 * 60 });
+
+    // still no replenish
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(refill - spent);
+
+    // go forward 12 hours more
+    await mine(13, { interval: 60 * 60 });
+
+    // yes it replenished
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(refill);
   });
 
   it("passes and reflects recent spending on the result", async () => {
@@ -137,7 +157,7 @@ describe("account-query", () => {
     let result = await evaluateAccount(account, owner.address, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.allowance.balance).to.equal(config.allowance);
+    expect(result.allowance.balance).to.equal(config.allowance.refill);
 
     const justSpent = 23;
     const transaction = await populateSpend(
@@ -152,7 +172,7 @@ describe("account-query", () => {
     result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(
-      Number(config.allowance) - justSpent
+      Number(config.allowance.refill) - justSpent
     );
   });
 
@@ -338,10 +358,15 @@ describe("account-query", () => {
 async function evaluateAccount(
   account: string,
   owner: string,
-  config: AccountConfig
+  config: SetupConfig
 ) {
   return accountQuery(
-    { account, owner, spender: config.spender, cooldown: config.cooldown },
+    {
+      account,
+      owner,
+      spender: config.spender,
+      cooldown: config.delay.cooldown,
+    },
     ({ to, data }) => hre.ethers.provider.send("eth_call", [{ to, data }])
   );
 }
