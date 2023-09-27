@@ -14,10 +14,10 @@ export default function encode(
   const { address, iface } = deployments.multisend;
 
   return {
-    operation: OperationType.DelegateCall,
     to: address,
     data: iface.encodeFunctionData("multiSend", [transactionsEncoded]),
     value: 0,
+    operation: OperationType.DelegateCall,
   };
 }
 

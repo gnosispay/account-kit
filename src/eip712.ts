@@ -6,9 +6,15 @@ import { SafeTransactionData } from "./types";
  */
 
 export function typedDataForSafeTransaction(
-  safe: string,
-  chainId: bigint | number,
-  nonce: bigint | number,
+  {
+    safe,
+    chainId,
+    nonce,
+  }: {
+    safe: string;
+    chainId: bigint | number;
+    nonce: bigint | number;
+  },
   { to, value, data, operation }: SafeTransactionData
 ) {
   const domain = { verifyingContract: safe, chainId };

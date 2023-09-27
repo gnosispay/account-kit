@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import hre from "hardhat";
-import { AccountConfig } from "../../src/types";
-import { IERC20__factory } from "../../typechain-types";
+import { SetupConfig } from "../src/types";
+import { IERC20__factory } from "../typechain-types";
 
 export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.
@@ -48,30 +48,36 @@ export async function moveERC20(
   await receipt.wait();
 }
 
-export function createAccountConfig({
+export function createSetupConfig({
   // for allowance
-  owner,
   spender,
+  receiver,
   token = GNO,
-  amount = 1000000,
-  period = 60 * 24, // in minutes, 1 day
-  // for delay
-  cooldown = 20, // in minutes, 20 minutes
+  allowance = 1000000,
+  period = 60 * 60 * 24, // in seconds, 1 day
+  cooldown = 60 * 3, // in seconds, 3 minutes
+  expiration = 60 * 30, // in seconds, 30 minutes
 }: {
-  owner: string;
   spender: string;
+  receiver: string;
   token?: string;
-  amount?: number | bigint;
+  allowance?: number | bigint;
   period?: number;
   cooldown?: number;
-}): AccountConfig {
+  expiration?: number;
+}): SetupConfig {
   return {
-    owner,
     spender,
+    receiver,
     token,
-    amount,
-    period,
-    cooldown,
+    allowance: {
+      refill: allowance,
+      period,
+    },
+    delay: {
+      cooldown,
+      expiration,
+    },
   };
 }
 

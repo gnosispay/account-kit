@@ -1,35 +1,38 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import { getAddress } from "ethers";
 import hre from "hardhat";
 
-import execSafeTransaction from "./test-helpers/execSafeTransaction";
 import {
   GNO,
   GNO_WHALE,
-  createAccountConfig,
+  createSetupConfig,
   fork,
   forkReset,
   moveERC20,
-} from "./test-helpers/setup";
+} from "./setup";
+
 import {
   populateAccountCreation,
   populateAccountSetup,
-  populateAllowanceTransfer,
-  predictDelayAddress,
-  predictSafeAddress,
-  populateAccountQuery,
-  evaluateAccountQuery,
+  populateLimitEnqueue,
+  populateLimitDispatch,
+  populateSpend,
+  predictAccountAddress,
+  accountQuery,
+  populateExecuteEnqueue,
+  populateExecuteDispatch,
 } from "../src";
-import deployments from "../src/deployments";
-import { AccountConfig, AccountIntegrityStatus } from "../src/types";
+
+import { predictDelayAddress, predictRolesAddress } from "../src/parts";
+import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
-  IAllowanceModule__factory,
   IDelayModule__factory,
+  IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
-const AddressOther = "0x0000000000000000000000000000000000000009";
 
 describe("account-query", () => {
   before(async () => {
@@ -41,22 +44,24 @@ describe("account-query", () => {
   });
 
   async function setupAccount() {
-    const [owner, alice, bob, relayer] = await hre.ethers.getSigners();
+    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
-    const config = createAccountConfig({
-      owner: owner.address,
-      spender: alice.address,
-      period: 7654,
+    const config = createSetupConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+      period: 60 * 60 * 24, // 86400 seconds one day
       token: GNO,
-      amount: 123,
+      allowance: 123,
+      cooldown: 120, // 120 seconds
     });
-    const safeAddress = predictSafeAddress(owner.address);
-    const delayAddress = predictDelayAddress(safeAddress);
-    await moveERC20(GNO_WHALE, safeAddress, GNO, 2000);
+    const account = predictAccountAddress(owner.address);
+    const delayAddress = predictDelayAddress(account);
+    const rolesAddress = predictRolesAddress(account);
+    await moveERC20(GNO_WHALE, account, GNO, 2000);
 
     const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
       (domain, types, message) => owner.signTypedData(domain, types, message)
     );
@@ -65,283 +70,300 @@ describe("account-query", () => {
     await relayer.sendTransaction(setupTx);
 
     return {
+      account,
       owner,
-      spender: alice,
-      alice,
-      bob,
+      spender,
+      receiver,
       relayer,
-      safeAddress: safeAddress,
-      safe: ISafe__factory.connect(safeAddress, relayer),
-      allowance: IAllowanceModule__factory.connect(
-        deployments.allowanceSingleton.address,
-        relayer
-      ),
+      safe: ISafe__factory.connect(account, relayer),
       delay: IDelayModule__factory.connect(delayAddress, relayer),
+      roles: IRolesModifier__factory.connect(rolesAddress, relayer),
       config,
     };
   }
 
   it("passes for a well configured account", async () => {
-    const { safeAddress, config } = await loadFixture(setupAccount);
+    const { account, owner, config } = await loadFixture(setupAccount);
 
-    const result = await evaluateAccount(safeAddress, config);
+    const result = await evaluateAccount(account, owner.address, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.detail?.allowance.unspent).to.equal(config.amount);
-    expect(result.detail?.allowance.nonce).to.equal(1);
+    expect(result.allowance.balance).to.equal(123);
+  });
+
+  it("calculates accrued allowance", async () => {
+    const { account, owner, spender, receiver, relayer, config } =
+      await loadFixture(setupAccount);
+
+    const oneDay = 60 * 60 * 24;
+    const refill = 1000;
+    const spent = 50;
+
+    const enqueue = await populateLimitEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { period: oneDay, refill },
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueue);
+
+    // go forward3 minutes
+    await mine(3, { interval: 60 });
+
+    const dispatch = populateLimitDispatch(account, {
+      period: oneDay,
+      refill,
+    });
+    await relayer.sendTransaction(dispatch);
+
+    let result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(refill);
+
+    const spendTx = await populateSpend(
+      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      {
+        token: config.token,
+        to: receiver.address,
+        amount: spent,
+      },
+      (...args) => spender.signTypedData(...args)
+    );
+    await relayer.sendTransaction(spendTx);
+
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(refill - spent);
+
+    // go forward 12 hours
+    await mine(13, { interval: 60 * 60 });
+
+    // still no replenish
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(refill - spent);
+
+    // go forward 12 hours more
+    await mine(13, { interval: 60 * 60 });
+
+    // yes it replenished
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(refill);
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { safeAddress, alice, bob, config } = await loadFixture(setupAccount);
+    const { account, owner, spender, receiver, relayer, config } =
+      await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    let result = await evaluateAccount(account, owner.address, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.detail?.allowance.unspent).to.equal(config.amount);
-    expect(result.detail?.allowance.nonce).to.equal(1);
+    expect(result.allowance.balance).to.equal(config.allowance.refill);
 
     const justSpent = 23;
-    const transaction = populateAllowanceTransfer(safeAddress, {
-      spender: alice.address,
-      token: GNO,
-      to: bob.address,
-      amount: justSpent,
-    });
+    const transaction = await populateSpend(
+      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { token: GNO, to: receiver.address, amount: justSpent },
+      (...args) => spender.signTypedData(...args)
+    );
 
-    await alice.sendTransaction(transaction);
+    await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
-    result = await evaluateAccount(safeAddress, config);
+    result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-    expect(result.detail?.allowance.unspent).to.equal(
-      Number(config.amount) - justSpent
+    expect(result.allowance.balance).to.equal(
+      Number(config.allowance.refill) - justSpent
     );
-    expect(result.detail?.allowance.nonce).to.equal(2);
   });
 
-  it("fails when there aren't exactly two owners", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+  it("fails when ownership isn't renounced", async () => {
+    const { account, owner, spender, relayer, safe, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
+    // ACCOUNT starts OK
+    let result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
-    await execSafeTransaction(
-      safe,
-      await safe.removeOwner.populateTransaction(
-        await spender.getAddress(),
-        await owner.getAddress(),
-        1
-      ),
-      [owner, spender]
+    const reconfigTx = await safe.addOwnerWithThreshold.populateTransaction(
+      await spender.getAddress(),
+      2
     );
 
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
-  });
-
-  it("fails when threshold is tampered with", async () => {
-    const { safe, safeAddress, owner, spender, config } =
-      await loadFixture(setupAccount);
-
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-
-    // move threshold to 1, fails
-    await execSafeTransaction(
-      safe,
-      await safe.changeThreshold.populateTransaction(1),
-      [owner, spender]
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfigTx,
+      (...args) => owner.signTypedData(...args)
     );
-    result = await evaluateAccount(safeAddress, config);
+    await relayer.sendTransaction(enqueue);
+
+    // FAIL: queue not empty
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
+
+    // move 3 minutes forward, cooldown is 2 minutes
+    await mine(4, { interval: 60 });
+    const dispatch = populateExecuteDispatch(account, reconfigTx);
+    await relayer.sendTransaction(dispatch);
+
+    // FAIL: no renounce ownership
+    result = await evaluateAccount(account, owner.address, config);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
-
-  it("fails when the gnosis signer is not one of the owners", async () => {
-    const { safe, safeAddress, owner, spender, config } =
-      await loadFixture(setupAccount);
-
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-
-    const sentinel = "0x0000000000000000000000000000000000000001";
-    const oldSigner = await spender.getAddress();
-    const newSigner = "0x000000000000000000000000000000000000000f";
-
-    await execSafeTransaction(
-      safe,
-      await safe.swapOwner.populateTransaction(sentinel, oldSigner, newSigner),
-      [owner, spender]
-    );
-
-    expect(await safe.getOwners()).to.have.length(2);
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
-  });
-
   it("fails when the number of modules enabled is not two", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+    const { account, owner, relayer, safe, config } =
       await loadFixture(setupAccount);
 
-    await execSafeTransaction(
-      safe,
-      await safe.enableModule.populateTransaction(
-        "0x0000000000000000000000000000000000000009"
-      ),
-      [owner, spender]
+    const reconfig = await safe.enableModule.populateTransaction(
+      "0x0000000000000000000000000000000000000005"
     );
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfig,
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueue);
+
+    await mine(4, { interval: 60 });
+    const dispatch = populateExecuteDispatch(account, reconfig);
+    await relayer.sendTransaction(dispatch);
+
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
-
-  it("fails when allowance module is not enabled", async () => {
-    const { safe, safeAddress, owner, spender, config } =
+  it("fails when roles module is not enabled", async () => {
+    const { owner, relayer, safe, account, config } =
       await loadFixture(setupAccount);
 
-    const allowanceAddress = deployments.allowanceSingleton.address;
-    const delayAddress = predictDelayAddress(safeAddress);
+    const delayAddress = predictDelayAddress(account);
+    const rolesAddress = predictRolesAddress(account);
 
-    await execSafeTransaction(
-      safe,
-      await safe.disableModule.populateTransaction(
-        delayAddress,
-        allowanceAddress
-      ),
-      [owner, spender]
+    const reconfig = await safe.disableModule.populateTransaction(
+      delayAddress,
+      rolesAddress
     );
 
-    await execSafeTransaction(
-      safe,
-      await safe.enableModule.populateTransaction(AddressOther),
-      [owner, spender]
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfig,
+      (...args) => owner.signTypedData(...args)
     );
+    await relayer.sendTransaction(enqueue);
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    await mine(4, { interval: 60 });
+    const dispatch = populateExecuteDispatch(account, reconfig);
+    await relayer.sendTransaction(dispatch);
+
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
-
   it("fails when delay module is not enabled", async () => {
-    const { safe, spender, owner, config } = await loadFixture(setupAccount);
+    const { account, owner, relayer, safe, config } =
+      await loadFixture(setupAccount);
 
-    const safeAddress = await safe.getAddress();
-    const delayAddress = predictDelayAddress(safeAddress);
+    const delayAddress = predictDelayAddress(account);
 
-    await execSafeTransaction(
-      safe,
-      await safe.disableModule.populateTransaction(AddressOne, delayAddress),
-      [owner, spender]
+    const reconfig = await safe.disableModule.populateTransaction(
+      AddressOne,
+      delayAddress
     );
 
-    await execSafeTransaction(
-      safe,
-      await safe.enableModule.populateTransaction(AddressOther),
-      [owner, spender]
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfig,
+      (...args) => owner.signTypedData(...args)
     );
+    await relayer.sendTransaction(enqueue);
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    await mine(4, { interval: 60 });
+    const dispatch = populateExecuteDispatch(account, reconfig);
+    await relayer.sendTransaction(dispatch);
+
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
-
   it("fails when the safe is not the owner of delay", async () => {
-    const { safe, safeAddress, delay, owner, spender, config } =
+    const { account, owner, relayer, delay, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+    await expect(await delay.owner()).to.equal(account);
 
-    await execSafeTransaction(
-      safe,
-      await delay.transferOwnership.populateTransaction(
-        "0x000000000000000000000000000000000000000f"
-      ),
-      [owner, spender]
+    const reconfig = await delay.transferOwnership.populateTransaction(
+      "0x000000000000000000000000000000000000000f"
     );
 
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
-  });
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfig,
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueue);
 
-  it("fails when cooldown is too short", async () => {
-    const { safe, delay, safeAddress, owner, spender, config } =
-      await loadFixture(setupAccount);
+    await mine(4, { interval: 60 });
+    const dispatch = populateExecuteDispatch(account, reconfig);
+    await relayer.sendTransaction(dispatch);
 
-    await execSafeTransaction(
-      safe,
-      await delay.setTxCooldown.populateTransaction(5),
-      [owner, spender]
+    expect(await delay.owner()).to.equal(
+      getAddress("0x000000000000000000000000000000000000000f")
     );
 
-    const { status } = await evaluateAccount(safeAddress, config);
+    const { status } = await evaluateAccount(account, owner.address, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
+  it("fails when cooldown is too short", async () => {
+    const { account, owner, relayer, delay, config } =
+      await loadFixture(setupAccount);
 
+    const reconfig = await delay.setTxCooldown.populateTransaction(5);
+
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfig,
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueue);
+
+    await mine(4, { interval: 60 });
+    const dispatch = populateExecuteDispatch(account, reconfig);
+    await relayer.sendTransaction(dispatch);
+
+    const { status } = await evaluateAccount(account, owner.address, config);
+    expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
+  });
   it("fails when queue is not empty", async () => {
-    const { safeAddress, owner, config } = await loadFixture(setupAccount);
-
-    const delayAddress = predictDelayAddress(safeAddress);
-    // owner is configured as module on the delay. connect both here
-    const delay = IDelayModule__factory.connect(delayAddress, owner);
-
-    // everything is alright
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-
-    // enqueue a via delay
-    await delay.execTransactionFromModule(AddressOther, 0, "0x", 0);
-
-    // integrity fails
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
-  });
-
-  it("fails when spender was removed", async () => {
-    const { safeAddress, safe, allowance, owner, spender, config } =
+    const { account, owner, relayer, delay, config } =
       await loadFixture(setupAccount);
 
-    // everything is alright
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+    const reconfig = await delay.setTxCooldown.populateTransaction(5);
 
-    await execSafeTransaction(
-      safe,
-      await allowance.removeDelegate.populateTransaction(config.spender, true),
-      [owner, spender]
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      reconfig,
+      (...args) => owner.signTypedData(...args)
     );
+    await relayer.sendTransaction(enqueue);
 
-    // integrity fails
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(
-      AccountIntegrityStatus.AllowanceMisconfigured
-    );
-  });
-
-  it("fails when allowance for spender was removed", async () => {
-    const { safeAddress, safe, allowance, owner, spender, config } =
-      await loadFixture(setupAccount);
-
-    let result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
-
-    await execSafeTransaction(
-      safe,
-      await allowance.deleteAllowance.populateTransaction(
-        config.spender,
-        config.token
-      ),
-      [owner, spender]
-    );
-
-    // integrity fails
-    result = await evaluateAccount(safeAddress, config);
-    expect(result.status).to.equal(
-      AccountIntegrityStatus.AllowanceMisconfigured
-    );
+    const { status } = await evaluateAccount(account, owner.address, config);
+    expect(status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
 });
 
-async function evaluateAccount(account: string, config: AccountConfig) {
-  const { to, data } = populateAccountQuery(account, config);
-  const resultData = await hre.ethers.provider.send("eth_call", [{ to, data }]);
-  return evaluateAccountQuery(account, config, resultData);
+async function evaluateAccount(
+  account: string,
+  owner: string,
+  config: SetupConfig
+) {
+  return accountQuery(
+    {
+      account,
+      owner,
+      spender: config.spender,
+      cooldown: config.delay.cooldown,
+    },
+    ({ to, data }) => hre.ethers.provider.send("eth_call", [{ to, data }])
+  );
 }

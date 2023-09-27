@@ -5,13 +5,14 @@ import {
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments/";
-import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
+
+import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 import {
-  IAllowanceModule__factory,
   IDelayModule__factory,
   IModuleProxyFactory__factory,
   IMulticall__factory,
   IMultisend__factory,
+  IRolesModifier__factory,
   ISafeProxyFactory__factory,
   ISafe__factory,
 } from "../typechain-types";
@@ -36,11 +37,6 @@ export default {
       version: VERSION,
     })?.defaultAddress as string,
   },
-  allowanceSingleton: {
-    // 1 and 100 same address
-    address: getAllowanceModuleDeployment()?.networkAddresses[1] as string,
-    iface: IAllowanceModule__factory.createInterface(),
-  },
   moduleProxyFactory: {
     // 1 and 100 same address
     address: ContractAddresses[1][KnownContracts.FACTORY],
@@ -51,6 +47,11 @@ export default {
     address: ContractAddresses[1][KnownContracts.DELAY],
     iface: IDelayModule__factory.createInterface(),
   },
+  rolesMastercopy: {
+    // 1 and 100 same address
+    address: ContractAddresses[1][KnownContracts.ROLES],
+    iface: IRolesModifier__factory.createInterface(),
+  },
   multisend: {
     address: getMultiSendDeployment({ version: VERSION })
       ?.defaultAddress as string,
@@ -59,6 +60,9 @@ export default {
   multicall: {
     address: "0xcA11bde05977b3631167028862bE2a173976CA11",
     iface: IMulticall__factory.createInterface(),
+  },
+  singletonFactory: {
+    address: getSingletonFactoryInfo(1)?.address as string,
   },
 };
 

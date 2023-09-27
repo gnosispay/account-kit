@@ -4,7 +4,6 @@ import {
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
 } from "@safe-global/safe-deployments";
-import { getAllowanceModuleDeployment } from "@safe-global/safe-modules-deployments";
 import { generateSolidity } from "abi-to-sol";
 import fs from "fs";
 import path from "path";
@@ -16,8 +15,8 @@ const isCheck = process.argv
   .map((v) => v.toLowerCase())
   .some((v) => v == "--check" || v == "-c");
 
-generate("IAllowanceModule", getAllowanceModuleDeployment()?.abi);
 // generate("IDelayModule", ContractAbis[KnownContracts.DELAY], "^0.8.0");
+// generate("IRolesModifier", ContractAbis[KnownContracts.ROLES]);
 generate("IModuleProxyFactory", ContractAbis[KnownContracts.FACTORY]);
 generate("IMultisend", getMultiSendDeployment({ version: VERSION })?.abi);
 generate("ISafe", getSafeSingletonDeployment({ version: VERSION })?.abi);

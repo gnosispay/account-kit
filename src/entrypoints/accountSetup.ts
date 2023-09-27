@@ -1,46 +1,66 @@
-import { ZeroAddress, ZeroHash } from "ethers";
+import { AbiCoder, ZeroAddress } from "ethers";
 
-import predictDelayAddress, {
-  encodeSetUp as encodeDelaySetUp,
-} from "./predictDelayAddress";
+import { IERC20__factory } from "../../typechain-types";
+import {
+  SENTINEL,
+  SPENDING_ALLOWANCE_KEY,
+  SPENDING_ROLE_KEY,
+} from "../constants";
+
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
+import {
+  populateBouncerCreation,
+  populateDelayCreation,
+  populateOwnerChannelCreation,
+  populateRolesCreation,
+  populateSpenderChannelCreation,
+  predictBouncerAddress,
+  predictDelayAddress,
+  predictOwnerChannelAddress,
+  predictRolesAddress,
+  predictSpenderChannelAddress,
+} from "../parts";
 
 import {
-  AccountConfig,
+  SetupConfig,
+  RolesExecutionOptions,
+  RolesOperator,
+  RolesParameterType,
   SafeTransactionData,
-  ExecutionConfig,
   TransactionData,
 } from "../types";
 
+const AddressTwo = "0x0000000000000000000000000000000000000002";
+
 export default async function populateAccountSetup(
-  { account, chainId, nonce }: ExecutionConfig,
-  config: AccountConfig,
+  {
+    account,
+    owner,
+    chainId,
+    nonce,
+  }: { account: string; owner: string; chainId: number; nonce: number },
+  config: SetupConfig,
   sign: (domain: any, types: any, message: any) => Promise<string>
 ): Promise<TransactionData> {
-  const safe = {
-    address: account,
-    iface: deployments.safeMastercopy.iface,
-  };
+  const { iface } = deployments.safeMastercopy;
 
-  const { to, data, value, operation } = populateSafeTransaction(
-    safe.address,
+  const { to, data, value, operation } = populateInitMultisend(
+    { account, owner },
     config
   );
 
   const { domain, types, message } = typedDataForSafeTransaction(
-    safe.address,
-    chainId,
-    nonce,
+    { safe: account, chainId, nonce },
     { to, data, value, operation }
   );
 
   const signature = await sign(domain, types, message);
 
   return {
-    to: safe.address,
-    data: safe.iface.encodeFunctionData("execTransaction", [
+    to: account,
+    data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
       data,
@@ -55,83 +75,158 @@ export default async function populateAccountSetup(
   };
 }
 
-function populateSafeTransaction(
-  account: string,
-  { owner, spender, token, amount, period, cooldown }: AccountConfig
+function populateInitMultisend(
+  { account, owner }: { account: string; owner: string },
+  {
+    spender,
+    receiver,
+    token,
+    allowance: { refill, period },
+    delay: { cooldown, expiration },
+  }: SetupConfig
 ): SafeTransactionData {
-  const moduleProxyFactory = deployments.moduleProxyFactory;
-  const safe = {
-    address: account,
-    iface: deployments.safeMastercopy.iface,
-  };
-  const allowance = deployments.allowanceSingleton;
+  const abi = AbiCoder.defaultAbiCoder();
+
+  const { iface } = deployments.safeMastercopy;
+
   const delay = {
-    address: predictDelayAddress(safe.address),
+    address: predictDelayAddress(account),
     iface: deployments.delayMastercopy.iface,
   };
+  const roles = {
+    address: predictRolesAddress(account),
+    iface: deployments.rolesMastercopy.iface,
+  };
+
+  const bouncerAddress = predictBouncerAddress(account);
+  const ownerChannelAddress = predictOwnerChannelAddress({
+    owner,
+    account,
+  });
+  const spenderChannelAddress = predictSpenderChannelAddress({
+    spender,
+    account,
+  });
 
   return multisendEncode([
     /**
      * CONFIG SAFE
      */
-    // set add the gnosis signer, and set threshold to 2
+    // renounce ownership
     {
-      to: safe.address,
-      data: safe.iface.encodeFunctionData("addOwnerWithThreshold", [
-        spender,
-        2,
+      to: account,
+      data: iface.encodeFunctionData("swapOwner", [
+        SENTINEL,
+        owner,
+        AddressTwo,
       ]),
     },
-    // enable allowance as module on safe
+    // enable roles as module on safe
     {
-      to: safe.address,
-      data: safe.iface.encodeFunctionData("enableModule", [allowance.address]),
+      to: account,
+      data: iface.encodeFunctionData("enableModule", [roles.address]),
     },
     // enable delay as module on safe
     {
-      to: safe.address,
-      data: safe.iface.encodeFunctionData("enableModule", [delay.address]),
+      to: account,
+      data: iface.encodeFunctionData("enableModule", [delay.address]),
     },
     /**
-     * CONFIG ALLOWANCE
+     * DEPLOY AND CONFIG DELAY MODULE
+     * note we deploy delay with 0, 0 as to be as stable as possible
+     * with deployment address prediction. set afeter
      */
-    // configure spender on the allowance mod
-    {
-      to: allowance.address,
-      data: allowance.iface.encodeFunctionData("addDelegate", [spender]),
-    },
-    // create an allowance entry for safe -> spender -> token
-    {
-      to: allowance.address,
-      data: allowance.iface.encodeFunctionData("setAllowance", [
-        spender,
-        token,
-        amount,
-        period,
-        0,
-      ]),
-    },
-    /**
-     * CONFIG DELAY
-     */
-    // actually deploy the delay mod proxy
-    {
-      to: moduleProxyFactory.address,
-      data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-        deployments.delayMastercopy.address,
-        encodeDelaySetUp(safe.address),
-        ZeroHash,
-      ]),
-    },
+    populateDelayCreation(account),
     // configure cooldown on delay
     {
       to: delay.address,
       data: delay.iface.encodeFunctionData("setTxCooldown", [cooldown]),
     },
+    // configure expiration on delay
+    {
+      to: delay.address,
+      data: delay.iface.encodeFunctionData("setTxExpiration", [expiration]),
+    },
     // enable owner on the delay as module
     {
       to: delay.address,
-      data: delay.iface.encodeFunctionData("enableModule", [owner]),
+      data: delay.iface.encodeFunctionData("enableModule", [
+        ownerChannelAddress,
+      ]),
     },
+    /**
+     * DEPLOY AND CONFIG ROLES MODIFIER
+     */
+    populateRolesCreation(account),
+    {
+      to: roles.address,
+      data: roles.iface.encodeFunctionData("setAllowance", [
+        SPENDING_ALLOWANCE_KEY,
+        // balance
+        refill,
+        // maxBalance
+        refill,
+        // refill
+        refill,
+        // period,
+        period,
+        // timestamp
+        0,
+      ]),
+    },
+    {
+      to: roles.address,
+      data: roles.iface.encodeFunctionData("assignRoles", [
+        spenderChannelAddress,
+        [SPENDING_ROLE_KEY],
+        [true],
+      ]),
+    },
+    {
+      to: roles.address,
+      data: roles.iface.encodeFunctionData("scopeTarget", [
+        SPENDING_ROLE_KEY,
+        token,
+      ]),
+    },
+    {
+      to: roles.address,
+      data: roles.iface.encodeFunctionData("scopeFunction", [
+        SPENDING_ROLE_KEY,
+        token,
+        IERC20__factory.createInterface().getFunction("transfer").selector,
+        [
+          {
+            parent: 0,
+            paramType: RolesParameterType.Calldata,
+            operator: RolesOperator.Matches,
+            compValue: "0x",
+          },
+          {
+            parent: 0,
+            paramType: RolesParameterType.Static,
+            operator: RolesOperator.EqualTo,
+            compValue: abi.encode(["address"], [receiver]),
+          },
+          {
+            parent: 0,
+            paramType: RolesParameterType.Static,
+            operator: RolesOperator.WithinAllowance,
+            compValue: SPENDING_ALLOWANCE_KEY,
+          },
+        ],
+        RolesExecutionOptions.None,
+      ]),
+    },
+    {
+      to: roles.address,
+      data: roles.iface.encodeFunctionData("transferOwnership", [
+        bouncerAddress,
+      ]),
+    },
+    // Deploy Misc
+    populateBouncerCreation(account),
+    populateOwnerChannelCreation({ owner, account }),
+    populateSpenderChannelCreation({ spender, account }),
   ]);
 }

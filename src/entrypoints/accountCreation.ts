@@ -1,61 +1,68 @@
 import { ZeroAddress } from "ethers";
 
-import { SALT_NONCE } from "./predictSafeAddress";
+import { IERC20__factory } from "../../typechain-types";
+import { ACCOUNT_SALT_NONCE } from "../constants";
 import deployments from "../deployments";
-import { TransactionData } from "../types";
+import { typedDataForSafeTransaction } from "../eip712";
+import { _populateSafeCreation, _predictSafeAddress } from "../parts";
+
+import { OperationType, TransactionData, Transfer } from "../types";
+
+export function predictAccountAddress(
+  owner: string,
+  saltNonce: bigint = ACCOUNT_SALT_NONCE
+): string {
+  return _predictSafeAddress(owner, saltNonce);
+}
 
 export default function populateAccountCreation(
   owner: string,
-  seed: bigint = SALT_NONCE
+  seed: bigint = ACCOUNT_SALT_NONCE
 ): TransactionData {
-  const { iface, address: factory } = deployments.safeProxyFactory;
-  const mastercopy = deployments.safeMastercopy.address;
-
-  return {
-    to: factory,
-    /*
-     * Safe Proxy Creation works by calling proxy factory, and including an
-     * embedded setup call (the initializer)
-     */
-    data: iface.encodeFunctionData("createProxyWithNonce", [
-      mastercopy,
-      initializer(owner),
-      seed,
-    ]),
-  };
+  return _populateSafeCreation(owner, seed);
 }
 
-export function initializer(owner: string) {
-  /*
-   * The initializer contains the calldata that invokes the setup
-   * function. This is what effectively sets up the proxy's storage
-   * (owner/threshold etc, other safe config)
-   *
-   * This calldata will be sent embedded in the the createProxy call
-   * at the SafeProxyFactory
-   */
+export async function populateDirectTransfer(
+  {
+    account,
+    chainId,
+    nonce,
+  }: { account: string; chainId: number; nonce: number },
+  transfer: Transfer,
+  sign: (domain: any, types: any, message: any) => Promise<string>
+): Promise<TransactionData> {
+  const { to, value, data, operation } = {
+    to: transfer.token,
+    data: IERC20__factory.createInterface().encodeFunctionData("transfer", [
+      transfer.to,
+      transfer.amount,
+    ]),
+    value: 0,
+    operation: OperationType.Call,
+  };
+
+  const { domain, types, message } = typedDataForSafeTransaction(
+    { safe: account, chainId, nonce },
+    { to, value, data, operation }
+  );
+
+  const signature = await sign(domain, types, message);
 
   const { iface } = deployments.safeMastercopy;
-  const fallbackHandlerAddress = deployments.fallbackHandler.address;
-
-  const initializer = iface.encodeFunctionData("setup", [
-    // owners
-    [owner],
-    // threshold
-    1,
-    // to - for setupModules
-    ZeroAddress,
-    // data - for setupModules
-    "0x",
-    // fallbackHandler
-    fallbackHandlerAddress,
-    // paymentToken
-    ZeroAddress,
-    // payment
-    0,
-    // paymentReceiver
-    ZeroAddress,
-  ]);
-
-  return initializer;
+  return {
+    to: account,
+    data: iface.encodeFunctionData("execTransaction", [
+      to,
+      value,
+      data,
+      operation,
+      0,
+      0,
+      0,
+      ZeroAddress,
+      ZeroAddress,
+      signature,
+    ]),
+    value: 0,
+  };
 }
