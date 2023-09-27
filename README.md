@@ -1,8 +1,8 @@
 # Account Kit
 
-Software development kit that facilitates the interaction with on-chain Gnosis Pay accounts.
+Software development kit that facilitates the interaction with onchain Gnosis Pay accounts.
 
-For each relevant account action, this SDK provides a function that generates transaction payloads. These payloads are ready to be transmitted, and require no further signing
+For each relevant account action, this SDK provides a function that populates transaction payloads. The generated payloads are relay ready, and require no further signing
 
 ## Table of contents
 
@@ -28,7 +28,7 @@ await provider.sendTransaction(populateAccountCreation(eoa));
 
 ## <a name="direct-transfer">Direct Transfer</a>
 
-Signs a ERC20 token transfer out of the safe. To be used on freshly created safes (before setup). The resulting transaction is relay ready.
+Signs a ERC20 token transfer out of the account. To be used on newly created 1/1 safes (before setup). The populated transaction is relay ready and requires no further signing.
 
 ```js
 import { populateDirectTransfer } from "@gnosispay/account-kit";
@@ -55,7 +55,7 @@ await relayer.sendTransaction(transaction);
 
 ## <a name="account-setup">Account Setup</a>
 
-Upgrades a 1/1 safe to a Gnosis Pay account. The resulting transaction is relay ready.
+Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is relay ready and requires no further signing.
 
 ```js
 import { populateAccountSetup } from "@gnosispay/account-kit";
@@ -96,7 +96,7 @@ await provider.sendTransaction(transaction);
 
 ## <a name="execute">Execute</a>
 
-Generates payloads to be enqueued in the Delay. Allows owner to execute arbitrary transactions via Delay. The resulting transactions are relay ready.
+Generates a payload that posts the provided transaction to the Delay Mod's queue. After cooldown the transaction can be dispatched for execution. This flow allows the owner to execute any arbitrary transactions on a cooldown. The generated transactions are relay ready.
 
 ```js
 import {
@@ -128,7 +128,7 @@ await relayer.sendTransaction(dispatch);
 
 ## <a name="limit">Limit</a>
 
-Generates the allowance config payload to be enqueued in the Delay. User has permissionless access to Allowance config. The resulting transactions are relay ready.
+Generates a payload that posts the provided allowance change to the Delay Mod's queue. After cooldown the allowance change can be dispatched for execution. User has unilateral access and control to Allowance config. The populated transactions are relay ready.
 
 ```js
 import {
@@ -165,7 +165,7 @@ await relayer.sendTransaction(dispatch);
 
 ## <a name="spend">Spend</a>
 
-Generates the spend payload to be submitted to the Roles Mod. Spender has permissionless access when staying within configured Allowance. The resulting transactions are relay ready.
+Generates the spend payload to be submitted to the Roles Mod. Spender has permissionless access when staying within configured Allowance limits. The resulting transactions are relay ready.
 
 ```js
 import { populateSpend } from "@gnosispay/account-kit";
