@@ -1,4 +1,4 @@
-import { populateExecDispatch, populateExecEnqueue } from "./exec";
+import { populateExecuteDispatch, populateExecuteEnqueue } from "./execute";
 import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
 import { predictBouncerAddress } from "../parts";
@@ -17,7 +17,7 @@ export async function populateLimitEnqueue(
 ): Promise<TransactionData> {
   const transaction = populateSetAllowance(account, config);
 
-  return populateExecEnqueue(
+  return populateExecuteEnqueue(
     { account, owner, chainId, nonce },
     transaction,
     sign
@@ -29,7 +29,7 @@ export function populateLimitDispatch(
   config: AllowanceConfig
 ): TransactionData {
   const transaction = populateSetAllowance(account, config);
-  return populateExecDispatch(account, transaction);
+  return populateExecuteDispatch(account, transaction);
 }
 
 function populateSetAllowance(

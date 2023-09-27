@@ -5,25 +5,26 @@ import populateAccountCreation, {
 import accountQuery from "./entrypoints/accountQuery";
 import populateAccountSetup from "./entrypoints/accountSetup";
 import {
+  populateExecuteEnqueue,
+  populateExecuteDispatch,
+} from "./entrypoints/execute";
+import {
   populateLimitEnqueue,
   populateLimitDispatch,
 } from "./entrypoints/limit";
 import populateSpend from "./entrypoints/spend";
-
-function populateExecEnqueue() {}
-function populateExecDispatch() {}
 
 export * from "./types";
 
 export {
   // populate transactions
   populateAccountCreation,
-  populateAccountSetup,
   populateDirectTransfer,
-  populateExecEnqueue,
-  populateExecDispatch,
-  populateLimitEnqueue,
+  populateAccountSetup,
+  populateExecuteDispatch,
+  populateExecuteEnqueue,
   populateLimitDispatch,
+  populateLimitEnqueue,
   populateSpend,
   // predict account setup addresses
   predictAccountAddress,

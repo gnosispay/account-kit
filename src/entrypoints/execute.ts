@@ -10,7 +10,7 @@ import {
 
 import { OperationType, TransactionData } from "../types";
 
-export async function populateExecEnqueue(
+export async function populateExecuteEnqueue(
   {
     account,
     owner,
@@ -51,7 +51,7 @@ export async function populateExecEnqueue(
   };
 }
 
-export function populateExecDispatch(
+export function populateExecuteDispatch(
   account: string,
   transaction: TransactionData
 ): TransactionData {

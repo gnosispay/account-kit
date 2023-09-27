@@ -20,14 +20,11 @@ import {
   populateSpend,
   predictAccountAddress,
   accountQuery,
+  populateExecuteEnqueue,
+  populateExecuteDispatch,
 } from "../src";
-import {
-  populateExecDispatch,
-  populateExecEnqueue,
-} from "../src/entrypoints/exec";
-import { predictDelayAddress } from "../src/parts/delay";
-import { predictRolesAddress } from "../src/parts/roles";
 
+import { predictDelayAddress, predictRolesAddress } from "../src/parts";
 import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
   IDelayModule__factory,
@@ -190,7 +187,7 @@ describe("account-query", () => {
     );
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfigTx,
       (...args) => owner.signTypedData(...args)
@@ -203,7 +200,7 @@ describe("account-query", () => {
 
     // move 3 minutes forward, cooldown is 2 minutes
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(account, reconfigTx);
+    const dispatch = await populateExecuteDispatch(account, reconfigTx);
     await relayer.sendTransaction(dispatch);
 
     // FAIL: no renounce ownership
@@ -219,7 +216,7 @@ describe("account-query", () => {
     );
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => owner.signTypedData(...args)
@@ -227,7 +224,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(account, reconfig);
+    const dispatch = await populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -246,7 +243,7 @@ describe("account-query", () => {
     );
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => owner.signTypedData(...args)
@@ -254,7 +251,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(account, reconfig);
+    const dispatch = await populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -272,7 +269,7 @@ describe("account-query", () => {
     );
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => owner.signTypedData(...args)
@@ -280,7 +277,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(account, reconfig);
+    const dispatch = await populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -297,7 +294,7 @@ describe("account-query", () => {
     );
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => owner.signTypedData(...args)
@@ -305,7 +302,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(account, reconfig);
+    const dispatch = await populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     expect(await delay.owner()).to.equal(
@@ -322,7 +319,7 @@ describe("account-query", () => {
     const reconfig = await delay.setTxCooldown.populateTransaction(5);
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => owner.signTypedData(...args)
@@ -330,7 +327,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = await populateExecDispatch(account, reconfig);
+    const dispatch = await populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, owner.address, config);
@@ -343,7 +340,7 @@ describe("account-query", () => {
     const reconfig = await delay.setTxCooldown.populateTransaction(5);
 
     // enqueue the change
-    const enqueue = await populateExecEnqueue(
+    const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
       (...args) => owner.signTypedData(...args)
