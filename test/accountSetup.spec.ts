@@ -9,7 +9,7 @@ import {
   predictAccountAddress,
 } from "../src";
 
-import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
+import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import {
   predictOwnerChannelAddress,
   predictSpenderChannelAddress,
@@ -241,7 +241,7 @@ describe("account-setup", () => {
       refillTimestamp,
       balance,
       maxBalance,
-    } = await roles.allowances(ALLOWANCE_SPENDING_KEY);
+    } = await roles.allowances(SPENDING_ALLOWANCE_KEY);
 
     expect(refillAmount).to.equal(AMOUNT);
     expect(refillInterval).to.equal(PERIOD);

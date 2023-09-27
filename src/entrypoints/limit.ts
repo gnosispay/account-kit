@@ -1,5 +1,5 @@
 import { populateExecDispatch, populateExecEnqueue } from "./exec";
-import { ALLOWANCE_SPENDING_KEY } from "../constants";
+import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
 import { predictForwarderAddress } from "../parts";
 
@@ -42,7 +42,7 @@ function populateSetAllowance(
   return {
     to: address,
     data: iface.encodeFunctionData("setAllowance", [
-      ALLOWANCE_SPENDING_KEY,
+      SPENDING_ALLOWANCE_KEY,
       balance || 0,
       refill, // maxBalance
       refill, // refill

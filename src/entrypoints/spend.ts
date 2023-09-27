@@ -1,8 +1,8 @@
 import { ZeroAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
-import { ROLE_SPENDING_KEY } from "../constants";
 
+import { SPENDING_ROLE_KEY } from "../constants";
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import { predictRolesAddress, predictSpenderChannelAddress } from "../parts";
@@ -68,7 +68,7 @@ function populateSpendTransaction(
         amount,
       ]),
       OperationType.Call,
-      ROLE_SPENDING_KEY,
+      SPENDING_ROLE_KEY,
       true, // shouldRevert
     ]),
   };

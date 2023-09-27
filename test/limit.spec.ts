@@ -18,7 +18,7 @@ import {
   populateLimitDispatch,
   predictAccountAddress,
 } from "../src";
-import { ALLOWANCE_SPENDING_KEY } from "../src/constants";
+import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { predictDelayAddress } from "../src/parts/delay";
 import { predictRolesAddress } from "../src/parts/roles";
 
@@ -83,7 +83,7 @@ describe("limit", () => {
   it("sets allowance", async () => {
     const { account, owner, relayer, roles } = await loadFixture(setupAccount);
 
-    let allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
+    let allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.equal(12345);
     expect(allowance.refillAmount).to.equal(76543);
 
@@ -100,7 +100,7 @@ describe("limit", () => {
 
     await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
 
-    allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
+    allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.equal(12345);
     expect(allowance.refillAmount).to.equal(76543);
 
@@ -110,7 +110,7 @@ describe("limit", () => {
     // works after cooldown
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
-    allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
+    allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.equal(1);
     expect(allowance.refillAmount).to.equal(1);
   });
@@ -141,7 +141,7 @@ describe("limit", () => {
     });
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
-    const allowance = await roles.allowances(ALLOWANCE_SPENDING_KEY);
+    const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.refillInterval).to.equal(7);
     expect(allowance.refillAmount).to.equal(7);
   });

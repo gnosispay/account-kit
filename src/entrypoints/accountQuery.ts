@@ -1,7 +1,7 @@
 import assert from "assert";
 import { AbiCoder } from "ethers";
 
-import { ALLOWANCE_SPENDING_KEY } from "../constants";
+import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
 import {
   predictDelayAddress,
@@ -96,7 +96,7 @@ function createRequest(
         target: roles.address,
         allowFailure: true,
         callData: roles.iface.encodeFunctionData("allowances", [
-          ALLOWANCE_SPENDING_KEY,
+          SPENDING_ALLOWANCE_KEY,
         ]),
       },
       {

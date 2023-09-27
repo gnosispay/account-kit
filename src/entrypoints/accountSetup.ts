@@ -2,9 +2,9 @@ import { AbiCoder, ZeroAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
 import {
-  ALLOWANCE_SPENDING_KEY,
-  ROLE_SPENDING_KEY,
   SENTINEL,
+  SPENDING_ALLOWANCE_KEY,
+  SPENDING_ROLE_KEY,
 } from "../constants";
 
 import deployments from "../deployments";
@@ -148,7 +148,7 @@ function populateInitMultisend(
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("setAllowance", [
-        ALLOWANCE_SPENDING_KEY,
+        SPENDING_ALLOWANCE_KEY,
         allowance, // balance
         allowance, // maxBalance
         allowance, // refill
@@ -160,21 +160,21 @@ function populateInitMultisend(
       to: roles.address,
       data: roles.iface.encodeFunctionData("assignRoles", [
         spenderChannelAddress,
-        [ROLE_SPENDING_KEY],
+        [SPENDING_ROLE_KEY],
         [true],
       ]),
     },
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("scopeTarget", [
-        ROLE_SPENDING_KEY,
+        SPENDING_ROLE_KEY,
         token,
       ]),
     },
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("scopeFunction", [
-        ROLE_SPENDING_KEY,
+        SPENDING_ROLE_KEY,
         token,
         IERC20__factory.createInterface().getFunction("transfer").selector,
         [
@@ -194,7 +194,7 @@ function populateInitMultisend(
             parent: 0,
             paramType: RolesParameterType.Static,
             operator: RolesOperator.WithinAllowance,
-            compValue: ALLOWANCE_SPENDING_KEY,
+            compValue: SPENDING_ALLOWANCE_KEY,
           },
         ],
         RolesExecutionOptions.None,
