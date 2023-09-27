@@ -7,10 +7,11 @@ For each relevant account action, this SDK provides a function that generates tr
 ## Table of contents
 
 - [Account Creation](#account-creation)
+- [Direct Transfer](#direct-transfer)
 - [Account Setup](#account-setup)
-- [Token Transfer](#token-transfer)
-- [Allowance Transfer](#allowance-transfer)
-- [Allowance Reconfig](#allowance-reconfig)
+- [Execute](#execute)
+- [Limit](#limit)
+- [Spend](#spend)
 - [Account Query](#account-query)
 - [Contributors](#contributors)
 
@@ -21,8 +22,35 @@ Creates a new 1/1 safe.
 ```js
 import { populateAccountCreation } from "@gnosispay/account-kit";
 
-const eoa = `0x<address>`; // the owner address
+const owner = `<address>`; // the owner of the account
 await provider.sendTransaction(populateAccountCreation(eoa));
+```
+
+## <a name="direct-transfer">Direct Transfer</a>
+
+Signs a ERC20 token transfer out of the safe. To be used on freshly created safes (before setup). The resulting transaction is relay ready.
+
+```js
+import { populateDirectTransfer } from "@gnosispay/account-kit";
+
+const owner: Signer = {}; // the account owner
+const account = `<address>`; // the main safe address
+const chainId = `<number>`;
+const nonce = `<number>`; // current safe nonce, since fresh, expected 0
+
+const token = `<address>`;
+const to = `<address>`;
+const amount = `<bigint>`;
+
+const transaction = await populateDirectTransfer(
+  { safe, chainId, nonce },
+  { token, to, amount },
+  // callback that wraps an eip-712 sig. Library agnostic
+  (...args) => owner.signTypedData(...args) // (domain, types, message)
+
+);
+
+await relayer.sendTransaction(transaction);
 ```
 
 ## <a name="account-setup">Account Setup</a>
@@ -32,116 +60,134 @@ Upgrades a 1/1 safe to a Gnosis Pay account. The resulting transaction is relay 
 ```js
 import { populateAccountSetup } from "@gnosispay/account-kit";
 
-const eoa : Signer = {}; // the account owner
-const safe = `0x<address>`;
+const owner: Signer = {}; // the account owner
+const account = `<address>`; // the main safe address
 const chainId = `<number>`;
 const nonce = `<number>`; // current safe nonce
 
-const config : AccountConfig = {
+const config: SetupConfig = {
   // the gnosis signer
-  spender: `0x<address>`,
-   // the settlement safe
-  receiver: `0x<address>`,
+  spender: `<address>`,
+  // the settlement safe
+  receiver: `<address>`,
   // token used for payments
-  token: `0x<address>`,
-  // the allowance amount granted to spender
-  allowance: `<bigint>`,
-   // allowance refill period in seconds
-  period: `<number>`,
-  // delay, in seconds, before eoa can rug
-  cooldown: `<number>`,
+  token: `<address>`,
+  // allowance settings
+  allowance: {
+    refill: `<bigint>`, // amount per period
+    period: `<number>`, // in seconds
+  },
+  // delay mod  settings
+  delay: {
+    cooldown: `<number>`, // in seconds
+    expiration: `<number>`, // in seconds
+  },
 };
 
 const transaction = await populateAccountSetup(
-  { eoa, safe, chainId, nonce },
+  { owner: owner.address, account, chainId, nonce },
   config,
-  (domain, types, message) => eoa.signTypedData(domain, types, message) // eip712 sig
+  // callback that wraps an eip-712 sig. Library agnostic
+  (...args) => owner.signTypedData(...args) // (domain, types, message)
 );
 
 await provider.sendTransaction(transaction);
 ```
 
-## <a name="token-transfer">Token Transfer</a>
+## <a name="execute">Execute</a>
 
-Signs a ERC20 token transfer out of the safe. To be used on freshly created safes (before setup). The resulting transaction is relay ready.
+Generates payloads to be enqueued in the Delay. Allows owner to execute arbitrary transactions via Delay. The resulting transactions are relay ready.
 
 ```js
-import { populateTokenTransfer } from "@gnosispay/account-kit";
+import {
+  populateExecEnqueue,
+  populateExecDispatch,
+} from "@gnosispay/account-kit";
 
-const eoa : Signer = {}; // the account owner
-const safe = `0x<address>`;
+//  Signer
+const owner = {}; // the account owner
+const account = `<address>`; // the main safe address
 const chainId = `<number>`;
 const nonce = `<number>`; // current safe nonce
 
-const token = `0x<address>`;
-const to = `0x<address>`;
-const amount = `<bigint>`;
+const someTransaction = { to: `<address>`, data: `0x<bytes>` };
 
-const transaction = await populateAccountSetup(
-  { safe, chainId, nonce },
-  { token, to, amount },
-  (domain, types, message) => eoa.signTypedData(domain, types, message) // eip712 sig
+const enqueue = await populateExecEnqueue(
+  { owner: owner.address, account, chainId, nonce },
+  someTransaction,
+  // callback that wraps an eip-712 sig. Library agnostic
+  (...args) => owner.signTypedData(...args) // (domain, types, message)
 );
+await relayer.sendTransaction(enqueue);
 
-await relayer.sendTransaction(transaction);
+// (...) WAIT {COOLDOWN} SECONDS (...)
+
+const dispatch = populateExecDispatch(account, someTransaction);
+await relayer.sendTransaction(dispatch);
 ```
 
-## <a name="allowance-transfer">Allowance Transfer</a>
+## <a name="limit">Limit</a>
 
-Generates an ERC20 token transfer via the RolesMod's AllowanceSpend Role. The generated transaction is unsigned, and can only be sent by the spender, which is the only account configured on the role.
-
-```js
-import { populateAllowanceTransfer } from "@gnosispay/account-kit";
-
-const spender: Signer = {};
-const safe = `0x<address>`;
-
-const token = `0x<address>`;
-const to = `0x<address>`;
-const amount = "<number>";
-
-const transaction = populateAllowanceTransfer(
-  { safe },
-  {
-    token,
-    to,
-    amount,
-  }
-);
-
-await spender.sendTransaction(transaction);
-```
-
-## <a name="allowance-reconfig">Allowance Reconfig</a>
-
-Generates an adjustment to the RolesMod's available allowance. The generated transaction is to be signed by the EOA, which is the account that has access to the setAllowance function. The resulting transaction is relay ready.
+Generates the allowance config payload to be enqueued in the Delay. User has permissionless access to Allowance config. The resulting transactions are relay ready.
 
 ```js
-import { populateAllowanceReconfig } from "@gnosispay/account-kit";
+import {
+  populateLimitEnqueue,
+  populateLimitDispatch,
+} from "@gnosispay/account-kit";
 
-const eoa : Signer = {};
-const safe = `0x<address>`;
+//
+const owner : Signer = {}; // the account owner
+const account = `<address>`; // the main safe address
 const chainId = `<number>`;
-const nonce = `<number>`; // current stub nonce
+const nonce = `<number>`; // current safe nonce
 
 const config : AllowanceConfig = {
   // Duration, in seconds, before a refill occurs
   period: `<number>`,
   /// Amount added to balance after each period elapses.
   refill: `<bigint>`,
-  // [OPTIONAL] Initial allowance available for use.
-  balance: `<bigint> | undefined`,
-  // [OPTIONAL] Timestamp when the last refill occurred.
-  timestamp: `<bigint> | undefined`,
 };
 
-const transaction = await populateAllowanceReconfig(
-  { eoa: eoa.address, safe, chainId, nonce },
+const enqueue = await populateLimitEnqueue(
+  { owner: owner.address, account, chainId, nonce },
   config,
-  (...args) => eoa.signTypedData(...args) // eip712 sig
+  // callback that wraps an eip-712 sig. Library agnostic
+  (...args) => owner.signTypedData(...args) // (domain, types, message)
 );
+await relayer.sendTransaction(enqueue);
 
-await relayer.sendTransaction(transaction);
+// (...) WAIT {COOLDOWN} SECONDS (...)
+
+const dispatch = populateLimitDispatch(account, config);
+await relayer.sendTransaction(dispatch);
+```
+
+## <a name="spend">Spend</a>
+
+Generates the spend payload to be submitted to the Roles Mod. Spender has permissionless access when staying within configured Allowance. The resulting transactions are relay ready.
+
+```js
+import { populateSpend } from "@gnosispay/account-kit";
+
+const spender : Signer = {}; // the gnosis signer
+const account = `<address>`; // the main safe address
+const chainId = `<number>`;
+const nonce = `<number>`; // current safe nonce
+
+const transfer : Transfer= {
+  token: `<address>`,
+  to: `<address>`,
+  amount: `<bigint>`,
+};
+
+const enqueue = await populateSpend(
+  { account, spender: spender.address, chainId, nonce },
+  transfer,
+  // callback that wraps an eip-712 sig. Library agnostic
+  (...args) => spender.signTypedData(...args) // (domain, types, message)
+);
+await relayer.sendTransaction(enqueue);
 ```
 
 ## <a name="account-query">Account Query</a>
@@ -154,10 +200,10 @@ import {
   evaluateAccountQuery,
 } from "@gnosispay/account-kit";
 
-const eoa = `0x<address>`;
-const safe = `0x<address>`;
-const spender = `0x<address>`;
-const token = `0x<address>`;
+const eoa = `<address>`;
+const safe = `<address>`;
+const spender = `<address>`;
+const token = `<address>`;
 const cooldown = `<number>`;
 
 const { to, data } = populateAccountQuery({ safe }, { spender, token });
