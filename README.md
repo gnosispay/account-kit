@@ -192,33 +192,27 @@ await relayer.sendTransaction(enqueue);
 
 ## <a name="account-query">Account Query</a>
 
-Creates a multicall payload that collects all data required to assess if a given GnosisPay account passes integrity requirements. It also computed the accrued available allowance granted to spender.
+Creates a multicall payload that collects all data required to assess if a given GnosisPay account passes integrity requirements. It also queries and computes useful account information like accrued allowance and relevant nonces.
 
 ```js
-import {
-  populateAccountQuery,
-  evaluateAccountQuery,
-} from "@gnosispay/account-kit";
+import { accountQuery } from "@gnosispay/account-kit";
 
-const eoa = `<address>`;
-const safe = `<address>`;
+const owner = `<address>`;
+const account = `<address>`;
 const spender = `<address>`;
-const token = `<address>`;
 const cooldown = `<number>`;
 
-const { to, data } = populateAccountQuery({ safe }, { spender, token });
-const functionResult = await provider.send("eth_call", [{ to, data }]);
-const result = evaluateAccountQuery(
-  { eoa, safe },
-  { spender, cooldown },
-  functionResult
+const { status, allowance, nonces } = await accountQuery(
+  { account, owner, spender, cooldown },
+  // a function that receives that and performs eth_call, library agnostic
+  ({ to, data }) => provider.send("eth_call", [{ to, data }])
 );
-
 /*
  * Returns
  *  {
  *    status: AccountIntegrityStatus
- *    allowance: bigint
+ *    allowance: { balance },
+ *    nonces: { account, owner, spender }
  *  }
  *
  */
