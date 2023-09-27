@@ -9,13 +9,13 @@ import {
 import { predictRolesAddress } from "./roles";
 
 import {
+  Bouncer__factory,
   IRolesModifier__factory,
-  SinglePurposeForwarder__factory,
 } from "../../typechain-types";
 import deployments from "../deployments";
 import { TransactionData } from "../types";
 
-export function predictForwarderAddress(safe: string) {
+export function predictBouncerAddress(safe: string) {
   const salt = ZeroHash;
 
   return getCreate2Address(
@@ -25,7 +25,7 @@ export function predictForwarderAddress(safe: string) {
   );
 }
 
-export function populateForwarderCreation(safe: string): TransactionData {
+export function populateBouncerCreation(safe: string): TransactionData {
   return {
     to: deployments.singletonFactory.address,
     data: `${ZeroHash}${creationBytecode(safe).slice(2)}`,
@@ -42,7 +42,7 @@ function creationBytecode(safe: string) {
 
   // encode the creationBytecode
   return concat([
-    SinglePurposeForwarder__factory.bytecode,
+    Bouncer__factory.bytecode,
     AbiCoder.defaultAbiCoder().encode(
       ["address", "address", "bytes4"],
       [from, to, selector]

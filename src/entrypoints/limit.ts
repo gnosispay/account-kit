@@ -1,7 +1,7 @@
 import { populateExecDispatch, populateExecEnqueue } from "./exec";
 import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
-import { predictForwarderAddress } from "../parts";
+import { predictBouncerAddress } from "../parts";
 
 import { AllowanceConfig, TransactionData } from "../types";
 
@@ -36,7 +36,7 @@ function populateSetAllowance(
   account: string,
   { refill, period }: AllowanceConfig
 ): TransactionData {
-  const address = predictForwarderAddress(account);
+  const address = predictBouncerAddress(account);
   const iface = deployments.rolesMastercopy.iface;
 
   return {

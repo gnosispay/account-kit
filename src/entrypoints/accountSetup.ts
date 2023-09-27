@@ -11,13 +11,13 @@ import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import multisendEncode from "../multisend";
 import {
+  populateBouncerCreation,
   populateDelayCreation,
-  populateForwarderCreation,
   populateOwnerChannelCreation,
   populateRolesCreation,
   populateSpenderChannelCreation,
+  predictBouncerAddress,
   predictDelayAddress,
-  predictForwarderAddress,
   predictOwnerChannelAddress,
   predictRolesAddress,
   predictSpenderChannelAddress,
@@ -98,7 +98,7 @@ function populateInitMultisend(
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const forwarderAddress = predictForwarderAddress(account);
+  const bouncerAddress = predictBouncerAddress(account);
   const ownerChannelAddress = predictOwnerChannelAddress({
     owner,
     account,
@@ -221,11 +221,11 @@ function populateInitMultisend(
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("transferOwnership", [
-        forwarderAddress,
+        bouncerAddress,
       ]),
     },
     // Deploy Misc
-    populateForwarderCreation(account),
+    populateBouncerCreation(account),
     populateOwnerChannelCreation({ owner, account }),
     populateSpenderChannelCreation({ spender, account }),
   ]);

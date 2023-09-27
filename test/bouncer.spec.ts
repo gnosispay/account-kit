@@ -1,22 +1,17 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import {
-  SinglePurposeForwarder__factory,
-  TestContract__factory,
-} from "../typechain-types";
+import { Bouncer__factory, TestContract__factory } from "../typechain-types";
 
-describe("SinglePurposeForwarder", () => {
+describe("Bouncer", () => {
   async function setup() {
     const [caller, notTheCaller] = await hre.ethers.getSigners();
 
     const TestContract = await hre.ethers.getContractFactory("TestContract");
     const testContract = await TestContract.deploy();
 
-    const SinglePurposeForwarder = await hre.ethers.getContractFactory(
-      "SinglePurposeForwarder"
-    );
-    const forwarder = await SinglePurposeForwarder.deploy(
+    const Bouncer = await hre.ethers.getContractFactory("Bouncer");
+    const bouncer = await Bouncer.deploy(
       await caller.getAddress(),
       await testContract.getAddress(),
       testContract.getFunction("fnThatMaybeReverts").fragment.selector
@@ -28,18 +23,18 @@ describe("SinglePurposeForwarder", () => {
       testContract: TestContract__factory.connect(
         await testContract.getAddress()
       ),
-      forwarder: SinglePurposeForwarder__factory.connect(
-        await forwarder.getAddress(),
+      bouncer: Bouncer__factory.connect(
+        await bouncer.getAddress(),
         hre.ethers.provider
       ),
     };
   }
 
   it("only caller is allowed", async () => {
-    const { caller, notTheCaller, testContract, forwarder } =
+    const { caller, notTheCaller, testContract, bouncer } =
       await loadFixture(setup);
 
-    const to = await forwarder.getAddress();
+    const to = await bouncer.getAddress();
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
 
@@ -52,9 +47,9 @@ describe("SinglePurposeForwarder", () => {
   });
 
   it("only selector is allowed", async () => {
-    const { caller, testContract, forwarder } = await loadFixture(setup);
+    const { caller, testContract, bouncer } = await loadFixture(setup);
 
-    const to = await forwarder.getAddress();
+    const to = await bouncer.getAddress();
     const transactionOther = await testContract.fnOther.populateTransaction();
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
@@ -68,9 +63,9 @@ describe("SinglePurposeForwarder", () => {
   });
 
   it("reverts if underlying reverts", async () => {
-    const { caller, testContract, forwarder } = await loadFixture(setup);
+    const { caller, testContract, bouncer } = await loadFixture(setup);
 
-    const to = await forwarder.getAddress();
+    const to = await bouncer.getAddress();
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(true);
 
@@ -78,9 +73,9 @@ describe("SinglePurposeForwarder", () => {
   });
 
   it("succeeds if underlying succeeds", async () => {
-    const { caller, testContract, forwarder } = await loadFixture(setup);
+    const { caller, testContract, bouncer } = await loadFixture(setup);
 
-    const to = await forwarder.getAddress();
+    const to = await bouncer.getAddress();
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
 

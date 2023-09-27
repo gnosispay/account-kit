@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
  * @author Cristóvão Honorato - <cristovao.honorato@gnosis.io>
  * @author Auryn Macmillan    - <auryn.macmillan@gnosis.io>
  */
-contract SinglePurposeForwarder {
+contract Bouncer {
   address public immutable from;
   address public immutable to;
   bytes4 public immutable selector;

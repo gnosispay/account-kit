@@ -4,8 +4,8 @@ import { AbiCoder } from "ethers";
 import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
 import {
+  predictBouncerAddress,
   predictDelayAddress,
-  predictForwarderAddress,
   predictOwnerChannelAddress,
   predictRolesAddress,
   predictSpenderChannelAddress,
@@ -310,9 +310,9 @@ function evaluateRolesConfig(safe: string, rolesOwnerResult: string) {
   const abi = AbiCoder.defaultAbiCoder();
 
   const [rolesOwner] = abi.decode(["address"], rolesOwnerResult);
-  const forwarder = predictForwarderAddress(safe);
+  const bouncer = predictBouncerAddress(safe);
 
-  return rolesOwner === forwarder;
+  return rolesOwner === bouncer;
 }
 
 function evaluateDelayConfig(

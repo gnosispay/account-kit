@@ -10,18 +10,18 @@ import {
 } from "../src";
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
+import { predictBouncerAddress } from "../src/parts/bouncer";
 import {
   predictOwnerChannelAddress,
   predictSpenderChannelAddress,
 } from "../src/parts/channel";
 import { predictDelayAddress } from "../src/parts/delay";
-import { predictForwarderAddress } from "../src/parts/forwarder";
 import { predictRolesAddress } from "../src/parts/roles";
 import {
+  Bouncer__factory,
   IDelayModule__factory,
   IRolesModifier__factory,
   ISafe__factory,
-  SinglePurposeForwarder__factory,
 } from "../typechain-types";
 
 describe("account-setup", () => {
@@ -58,7 +58,7 @@ describe("account-setup", () => {
     };
   }
 
-  it("deploys forwarder", async () => {
+  it("deploys bouncer", async () => {
     const { account, owner, spender, receiver, relayer, roles } =
       await loadFixture(createAccount);
 
@@ -68,9 +68,9 @@ describe("account-setup", () => {
       receiver: receiver.address,
     });
 
-    const forwarderAddresss = predictForwarderAddress(account);
-    const forwarder = SinglePurposeForwarder__factory.connect(
-      forwarderAddresss,
+    const bouncerAddresss = predictBouncerAddress(account);
+    const bouncer = Bouncer__factory.connect(
+      bouncerAddresss,
       hre.ethers.provider
     );
 
@@ -79,15 +79,15 @@ describe("account-setup", () => {
       config,
       (...args) => owner.signTypedData(...args)
     );
-    expect(await provider.getCode(forwarderAddresss)).to.equal("0x");
+    expect(await provider.getCode(bouncer)).to.equal("0x");
 
     await relayer.sendTransaction(transaction);
 
-    expect(await provider.getCode(forwarderAddresss)).to.not.equal("0x");
+    expect(await provider.getCode(bouncer)).to.not.equal("0x");
 
-    expect(await forwarder.from()).to.equal(account);
-    expect(await forwarder.to()).to.equal(await roles.getAddress());
-    expect(await forwarder.selector()).to.equal(
+    expect(await bouncer.from()).to.equal(account);
+    expect(await bouncer.to()).to.equal(await roles.getAddress());
+    expect(await bouncer.selector()).to.equal(
       roles.interface.getFunction("setAllowance").selector
     );
   });
@@ -213,7 +213,7 @@ describe("account-setup", () => {
       allowance: AMOUNT,
     });
 
-    const forwarderAddress = predictForwarderAddress(account);
+    const bouncerAddress = predictBouncerAddress(account);
 
     const spenderChannelAddress = predictSpenderChannelAddress({
       account,
@@ -233,7 +233,7 @@ describe("account-setup", () => {
     expect(await roles.isModuleEnabled(owner.address)).to.be.false;
     expect(await roles.isModuleEnabled(spender.address)).to.be.false;
     expect(await roles.isModuleEnabled(spenderChannelAddress)).to.be.true;
-    expect(await roles.owner()).to.equal(forwarderAddress);
+    expect(await roles.owner()).to.equal(bouncerAddress);
 
     const {
       refillAmount,
