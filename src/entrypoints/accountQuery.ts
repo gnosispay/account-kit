@@ -268,6 +268,7 @@ function evaluateResult(
       },
     };
   } catch (e) {
+    console.error(e);
     return {
       ...empty,
       status: AccountIntegrityStatus.UnexpectedError,
@@ -418,5 +419,5 @@ function nextRefill({
   }
 
   const elapsedIntervals = (blockTimestamp - timestamp) / period;
-  return timestamp + (elapsedIntervals + 1n) * period;
+  return timestamp + (elapsedIntervals + BigInt(1)) * period;
 }
