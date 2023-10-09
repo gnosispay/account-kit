@@ -148,6 +148,45 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(refill);
   });
 
+  it("calculates next refill timestamp", async () => {
+    const { account, owner, relayer, config } = await loadFixture(setupAccount);
+
+    const oneDay = 60 * 60 * 24;
+    const refill = 1000;
+    const enqueue = await populateLimitEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { period: oneDay, refill },
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueue);
+
+    // go forward3 minutes
+    await mine(3, { interval: 60 });
+
+    const dispatch = populateLimitDispatch(account, {
+      period: oneDay,
+      refill,
+    });
+    await relayer.sendTransaction(dispatch);
+
+    let result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.nextRefill).to.equal(123n);
+
+    // go forward 12 hours
+    await mine(13, { interval: 60 * 60 });
+
+    // still same refill timestamp
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.nextRefill).to.equal(123n);
+
+    // go forward 12 hours more
+    await mine(13, { interval: 60 * 60 });
+
+    // refill is next day
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.nextRefill).to.equal(456n);
+  });
+
   it("passes and reflects recent spending on the result", async () => {
     const { account, owner, spender, receiver, relayer, config } =
       await loadFixture(setupAccount);
