@@ -352,6 +352,10 @@ function accruedBalance(allowanceResult: string, blockTimestampResult: string) {
     return balance;
   }
 
+  if (balance >= maxBalance) {
+    return balance;
+  }
+
   const elapsedIntervals = (blockTimestamp - timestamp) / period;
   const balanceUncapped = balance + refill * elapsedIntervals;
   return balanceUncapped < maxBalance ? balanceUncapped : maxBalance;

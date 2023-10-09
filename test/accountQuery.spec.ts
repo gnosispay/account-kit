@@ -24,6 +24,7 @@ import {
   populateExecuteDispatch,
 } from "../src";
 
+import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { predictDelayAddress, predictRolesAddress } from "../src/parts";
 import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
@@ -171,6 +172,26 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(
       Number(config.allowance.refill) - justSpent
     );
+  });
+
+  it("handles balances exceeding max balance", async () => {
+    const { roles, account, owner, config } = await loadFixture(setupAccount);
+
+    // while not possible using account-kit functions, users might set a balance exceeding maxBalance
+    const PERIOD = 7654n;
+    const AMOUNT = 123n;
+    await roles.setAllowance(
+      SPENDING_ALLOWANCE_KEY,
+      AMOUNT * 2n,
+      AMOUNT,
+      AMOUNT,
+      PERIOD,
+      0
+    );
+
+    // we should handle this correctly
+    const result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.balance).to.equal(AMOUNT * 2n);
   });
 
   it("fails when ownership isn't renounced", async () => {
