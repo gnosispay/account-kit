@@ -24,6 +24,7 @@ import {
   populateExecuteDispatch,
 } from "../src";
 
+import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { predictDelayAddress, predictRolesAddress } from "../src/parts";
 import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
@@ -89,6 +90,9 @@ describe("account-query", () => {
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(123);
+    expect(result.allowance.maxBalance).to.equal(123);
+    expect(result.allowance.refill).to.equal(123);
+    expect(result.allowance.period).to.equal(60 * 60 * 24);
   });
 
   it("calculates accrued allowance", async () => {
@@ -147,6 +151,46 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(refill);
   });
 
+  it("calculates next refill timestamp", async () => {
+    const { account, owner, relayer, config } = await loadFixture(setupAccount);
+
+    const block = await hre.ethers.provider.getBlock("latest");
+    if (!block) throw new Error("cannot get block");
+
+    const date = new Date(block.timestamp * 1000);
+    date.setUTCHours(0, 0, 0, 0);
+    const startOfDay = date.getTime() / 1000;
+
+    const oneDay = 60 * 60 * 24;
+    const refill = 1000;
+    const enqueue = await populateLimitEnqueue(
+      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { period: oneDay, refill, timestamp: startOfDay },
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueue);
+
+    // go forward3 minutes
+    await mine(3, { interval: 60 });
+
+    const dispatch = populateLimitDispatch(account, {
+      period: oneDay,
+      refill,
+      timestamp: startOfDay,
+    });
+    await relayer.sendTransaction(dispatch);
+
+    let result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay);
+
+    // go forward 24 hours
+    await mine(25, { interval: 60 * 60 });
+
+    // refill is next day
+    result = await evaluateAccount(account, owner.address, config);
+    expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay + oneDay);
+  });
+
   it("passes and reflects recent spending on the result", async () => {
     const { account, owner, spender, receiver, relayer, config } =
       await loadFixture(setupAccount);
@@ -171,6 +215,50 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(
       Number(config.allowance.refill) - justSpent
     );
+  });
+
+  // TODO: Setting a balance > maxBalance will only be possible with Roles V2.1. Enable this test then.
+  it.skip("handles balances exceeding max balance", async () => {
+    const { roles, account, owner, config, relayer } =
+      await loadFixture(setupAccount);
+
+    // while not possible using account-kit functions, users might set a balance exceeding maxBalance
+    const PERIOD = 7654;
+    const AMOUNT = 123;
+
+    const updateLimitTx = {
+      to: await roles.getAddress(),
+      data: roles.interface.encodeFunctionData("setAllowance", [
+        SPENDING_ALLOWANCE_KEY,
+        AMOUNT * 2,
+        AMOUNT,
+        AMOUNT,
+        PERIOD,
+        0,
+      ]),
+    };
+
+    const enqueueTx = await populateExecuteEnqueue(
+      {
+        account,
+        owner: await owner.address,
+        chainId: hre.network.config.chainId as number,
+        nonce: 0,
+      },
+      updateLimitTx,
+      (...args) => owner.signTypedData(...args)
+    );
+    await relayer.sendTransaction(enqueueTx);
+
+    // wait for cooldown & dispatch
+    await mine(2, { interval: config.delay.cooldown });
+    const dispatchTx = await populateExecuteDispatch(account, updateLimitTx);
+    await relayer.sendTransaction(dispatchTx);
+
+    // we should handle this correctly
+    const result = await evaluateAccount(account, owner.address, config);
+    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+    expect(result.allowance.balance).to.equal(AMOUNT * 2);
   });
 
   it("fails when ownership isn't renounced", async () => {

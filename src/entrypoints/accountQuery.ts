@@ -17,6 +17,10 @@ type Result = {
   status: AccountIntegrityStatus;
   allowance: {
     balance: bigint;
+    nextRefill: bigint | null;
+    refill: bigint;
+    period: bigint;
+    maxBalance: bigint;
   };
   nonces: {
     account: bigint;
@@ -27,7 +31,13 @@ type Result = {
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const empty = {
-  allowance: { balance: BigInt(0) },
+  allowance: {
+    balance: BigInt(0),
+    nextRefill: null,
+    refill: BigInt(0),
+    period: BigInt(0),
+    maxBalance: BigInt(0),
+  },
   nonces: { account: BigInt(0), owner: BigInt(0), spender: BigInt(0) },
 };
 
@@ -250,9 +260,7 @@ function evaluateResult(
     return {
       ...empty,
       status: AccountIntegrityStatus.Ok,
-      allowance: {
-        balance: accruedBalance(allowanceResult, blockTimestampResult),
-      },
+      allowance: evaluateAllowance(allowanceResult, blockTimestampResult),
       nonces: {
         account: BigInt(accountNonceResult),
         owner: BigInt(ownerNonceResult),
@@ -260,6 +268,7 @@ function evaluateResult(
       },
     };
   } catch (e) {
+    console.error(e);
     return {
       ...empty,
       status: AccountIntegrityStatus.UnexpectedError,
@@ -335,7 +344,10 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   return nonceResult == queueResult;
 }
 
-function accruedBalance(allowanceResult: string, blockTimestampResult: string) {
+function evaluateAllowance(
+  allowanceResult: string,
+  blockTimestampResult: string
+) {
   const { iface } = deployments.rolesMastercopy;
 
   const blockTimestamp = BigInt(blockTimestampResult);
@@ -348,11 +360,64 @@ function accruedBalance(allowanceResult: string, blockTimestampResult: string) {
   assert(typeof balance == "bigint");
   assert(typeof timestamp == "bigint");
 
+  const allowance = {
+    refill,
+    maxBalance,
+    period,
+    balance,
+    timestamp,
+    blockTimestamp,
+  };
+
+  return {
+    balance: accruedBalance(allowance),
+    nextRefill: nextRefill(allowance),
+    maxBalance,
+    refill,
+    period,
+  };
+}
+
+interface AllowanceResult {
+  balance: bigint;
+  maxBalance: bigint;
+  refill: bigint;
+  period: bigint;
+  timestamp: bigint;
+  blockTimestamp: bigint;
+}
+
+function accruedBalance({
+  refill,
+  maxBalance,
+  period,
+  balance,
+  timestamp,
+  blockTimestamp,
+}: AllowanceResult) {
   if (period == BigInt(0) || blockTimestamp < timestamp + period) {
+    return balance;
+  }
+
+  if (balance >= maxBalance) {
     return balance;
   }
 
   const elapsedIntervals = (blockTimestamp - timestamp) / period;
   const balanceUncapped = balance + refill * elapsedIntervals;
   return balanceUncapped < maxBalance ? balanceUncapped : maxBalance;
+}
+
+function nextRefill({
+  refill,
+  period,
+  timestamp,
+  blockTimestamp,
+}: AllowanceResult) {
+  if (period == BigInt(0) || refill == BigInt(0)) {
+    return null;
+  }
+
+  const elapsedIntervals = (blockTimestamp - timestamp) / period;
+  return timestamp + (elapsedIntervals + BigInt(1)) * period;
 }

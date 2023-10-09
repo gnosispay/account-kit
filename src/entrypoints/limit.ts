@@ -34,7 +34,7 @@ export function populateLimitDispatch(
 
 function populateSetAllowance(
   account: string,
-  { refill, period }: AllowanceConfig
+  { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionData {
   const address = predictBouncerAddress(account);
   const iface = deployments.rolesMastercopy.iface;
@@ -47,7 +47,7 @@ function populateSetAllowance(
       refill, // maxBalance
       refill, // refill
       period, // period
-      0, // timestamp
+      timestamp, // timestamp
     ]),
   };
 }
