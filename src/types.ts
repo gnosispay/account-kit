@@ -35,6 +35,8 @@ export type AllowanceConfig = {
   period: bigint | number;
   /// Amount added to balance after each period elapses.
   refill: bigint | number;
+  /// Timestamp of the initial period start, useful for bringing the period in sync with the user's local timezone
+  timestamp?: bigint | number;
 };
 
 export type DelayConfig = {
