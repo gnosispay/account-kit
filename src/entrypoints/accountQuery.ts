@@ -18,8 +18,8 @@ type Result = {
   allowance: {
     balance: bigint;
     nextRefill: bigint | null;
-    refillAmount: bigint;
-    refillInterval: bigint;
+    refill: bigint;
+    period: bigint;
     maxBalance: bigint;
   };
   nonces: {
@@ -34,8 +34,8 @@ const empty = {
   allowance: {
     balance: BigInt(0),
     nextRefill: null,
-    refillAmount: BigInt(0),
-    refillInterval: BigInt(0),
+    refill: BigInt(0),
+    period: BigInt(0),
     maxBalance: BigInt(0),
   },
   nonces: { account: BigInt(0), owner: BigInt(0), spender: BigInt(0) },
@@ -350,24 +350,19 @@ function evaluateAllowance(
   const { iface } = deployments.rolesMastercopy;
 
   const blockTimestamp = BigInt(blockTimestampResult);
-  const [
-    refillAmount,
-    maxBalance,
-    refillInterval,
-    balance,
-    timestamp,
-  ]: bigint[] = iface.decodeFunctionResult("allowances", allowanceResult);
+  const [refill, maxBalance, period, balance, timestamp]: bigint[] =
+    iface.decodeFunctionResult("allowances", allowanceResult);
 
-  assert(typeof refillAmount == "bigint");
+  assert(typeof refill == "bigint");
   assert(typeof maxBalance == "bigint");
-  assert(typeof refillInterval == "bigint");
+  assert(typeof period == "bigint");
   assert(typeof balance == "bigint");
   assert(typeof timestamp == "bigint");
 
   const allowance = {
-    refillAmount,
+    refill,
     maxBalance,
-    refillInterval,
+    period,
     balance,
     timestamp,
     blockTimestamp,
@@ -377,32 +372,29 @@ function evaluateAllowance(
     balance: accruedBalance(allowance),
     nextRefill: nextRefill(allowance),
     maxBalance,
-    refillAmount,
-    refillInterval,
+    refill,
+    period,
   };
 }
 
 interface AllowanceResult {
   balance: bigint;
   maxBalance: bigint;
-  refillAmount: bigint;
-  refillInterval: bigint;
+  refill: bigint;
+  period: bigint;
   timestamp: bigint;
   blockTimestamp: bigint;
 }
 
 function accruedBalance({
-  refillAmount,
+  refill,
   maxBalance,
-  refillInterval,
+  period,
   balance,
   timestamp,
   blockTimestamp,
 }: AllowanceResult) {
-  if (
-    refillInterval == BigInt(0) ||
-    blockTimestamp < timestamp + refillInterval
-  ) {
+  if (period == BigInt(0) || blockTimestamp < timestamp + period) {
     return balance;
   }
 
@@ -410,21 +402,21 @@ function accruedBalance({
     return balance;
   }
 
-  const elapsedIntervals = (blockTimestamp - timestamp) / refillInterval;
-  const balanceUncapped = balance + refillAmount * elapsedIntervals;
+  const elapsedIntervals = (blockTimestamp - timestamp) / period;
+  const balanceUncapped = balance + refill * elapsedIntervals;
   return balanceUncapped < maxBalance ? balanceUncapped : maxBalance;
 }
 
 function nextRefill({
-  refillAmount,
-  refillInterval,
+  refill,
+  period,
   timestamp,
   blockTimestamp,
 }: AllowanceResult) {
-  if (refillInterval == BigInt(0) || refillAmount == BigInt(0)) {
+  if (period == BigInt(0) || refill == BigInt(0)) {
     return null;
   }
 
-  const elapsedIntervals = (blockTimestamp - timestamp) / refillInterval;
-  return timestamp + (elapsedIntervals + 1n) * refillInterval;
+  const elapsedIntervals = (blockTimestamp - timestamp) / period;
+  return timestamp + (elapsedIntervals + 1n) * period;
 }
