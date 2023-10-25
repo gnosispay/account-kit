@@ -8,7 +8,7 @@ import {
   predictOwnerChannelAddress,
 } from "../parts";
 
-import { OperationType, TransactionData } from "../types";
+import { OperationType, SignTypedData, TransactionData } from "../types";
 
 export async function populateExecuteEnqueue(
   {
@@ -18,7 +18,7 @@ export async function populateExecuteEnqueue(
     nonce,
   }: { account: string; owner: string; chainId: number; nonce: number },
   transaction: TransactionData,
-  sign: (domain: any, types: any, message: any) => Promise<string>
+  sign: SignTypedData
 ): Promise<TransactionData> {
   const channel = {
     address: predictOwnerChannelAddress({ account, owner }),
@@ -27,12 +27,12 @@ export async function populateExecuteEnqueue(
 
   const { to, value = 0, data } = populateDelayEnqueue(account, transaction);
 
-  const { domain, types, message } = typedDataForSafeTransaction(
+  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
     { safe: channel.address, chainId, nonce },
     { to, value, data, operation: OperationType.Call }
   );
 
-  const signature = await sign(domain, types, message);
+  const signature = await sign({ domain, primaryType, types, message });
 
   return {
     to: channel.address,

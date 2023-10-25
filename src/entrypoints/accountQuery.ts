@@ -11,23 +11,11 @@ import {
   predictSpenderChannelAddress,
 } from "../parts";
 
-import { AccountIntegrityStatus, TransactionData } from "../types";
-
-type Result = {
-  status: AccountIntegrityStatus;
-  allowance: {
-    balance: bigint;
-    nextRefill: bigint | null;
-    refill: bigint;
-    period: bigint;
-    maxBalance: bigint;
-  };
-  nonces: {
-    account: bigint;
-    owner: bigint;
-    spender: bigint;
-  };
-};
+import {
+  AccountIntegrityStatus,
+  AccountQueryResult,
+  TransactionData,
+} from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const empty = {
@@ -54,7 +42,7 @@ export default async function accountQuery(
     cooldown: number;
   },
   doEthCall: (request: TransactionData) => Promise<string>
-): Promise<Result> {
+): Promise<AccountQueryResult> {
   const request = createRequest(account, owner, spender);
   const resultData = await doEthCall(request);
   return evaluateResult(account, cooldown, resultData);
@@ -164,7 +152,7 @@ function evaluateResult(
   account: string,
   cooldown: number,
   resultData: string
-): Result {
+): AccountQueryResult {
   try {
     const multicall = deployments.multicall.iface;
 

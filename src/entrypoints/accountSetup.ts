@@ -24,11 +24,12 @@ import {
 } from "../parts";
 
 import {
-  SetupConfig,
   RolesExecutionOptions,
   RolesOperator,
   RolesParameterType,
   SafeTransactionData,
+  SetupConfig,
+  SignTypedData,
   TransactionData,
 } from "../types";
 
@@ -42,7 +43,7 @@ export default async function populateAccountSetup(
     nonce,
   }: { account: string; owner: string; chainId: number; nonce: number },
   config: SetupConfig,
-  sign: (domain: any, types: any, message: any) => Promise<string>
+  sign: SignTypedData
 ): Promise<TransactionData> {
   const { iface } = deployments.safeMastercopy;
 
@@ -51,12 +52,12 @@ export default async function populateAccountSetup(
     config
   );
 
-  const { domain, types, message } = typedDataForSafeTransaction(
+  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
     { safe: account, chainId, nonce },
     { to, data, value, operation }
   );
 
-  const signature = await sign(domain, types, message);
+  const signature = await sign({ domain, primaryType, types, message });
 
   return {
     to: account,

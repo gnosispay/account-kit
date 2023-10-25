@@ -78,7 +78,8 @@ describe("account-creation", () => {
         to: AddressThree,
         amount: balance,
       },
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     expect(await gno.balanceOf(safeAddress)).to.be.equal(balance);

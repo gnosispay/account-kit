@@ -3,7 +3,7 @@ import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
 import { predictBouncerAddress } from "../parts";
 
-import { AllowanceConfig, TransactionData } from "../types";
+import { AllowanceConfig, SignTypedData, TransactionData } from "../types";
 
 export async function populateLimitEnqueue(
   {
@@ -13,7 +13,7 @@ export async function populateLimitEnqueue(
     nonce,
   }: { account: string; owner: string; chainId: number; nonce: number },
   config: AllowanceConfig,
-  sign: (domain: any, types: any, message: any) => Promise<string>
+  sign: SignTypedData
 ): Promise<TransactionData> {
   const transaction = populateSetAllowance(account, config);
 
