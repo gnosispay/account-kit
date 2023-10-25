@@ -61,7 +61,8 @@ describe("limit", () => {
     const setupTx = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(creationTx);
@@ -90,7 +91,8 @@ describe("limit", () => {
     const enqueueTx = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { refill: 1, period: 1 },
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     const executeTx = populateLimitDispatch(account, {
@@ -122,14 +124,16 @@ describe("limit", () => {
     let enqueueTx = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { refill: 7, period: 7 },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
     await expect(relayer.sendTransaction(enqueueTx)).to.be.reverted;
 
     enqueueTx = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { refill: 7, period: 7 },
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueueTx);
 

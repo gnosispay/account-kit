@@ -49,7 +49,8 @@ describe("spend", () => {
     const setupTransaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(setupTransaction);
@@ -76,12 +77,14 @@ describe("spend", () => {
     const spendSignedByOther = await populateSpend(
       { account, spender: spender.address, chainId: 31337, nonce: 0 },
       { token, to, amount },
-      (...args) => relayer.signTypedData(...args)
+      ({ domain, types, message }) =>
+        relayer.signTypedData(domain, types, message)
     );
     const spendSignedBySpender = await populateSpend(
       { account, spender: spender.address, chainId: 31337, nonce: 0 },
       { token, to, amount },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
 
     await expect(relayer.sendTransaction(spendSignedByOther)).to.be.reverted;
@@ -104,13 +107,15 @@ describe("spend", () => {
     const txToOther = await populateSpend(
       { account, spender: spender.address, chainId: 31337, nonce: 0 },
       { token, to: relayer.address, amount },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
 
     const txToReceiver = await populateSpend(
       { account, spender: spender.address, chainId: 31337, nonce: 0 },
       { token, to: receiver.address, amount },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
 
     // since we don't provide signature, the spender must be the sender:
@@ -133,7 +138,8 @@ describe("spend", () => {
     const txToReceiver = await populateSpend(
       { account, spender: spender.address, chainId: 31337, nonce: 0 },
       { token, to: receiver.address, amount },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
 
     expect(await gno.balanceOf(receiver.address)).to.be.equal(0);

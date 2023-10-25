@@ -64,7 +64,8 @@ describe("account-query", () => {
     const setupTx = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (domain, types, message) => owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(creationTx);
@@ -106,7 +107,8 @@ describe("account-query", () => {
     const enqueue = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { period: oneDay, refill },
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -129,7 +131,8 @@ describe("account-query", () => {
         to: receiver.address,
         amount: spent,
       },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(spendTx);
 
@@ -204,7 +207,8 @@ describe("account-query", () => {
     const transaction = await populateSpend(
       { account, spender: spender.address, chainId: 31337, nonce: 0 },
       { token: GNO, to: receiver.address, amount: justSpent },
-      (...args) => spender.signTypedData(...args)
+      ({ domain, types, message }) =>
+        spender.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(transaction);
@@ -278,7 +282,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfigTx,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -307,7 +312,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -334,7 +340,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -360,7 +367,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -385,7 +393,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -410,7 +419,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
@@ -431,7 +441,8 @@ describe("account-query", () => {
     const enqueue = await populateExecuteEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       reconfig,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 

@@ -77,7 +77,8 @@ describe("account-setup", () => {
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     expect(await provider.getCode(bouncer)).to.equal("0x");
 
@@ -120,7 +121,8 @@ describe("account-setup", () => {
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     expect(await provider.getCode(ownerChannelAddress)).to.equal("0x");
     expect(await provider.getCode(spenderChannelAddress)).to.equal("0x");
@@ -147,7 +149,8 @@ describe("account-setup", () => {
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     await expect(relayer.sendTransaction(transaction)).to.not.be.reverted;
@@ -174,7 +177,8 @@ describe("account-setup", () => {
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     expect(await provider.getCode(delayAddress)).to.equal("0x");
@@ -225,7 +229,8 @@ describe("account-setup", () => {
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(transaction);
 
@@ -273,7 +278,8 @@ describe("account-setup", () => {
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(transaction);

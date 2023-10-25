@@ -7,7 +7,12 @@ import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import { predictRolesAddress, predictSpenderChannelAddress } from "../parts";
 
-import { OperationType, TransactionData, Transfer } from "../types";
+import {
+  OperationType,
+  SignTypedData,
+  TransactionData,
+  Transfer,
+} from "../types";
 
 export default async function populateSpend(
   {
@@ -17,7 +22,7 @@ export default async function populateSpend(
     nonce,
   }: { account: string; spender: string; chainId: number; nonce: number },
   transfer: Transfer,
-  sign: (domain: any, types: any, message: any) => Promise<string>
+  sign: SignTypedData
 ): Promise<TransactionData> {
   const channel = {
     address: predictSpenderChannelAddress({ account, spender }),
@@ -25,12 +30,12 @@ export default async function populateSpend(
   };
   const { to, value = 0, data } = populateSpendTransaction(account, transfer);
 
-  const { domain, types, message } = typedDataForSafeTransaction(
+  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
     { safe: channel.address, chainId, nonce },
     { to, value, data, operation: OperationType.Call }
   );
 
-  const signature = await sign(domain, types, message);
+  const signature = await sign({ domain, primaryType, types, message });
 
   return {
     to: channel.address,

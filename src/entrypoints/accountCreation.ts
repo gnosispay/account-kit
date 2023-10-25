@@ -6,7 +6,12 @@ import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
 import { _populateSafeCreation, _predictSafeAddress } from "../parts";
 
-import { OperationType, TransactionData, Transfer } from "../types";
+import {
+  OperationType,
+  SignTypedData,
+  TransactionData,
+  Transfer,
+} from "../types";
 
 export function predictAccountAddress(
   owner: string,
@@ -29,7 +34,7 @@ export async function populateDirectTransfer(
     nonce,
   }: { account: string; chainId: number; nonce: number },
   transfer: Transfer,
-  sign: (domain: any, types: any, message: any) => Promise<string>
+  sign: SignTypedData
 ): Promise<TransactionData> {
   const { to, value, data, operation } = {
     to: transfer.token,
@@ -41,12 +46,12 @@ export async function populateDirectTransfer(
     operation: OperationType.Call,
   };
 
-  const { domain, types, message } = typedDataForSafeTransaction(
+  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
     { safe: account, chainId, nonce },
     { to, value, data, operation }
   );
 
-  const signature = await sign(domain, types, message);
+  const signature = await sign({ domain, primaryType, types, message });
 
   const { iface } = deployments.safeMastercopy;
   return {
