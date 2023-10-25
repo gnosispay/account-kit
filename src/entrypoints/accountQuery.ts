@@ -256,7 +256,6 @@ function evaluateResult(
       },
     };
   } catch (e) {
-    console.error(e);
     return {
       ...empty,
       status: AccountIntegrityStatus.UnexpectedError,
