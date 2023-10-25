@@ -45,8 +45,8 @@ const amount = `<bigint>`;
 const transaction = await populateDirectTransfer(
   { safe, chainId, nonce },
   { token, to, amount },
-  // callback that wraps an eip-712 sig. Library agnostic
-  (...args) => owner.signTypedData(...args) // (domain, types, message)
+  // callback that wraps an eip-712 signature
+  ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 
 );
 
@@ -87,8 +87,8 @@ const config: SetupConfig = {
 const transaction = await populateAccountSetup(
   { owner: owner.address, account, chainId, nonce },
   config,
-  // callback that wraps an eip-712 sig. Library agnostic
-  (...args) => owner.signTypedData(...args) // (domain, types, message)
+  // callback that wraps an eip-712 signature
+  ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
 
 await provider.sendTransaction(transaction);
@@ -115,8 +115,8 @@ const someTransaction = { to: `<address>`, data: `0x<bytes>` };
 const enqueue = await populateExecEnqueue(
   { owner: owner.address, account, chainId, nonce },
   someTransaction,
-  // callback that wraps an eip-712 sig. Library agnostic
-  (...args) => owner.signTypedData(...args) // (domain, types, message)
+  // callback that wraps an eip-712 signature
+  ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
 await relayer.sendTransaction(enqueue);
 
@@ -152,8 +152,8 @@ const config : AllowanceConfig = {
 const enqueue = await populateLimitEnqueue(
   { owner: owner.address, account, chainId, nonce },
   config,
-  // callback that wraps an eip-712 sig. Library agnostic
-  (...args) => owner.signTypedData(...args) // (domain, types, message)
+  // callback that wraps an eip-712 signature
+  ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
 await relayer.sendTransaction(enqueue);
 
@@ -184,8 +184,8 @@ const transfer : Transfer= {
 const enqueue = await populateSpend(
   { account, spender: spender.address, chainId, nonce },
   transfer,
-  // callback that wraps an eip-712 sig. Library agnostic
-  (...args) => spender.signTypedData(...args) // (domain, types, message)
+  // callback that wraps an eip-712 signature
+  ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
 await relayer.sendTransaction(enqueue);
 ```
