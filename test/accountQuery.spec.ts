@@ -169,7 +169,8 @@ describe("account-query", () => {
     const enqueue = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       { period: oneDay, refill, timestamp: startOfDay },
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
