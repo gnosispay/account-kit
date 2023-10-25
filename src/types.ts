@@ -1,7 +1,9 @@
-export enum OperationType {
-  Call = 0,
-  DelegateCall = 1,
-}
+export type SignTypedData = (param: {
+  domain: any;
+  primaryType: any;
+  types: any;
+  message: any;
+}) => Promise<string>;
 
 export interface TransactionData {
   to: string;
@@ -14,6 +16,11 @@ export interface SafeTransactionData {
   value: bigint | number;
   data: string;
   operation: OperationType;
+}
+
+export enum OperationType {
+  Call = 0,
+  DelegateCall = 1,
 }
 
 export type Transfer = {
@@ -44,6 +51,18 @@ export type DelayConfig = {
   cooldown: number;
   /// Duration in seconds that a proposed transaction is valid for after cooldown (or 0 if valid forever)
   expiration: number;
+};
+
+export type AccountQueryResult = {
+  status: AccountIntegrityStatus;
+  allowance: {
+    balance: bigint;
+  };
+  nonces: {
+    account: bigint;
+    owner: bigint;
+    spender: bigint;
+  };
 };
 
 export enum AccountIntegrityStatus {
