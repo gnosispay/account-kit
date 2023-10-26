@@ -59,7 +59,7 @@
     "typescript": "5.1.6"
   },
   "dependencies": {
-    "@gnosis.pm/zodiac": "^3.3.7",
+    "@gnosis.pm/zodiac": "3.3.7",
     "@safe-global/safe-deployments": "^1.26.0",
     "@safe-global/safe-singleton-factory": "^1.0.15",
     "ethers": "^6.7.1"
