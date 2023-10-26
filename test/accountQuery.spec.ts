@@ -251,7 +251,8 @@ describe("account-query", () => {
         nonce: 0,
       },
       updateLimitTx,
-      (...args) => owner.signTypedData(...args)
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueueTx);
 
