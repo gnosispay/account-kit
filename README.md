@@ -100,19 +100,19 @@ Generates a payload that posts the provided transaction to the Delay Mod's queue
 
 ```js
 import {
-  populateExecEnqueue,
-  populateExecDispatch,
+  populateExecuteEnqueue,
+  populateExecuteDispatch,
 } from "@gnosispay/account-kit";
 
-//  Signer
-const owner = {}; // the account owner
+
+const owner : Signer = {}; // the account owner
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
 const nonce = `<number>`; // current safe nonce
 
 const someTransaction = { to: `<address>`, data: `0x<bytes>` };
 
-const enqueue = await populateExecEnqueue(
+const enqueue = await populateExecuteEnqueue(
   { owner: owner.address, account, chainId, nonce },
   someTransaction,
   // callback that wraps an eip-712 signature
@@ -120,9 +120,9 @@ const enqueue = await populateExecEnqueue(
 );
 await relayer.sendTransaction(enqueue);
 
-// (...) WAIT {COOLDOWN} SECONDS (...)
+// ⏳ wait cooldown seconds ⏳
 
-const dispatch = populateExecDispatch(account, someTransaction);
+const dispatch = populateExecuteDispatch(account, someTransaction);
 await relayer.sendTransaction(dispatch);
 ```
 
@@ -157,7 +157,7 @@ const enqueue = await populateLimitEnqueue(
 );
 await relayer.sendTransaction(enqueue);
 
-// (...) WAIT {COOLDOWN} SECONDS (...)
+// ⏳ wait cooldown seconds ⏳
 
 const dispatch = populateLimitDispatch(account, config);
 await relayer.sendTransaction(dispatch);
