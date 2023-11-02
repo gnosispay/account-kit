@@ -136,7 +136,7 @@ import {
   populateLimitDispatch,
 } from "@gnosispay/account-kit";
 
-//
+
 const owner : Signer = {}; // the account owner
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
@@ -170,7 +170,7 @@ Generates the spend payload to be submitted to the Roles Mod. Spender has permis
 ```js
 import { populateSpend } from "@gnosispay/account-kit";
 
-const spender : Signer = {}; // the gnosis signer
+const spender : Signer = {}; // system wide config, the gnosis signer
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
 const nonce = `<number>`; // current safe nonce
@@ -199,8 +199,8 @@ import { accountQuery } from "@gnosispay/account-kit";
 
 const owner = `<address>`;
 const account = `<address>`;
-const spender = `<address>`;
-const cooldown = `<number>`;
+const spender = `<address>`; // system wide config, the gnosis signer
+const cooldown = `<number>`; // system wide config, cooldown time
 
 const { status, allowance, nonces } = await accountQuery(
   { account, owner, spender, cooldown },
