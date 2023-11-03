@@ -32,7 +32,7 @@ export function _predictSafeAddress(owner: string, saltNonce: bigint): string {
 
 export function _populateSafeCreation(
   owner: string,
-  seed: bigint
+  creationNonce: bigint
 ): TransactionRequest {
   const { iface, address: factory } = deployments.safeProxyFactory;
   const mastercopy = deployments.safeMastercopy.address;
@@ -47,7 +47,7 @@ export function _populateSafeCreation(
     data: iface.encodeFunctionData("createProxyWithNonce", [
       mastercopy,
       safeInitializer(owner),
-      seed,
+      creationNonce,
     ]),
   };
 }
