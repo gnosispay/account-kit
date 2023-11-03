@@ -31,7 +31,7 @@ export default async function populateSpend(
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const { to, value = 0, data } = populateSpendTransaction(account, transfer);
+  const { to, value, data } = populateSpendTransaction(account, transfer);
 
   const { domain, primaryType, types, message } =
     typedDataForModifierTransaction(

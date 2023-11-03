@@ -2,13 +2,9 @@ import { concat, getAddress } from "ethers";
 
 import deployments from "../deployments";
 import typedDataForModifierTransaction, { randomBytes32 } from "../eip712";
-import {
-  populateDelayDispatch,
-  populateDelayEnqueue,
-  predictDelayAddress,
-} from "../parts";
+import { predictDelayAddress } from "../parts";
 
-import { SignTypedData, TransactionRequest } from "../types";
+import { OperationType, SignTypedData, TransactionRequest } from "../types";
 
 export async function populateExecuteEnqueue(
   {
@@ -22,11 +18,20 @@ export async function populateExecuteEnqueue(
   account = getAddress(account);
   salt = salt || randomBytes32();
 
-  const { to, value = 0, data } = populateDelayEnqueue(account, transaction);
-
   const delay = {
     address: predictDelayAddress(account),
     iface: deployments.delayMastercopy.iface,
+  };
+
+  const { to, value, data } = {
+    to: delay.address,
+    value: 0,
+    data: delay.iface.encodeFunctionData("execTransactionFromModule", [
+      transaction.to,
+      transaction.value || 0,
+      transaction.data,
+      OperationType.Call,
+    ]),
   };
 
   const { domain, primaryType, types, message } =
@@ -45,5 +50,20 @@ export function populateExecuteDispatch(
   transaction: TransactionRequest
 ): TransactionRequest {
   account = getAddress(account);
-  return populateDelayDispatch(account, transaction);
+
+  const delay = {
+    address: predictDelayAddress(account),
+    iface: deployments.delayMastercopy.iface,
+  };
+
+  return {
+    to: delay.address,
+    value: 0,
+    data: delay.iface.encodeFunctionData("executeNextTx", [
+      transaction.to,
+      transaction.value || 0,
+      transaction.data,
+      OperationType.Call,
+    ]),
+  };
 }
