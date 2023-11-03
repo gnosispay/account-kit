@@ -25,7 +25,11 @@ import {
 } from "../src";
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
-import { predictDelayAddress, predictRolesAddress } from "../src/parts";
+import {
+  predictBouncerAddress,
+  predictDelayAddress,
+  predictRolesAddress,
+} from "../src/parts";
 import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
   IDelayModule__factory,
@@ -54,6 +58,7 @@ describe("account-query", () => {
       token: GNO,
       allowance: 123,
       cooldown: 120, // 120 seconds
+      expiration: 120 * 1000,
     });
     const account = predictAccountAddress(owner.address);
     const delayAddress = predictDelayAddress(account);
@@ -91,8 +96,8 @@ describe("account-query", () => {
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(123);
-    expect(result.allowance.maxBalance).to.equal(123);
     expect(result.allowance.refill).to.equal(123);
+    expect(result.allowance.maxRefill).to.equal(123);
     expect(result.allowance.period).to.equal(60 * 60 * 24);
   });
 
@@ -222,8 +227,7 @@ describe("account-query", () => {
     );
   });
 
-  // TODO: Setting a balance > maxBalance will only be possible with Roles V2.1. Enable this test then.
-  it.skip("handles balances exceeding max balance", async () => {
+  it("handles balances exceeding max refill", async () => {
     const { roles, account, owner, config, relayer } =
       await loadFixture(setupAccount);
 
@@ -232,7 +236,7 @@ describe("account-query", () => {
     const AMOUNT = 123;
 
     const updateLimitTx = {
-      to: await roles.getAddress(),
+      to: predictBouncerAddress(account),
       data: roles.interface.encodeFunctionData("setAllowance", [
         SPENDING_ALLOWANCE_KEY,
         AMOUNT * 2,
