@@ -86,7 +86,7 @@ const config: SetupConfig = {
 const transaction = await populateAccountSetup(
   { account, owner: owner.address, chainId, nonce },
   config,
-  // callback that wraps an eip-712 signature
+  // callback that wraps an eip-712 signature !!owner signs!!
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
 
@@ -103,16 +103,15 @@ import {
   populateExecuteDispatch,
 } from "@gnosispay/account-kit";
 
-
 const account = `<address>`;
 const chainId = `<number>`;
 const owner : Signer = {};
 
-const aTransaction = { to: `<address>`, data: `0x<bytes>` };
+const innerTransaction = { to: `<address>`, data: `0x<bytes>` };
 
 const enqueueTx = await populateExecuteEnqueue(
   { account, chainId },
-  aTransaction,
+  innerTransaction,
   // callback that wraps an eip-712 signature !!owner signs!!
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
@@ -120,7 +119,7 @@ await relayer.sendTransaction(enqueueTx);
 
 // ⏳ wait cooldown seconds ⏳
 
-const dispatchTx = populateExecuteDispatch(account, aTransaction);
+const dispatchTx = populateExecuteDispatch(account, innerTransaction);
 await relayer.sendTransaction(dispatchTx);
 ```
 
@@ -138,8 +137,7 @@ const account = `<address>`; // the main safe address
 const chainId = `<number>`;
 const owner : Signer = {}; // the account owner
 
-
-const config : AllowanceConfig = {
+const allowanceConfig : AllowanceConfig = {
   // Duration, in seconds, before a refill occurs
   period: `<number>`,
   /// Amount added to balance after each period elapses.
@@ -148,7 +146,7 @@ const config : AllowanceConfig = {
 
 const enqueueTx = await populateLimitEnqueue(
   { account, chainId },
-  config,
+  allowanceConfig,
   // callback that wraps an eip-712 signature !!owner signs!!
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
@@ -156,7 +154,7 @@ await relayer.sendTransaction(enqueueTx);
 
 // ⏳ wait cooldown seconds ⏳
 
-const dispatchTx = populateLimitDispatch(account, config);
+const dispatchTx = populateLimitDispatch(account, allowanceConfig);
 await relayer.sendTransaction(dispatchTx);
 ```
 
@@ -179,7 +177,7 @@ const transfer : Transfer= {
 };
 
 const spendTx = await populateSpend(
-  { account, spender: spender.address, chainId, nonce },
+  { account, chainId },
   transfer,
   // callback that wraps an eip-712 signature !!spender signs!!
   ({ domain, primaryType, types, message }) => spender.signTypedData(...)
@@ -197,19 +195,14 @@ import { accountQuery } from "@gnosispay/account-kit";
 const account = `<address>`;
 const cooldown = `<number>`; // system wide config, cooldown time in seconds
 
-const { status, allowance, nonces } = await accountQuery(
+const {
+  status,
+  allowance: { balance, refill, period, maxRefill, nextRefill },
+} = await accountQuery(
   { account, cooldown },
   // a function that receives that and performs eth_call, library agnostic
   ({ to, data }) => provider.send("eth_call", [{ to, data }])
 );
-/*
- * Returns
- *  {
- *    status: AccountIntegrityStatus
- *    allowance: { balance },
- *  }
- *
- */
 ```
 
 ## <a name="contributors">Contributors</a>
