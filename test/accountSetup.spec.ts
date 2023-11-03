@@ -11,10 +11,7 @@ import {
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { predictBouncerAddress } from "../src/parts/bouncer";
-import {
-  predictOwnerChannelAddress,
-  predictSpenderChannelAddress,
-} from "../src/parts/channel";
+
 import { predictDelayAddress } from "../src/parts/delay";
 import { predictRolesAddress } from "../src/parts/roles";
 import {
@@ -91,50 +88,6 @@ describe("account-setup", () => {
     expect(await bouncer.selector()).to.equal(
       roles.interface.getFunction("setAllowance").selector
     );
-  });
-
-  it("deploys the owner and spender channels", async () => {
-    const { account, owner, spender, receiver, relayer } =
-      await loadFixture(createAccount);
-
-    const provider = hre.ethers.provider;
-    const config = createSetupConfig({
-      spender: spender.address,
-      receiver: receiver.address,
-    });
-
-    const ownerChannelAddress = predictOwnerChannelAddress({
-      account,
-      owner: owner.address,
-    });
-    const spenderChannelAddress = predictSpenderChannelAddress({
-      account,
-      spender: spender.address,
-    });
-
-    const ownerChannel = ISafe__factory.connect(ownerChannelAddress, provider);
-    const spenderChannel = ISafe__factory.connect(
-      spenderChannelAddress,
-      provider
-    );
-
-    const transaction = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
-      config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
-    );
-    expect(await provider.getCode(ownerChannelAddress)).to.equal("0x");
-    expect(await provider.getCode(spenderChannelAddress)).to.equal("0x");
-
-    await relayer.sendTransaction(transaction);
-
-    expect(await provider.getCode(ownerChannelAddress)).to.not.equal("0x");
-    expect(await provider.getCode(spenderChannelAddress)).to.not.equal("0x");
-    expect(await ownerChannel.getThreshold()).to.equal(1);
-    expect(await ownerChannel.isOwner(owner.address)).to.be.true;
-    expect(await spenderChannel.getThreshold()).to.equal(1);
-    expect(await spenderChannel.isOwner(spender.address)).to.be.true;
   });
 
   it("renounces account ownership", async () => {
@@ -220,11 +173,6 @@ describe("account-setup", () => {
 
     const bouncerAddress = predictBouncerAddress(account);
 
-    const spenderChannelAddress = predictSpenderChannelAddress({
-      account,
-      spender: spender.address,
-    });
-
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
 
     const transaction = await populateAccountSetup(
@@ -233,12 +181,14 @@ describe("account-setup", () => {
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
+
+    expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
+
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
     expect(await roles.isModuleEnabled(owner.address)).to.be.false;
-    expect(await roles.isModuleEnabled(spender.address)).to.be.false;
-    expect(await roles.isModuleEnabled(spenderChannelAddress)).to.be.true;
+    expect(await roles.isModuleEnabled(spender.address)).to.be.true;
     expect(await roles.owner()).to.equal(bouncerAddress);
 
     const { balance, refill, maxRefill, period, timestamp } =
@@ -266,11 +216,6 @@ describe("account-setup", () => {
       expiration: EXPIRATION,
     });
 
-    const ownerChannelAddress = predictOwnerChannelAddress({
-      account,
-      owner: owner.address,
-    });
-
     const transaction = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
@@ -278,14 +223,14 @@ describe("account-setup", () => {
         owner.signTypedData(domain, types, message)
     );
 
+    expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
+
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
-
-    expect(await delay.isModuleEnabled(owner.address)).to.be.false;
+    expect(await delay.isModuleEnabled(owner.address)).to.be.true;
     expect(await delay.isModuleEnabled(spender.address)).to.be.false;
     expect(await delay.isModuleEnabled(receiver.address)).to.be.false;
-    expect(await delay.isModuleEnabled(ownerChannelAddress)).to.be.true;
 
     expect(await delay.owner()).to.equal(account);
     expect(await delay.txCooldown()).to.equal(COOLDOWN);
