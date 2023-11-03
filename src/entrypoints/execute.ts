@@ -1,5 +1,7 @@
 import { concat, getAddress } from "ethers";
 
+import deployments from "../deployments";
+import typedDataForModifierTransaction, { randomBytes32 } from "../eip712";
 import {
   populateDelayDispatch,
   populateDelayEnqueue,
@@ -7,19 +9,18 @@ import {
 } from "../parts";
 
 import { SignTypedData, TransactionData } from "../types";
-import typedDataForModifierTransaction from "../eip712";
-import deployments from "../deployments";
 
 export async function populateExecuteEnqueue(
   {
     account,
     chainId,
     salt,
-  }: { account: string; chainId: number; salt: string },
+  }: { account: string; chainId: number; salt?: string },
   transaction: TransactionData,
   sign: SignTypedData
 ): Promise<TransactionData> {
   account = getAddress(account);
+  salt = salt || randomBytes32();
 
   const { to, value = 0, data } = populateDelayEnqueue(account, transaction);
 
@@ -43,5 +44,6 @@ export function populateExecuteDispatch(
   account: string,
   transaction: TransactionData
 ): TransactionData {
+  account = getAddress(account);
   return populateDelayDispatch(account, transaction);
 }

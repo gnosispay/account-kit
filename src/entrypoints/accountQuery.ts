@@ -1,5 +1,5 @@
 import assert from "assert";
-import { AbiCoder } from "ethers";
+import { AbiCoder, getAddress } from "ethers";
 
 import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
@@ -30,27 +30,21 @@ const empty = {
 export default async function accountQuery(
   {
     account,
-    owner,
-    spender,
     cooldown,
   }: {
     account: string;
-    owner: string;
-    spender: string;
     cooldown: number;
   },
   doEthCall: (request: TransactionData) => Promise<string>
 ): Promise<AccountQueryResult> {
-  const request = createRequest(account, owner, spender);
+  account = getAddress(account);
+
+  const request = createRequest(account);
   const resultData = await doEthCall(request);
   return evaluateResult(account, cooldown, resultData);
 }
 
-function createRequest(
-  account: string,
-  owner: string,
-  spender: string
-): TransactionData {
+function createRequest(account: string): TransactionData {
   const { iface } = deployments.safeMastercopy;
   const delay = {
     address: predictDelayAddress(account),
@@ -122,11 +116,6 @@ function createRequest(
           "getCurrentBlockTimestamp"
         ),
       },
-      {
-        target: account,
-        allowFailure: true,
-        callData: iface.encodeFunctionData("nonce"),
-      },
     ],
   ]);
 
@@ -160,9 +149,6 @@ function evaluateResult(
       [txNonceSuccess, txNonceResult],
       [queueNonceSuccess, queueNonceResult],
       [, blockTimestampResult],
-      [, accountNonceResult],
-      [, ownerNonceResult],
-      [, spenderNonceResult],
     ] = aggregate3Result;
 
     if (
@@ -237,11 +223,6 @@ function evaluateResult(
       ...empty,
       status: AccountIntegrityStatus.Ok,
       allowance: evaluateAllowance(allowanceResult, blockTimestampResult),
-      nonces: {
-        account: BigInt(accountNonceResult),
-        owner: BigInt(ownerNonceResult),
-        spender: BigInt(spenderNonceResult),
-      },
     };
   } catch (e) {
     return {

@@ -1,4 +1,3 @@
-import { getAddress } from "ethers";
 import {
   getFallbackHandlerDeployment,
   getMultiSendDeployment,
@@ -7,6 +6,7 @@ import {
 } from "@safe-global/safe-deployments/";
 
 import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
+import { getAddress } from "ethers";
 import {
   IDelayModule__factory,
   IModuleProxyFactory__factory,

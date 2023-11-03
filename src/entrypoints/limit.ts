@@ -1,22 +1,24 @@
+import { getAddress } from "ethers";
+
 import { populateExecuteDispatch, populateExecuteEnqueue } from "./execute";
 import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
+import { randomBytes32 } from "../eip712";
 import { predictBouncerAddress } from "../parts";
 
 import { AllowanceConfig, SignTypedData, TransactionData } from "../types";
-import { getAddress } from "ethers";
-import assert from "assert";
 
 export async function populateLimitEnqueue(
   {
     account,
     chainId,
     salt,
-  }: { account: string; chainId: number; salt: string },
+  }: { account: string; chainId: number; salt?: string },
   config: AllowanceConfig,
   sign: SignTypedData
 ): Promise<TransactionData> {
   account = getAddress(account);
+  salt = salt || randomBytes32();
 
   const transaction = populateSetAllowance(account, config);
   return populateExecuteEnqueue({ account, chainId, salt }, transaction, sign);
@@ -36,8 +38,6 @@ function populateSetAllowance(
   account: string,
   { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionData {
-  assert(account == getAddress(account));
-
   const address = predictBouncerAddress(account);
   const iface = deployments.rolesMastercopy.iface;
 
