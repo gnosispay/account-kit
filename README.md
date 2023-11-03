@@ -23,7 +23,7 @@ Creates a new 1/1 safe.
 import { populateAccountCreation } from "@gnosispay/account-kit";
 
 const owner = `<address>`; // the owner of the account
-await provider.sendTransaction(populateAccountCreation(eoa));
+await provider.sendTransaction(populateAccountCreation(owner));
 ```
 
 ## <a name="direct-transfer">Direct Transfer</a>
@@ -33,21 +33,20 @@ Signs a ERC20 token transfer out of the account. To be used on newly created 1/1
 ```js
 import { populateDirectTransfer } from "@gnosispay/account-kit";
 
-const owner: Signer = {}; // the account owner
+const owner : Signer = {}; // the account owner
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
-const nonce = `<number>`; // current safe nonce, since fresh, expected 0
+const nonce = `<number>`; // the account's onchain nonce value
 
-const token = `<address>`;
+const token = `<address>`; // contract address of the token being transferred
 const to = `<address>`;
 const amount = `<bigint>`;
 
 const transaction = await populateDirectTransfer(
   { safe, chainId, nonce },
   { token, to, amount },
-  // callback that wraps an eip-712 signature
+  // callback that wraps an eip-712 signature by owner
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
-
 );
 
 await relayer.sendTransaction(transaction);
@@ -63,7 +62,7 @@ import { populateAccountSetup } from "@gnosispay/account-kit";
 const owner: Signer = {}; // the account owner
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
-const nonce = `<number>`; // current safe nonce
+const nonce = `<number>`; // the account's onchain nonce value
 
 const config: SetupConfig = {
   // the gnosis signer
@@ -74,8 +73,8 @@ const config: SetupConfig = {
   token: `<address>`,
   // allowance settings
   allowance: {
-    refill: `<bigint>`, // amount per period
-    period: `<number>`, // in seconds
+    refill: `<bigint>`, // amount refilled per period
+    period: `<number>`, // duration in seconds
   },
   // delay mod  settings
   delay: {
@@ -85,7 +84,7 @@ const config: SetupConfig = {
 };
 
 const transaction = await populateAccountSetup(
-  { owner: owner.address, account, chainId, nonce },
+  { account, owner: owner.address, chainId, nonce },
   config,
   // callback that wraps an eip-712 signature
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
@@ -105,25 +104,24 @@ import {
 } from "@gnosispay/account-kit";
 
 
-const owner : Signer = {}; // the account owner
-const account = `<address>`; // the main safe address
+const account = `<address>`;
 const chainId = `<number>`;
-const nonce = `<number>`; // current safe nonce
+const owner : Signer = {};
 
-const someTransaction = { to: `<address>`, data: `0x<bytes>` };
+const aTransaction = { to: `<address>`, data: `0x<bytes>` };
 
-const enqueue = await populateExecuteEnqueue(
-  { owner: owner.address, account, chainId, nonce },
-  someTransaction,
-  // callback that wraps an eip-712 signature
+const enqueueTx = await populateExecuteEnqueue(
+  { account, chainId },
+  aTransaction,
+  // callback that wraps an eip-712 signature !!owner signs!!
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
-await relayer.sendTransaction(enqueue);
+await relayer.sendTransaction(enqueueTx);
 
 // ⏳ wait cooldown seconds ⏳
 
-const dispatch = populateExecuteDispatch(account, someTransaction);
-await relayer.sendTransaction(dispatch);
+const dispatchTx = populateExecuteDispatch(account, aTransaction);
+await relayer.sendTransaction(dispatchTx);
 ```
 
 ## <a name="limit">Limit</a>
@@ -136,11 +134,10 @@ import {
   populateLimitDispatch,
 } from "@gnosispay/account-kit";
 
-
-const owner : Signer = {}; // the account owner
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
-const nonce = `<number>`; // current safe nonce
+const owner : Signer = {}; // the account owner
+
 
 const config : AllowanceConfig = {
   // Duration, in seconds, before a refill occurs
@@ -149,18 +146,18 @@ const config : AllowanceConfig = {
   refill: `<bigint>`,
 };
 
-const enqueue = await populateLimitEnqueue(
-  { owner: owner.address, account, chainId, nonce },
+const enqueueTx = await populateLimitEnqueue(
+  { account, chainId },
   config,
-  // callback that wraps an eip-712 signature
+  // callback that wraps an eip-712 signature !!owner signs!!
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
 );
-await relayer.sendTransaction(enqueue);
+await relayer.sendTransaction(enqueueTx);
 
 // ⏳ wait cooldown seconds ⏳
 
-const dispatch = populateLimitDispatch(account, config);
-await relayer.sendTransaction(dispatch);
+const dispatchTx = populateLimitDispatch(account, config);
+await relayer.sendTransaction(dispatchTx);
 ```
 
 ## <a name="spend">Spend</a>
@@ -170,10 +167,10 @@ Generates the spend payload to be submitted to the Roles Mod. Spender has permis
 ```js
 import { populateSpend } from "@gnosispay/account-kit";
 
-const spender : Signer = {}; // system wide config, the gnosis signer
+
 const account = `<address>`; // the main safe address
 const chainId = `<number>`;
-const nonce = `<number>`; // current safe nonce
+const spender : Signer = {}; // system wide config, the gnosis signer
 
 const transfer : Transfer= {
   token: `<address>`,
@@ -181,13 +178,13 @@ const transfer : Transfer= {
   amount: `<bigint>`,
 };
 
-const enqueue = await populateSpend(
+const spendTx = await populateSpend(
   { account, spender: spender.address, chainId, nonce },
   transfer,
-  // callback that wraps an eip-712 signature
-  ({ domain, primaryType, types, message }) => owner.signTypedData(...)
+  // callback that wraps an eip-712 signature !!spender signs!!
+  ({ domain, primaryType, types, message }) => spender.signTypedData(...)
 );
-await relayer.sendTransaction(enqueue);
+await relayer.sendTransaction(spendTx);
 ```
 
 ## <a name="account-query">Account Query</a>
@@ -197,13 +194,11 @@ Creates a multicall payload that collects all data required to assess if a given
 ```js
 import { accountQuery } from "@gnosispay/account-kit";
 
-const owner = `<address>`;
 const account = `<address>`;
-const spender = `<address>`; // system wide config, the gnosis signer
-const cooldown = `<number>`; // system wide config, cooldown time
+const cooldown = `<number>`; // system wide config, cooldown time in seconds
 
 const { status, allowance, nonces } = await accountQuery(
-  { account, owner, spender, cooldown },
+  { account, cooldown },
   // a function that receives that and performs eth_call, library agnostic
   ({ to, data }) => provider.send("eth_call", [{ to, data }])
 );
@@ -212,7 +207,6 @@ const { status, allowance, nonces } = await accountQuery(
  *  {
  *    status: AccountIntegrityStatus
  *    allowance: { balance },
- *    nonces: { account, owner, spender }
  *  }
  *
  */
