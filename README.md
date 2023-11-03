@@ -107,7 +107,7 @@ const account = `<address>`;
 const chainId = `<number>`;
 const owner : Signer = {};
 
-const innerTransaction = { to: `<address>`, data: `0x<bytes>` };
+const innerTransaction = { to: `<address>`, value: `<bigint>`, data: `0x<bytes>` };
 
 const enqueueTx = await populateExecuteEnqueue(
   { account, chainId },
