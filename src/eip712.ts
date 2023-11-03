@@ -1,5 +1,5 @@
 import { ZeroAddress, keccak256, toUtf8Bytes } from "ethers";
-import { SafeTransactionData } from "./types";
+import { SafeTransactionRequest } from "./types";
 
 export function typedDataForSafeTransaction(
   {
@@ -11,7 +11,7 @@ export function typedDataForSafeTransaction(
     chainId: bigint | number;
     nonce: bigint | number;
   },
-  { to, value, data, operation }: SafeTransactionData
+  { to, value, data, operation }: SafeTransactionRequest
 ) {
   const domain = { verifyingContract: safe, chainId };
   const primaryType = "SafeTx" as const;

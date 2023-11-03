@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import { ZeroAddress, ZeroHash, keccak256, toUtf8Bytes } from "ethers";
 import hre from "hardhat";
 
 import {
@@ -18,10 +19,9 @@ import {
   predictAccountAddress,
 } from "../src";
 
-import { IERC20__factory, IRolesModifier__factory } from "../typechain-types";
-import { ZeroAddress, ZeroHash, keccak256, toUtf8Bytes } from "ethers";
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { RolesConditionStatus } from "../src/parts/roles";
+import { IERC20__factory, IRolesModifier__factory } from "../typechain-types";
 
 describe("spend", () => {
   before(async () => {

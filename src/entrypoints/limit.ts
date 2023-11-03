@@ -6,7 +6,7 @@ import deployments from "../deployments";
 import { randomBytes32 } from "../eip712";
 import { predictBouncerAddress } from "../parts";
 
-import { AllowanceConfig, SignTypedData, TransactionData } from "../types";
+import { TransactionRequest, AllowanceConfig, SignTypedData } from "../types";
 
 export async function populateLimitEnqueue(
   {
@@ -16,7 +16,7 @@ export async function populateLimitEnqueue(
   }: { account: string; chainId: number; salt?: string },
   config: AllowanceConfig,
   sign: SignTypedData
-): Promise<TransactionData> {
+): Promise<TransactionRequest> {
   account = getAddress(account);
   salt = salt || randomBytes32();
 
@@ -27,7 +27,7 @@ export async function populateLimitEnqueue(
 export function populateLimitDispatch(
   account: string,
   config: AllowanceConfig
-): TransactionData {
+): TransactionRequest {
   account = getAddress(account);
 
   const transaction = populateSetAllowance(account, config);
@@ -37,12 +37,13 @@ export function populateLimitDispatch(
 function populateSetAllowance(
   account: string,
   { refill, period, timestamp = 0 }: AllowanceConfig
-): TransactionData {
+): TransactionRequest {
   const address = predictBouncerAddress(account);
   const iface = deployments.rolesMastercopy.iface;
 
   return {
     to: address,
+    value: 0,
     data: iface.encodeFunctionData("setAllowance", [
       SPENDING_ALLOWANCE_KEY,
       refill, // balance

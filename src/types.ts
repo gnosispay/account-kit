@@ -1,17 +1,10 @@
-export type SignTypedData = (param: {
-  domain: any;
-  primaryType: any;
-  types: any;
-  message: any;
-}) => Promise<string>;
-
-export interface TransactionData {
+export interface TransactionRequest {
   to: string;
-  value?: bigint | number;
+  value: bigint | number;
   data: string;
 }
 
-export interface SafeTransactionData {
+export interface SafeTransactionRequest {
   to: string;
   value: bigint | number;
   data: string;
@@ -22,6 +15,13 @@ export enum OperationType {
   Call = 0,
   DelegateCall = 1,
 }
+
+export type SignTypedData = (param: {
+  domain: any;
+  primaryType: any;
+  types: any;
+  message: any;
+}) => Promise<string>;
 
 export type Transfer = {
   token: string;
