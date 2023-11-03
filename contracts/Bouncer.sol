@@ -2,12 +2,14 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title SinglePurposeForward - Allows a specific caller to invoke a
- * single function on a target contract.
+ * @title Bouncer - Allows a specific caller to invoke a single function on a target contract.
  * @author Cristóvão Honorato - <cristovao.honorato@gnosis.io>
  * @author Auryn Macmillan    - <auryn.macmillan@gnosis.io>
  */
 contract Bouncer {
+  error BouncerBlockedCaller(address caller);
+  error BouncerBlockedSelector(bytes4 selector);
+
   address public immutable from;
   address public immutable to;
   bytes4 public immutable selector;
@@ -20,11 +22,11 @@ contract Bouncer {
 
   fallback() external payable virtual {
     if (msg.sender != from) {
-      revert("Unauthorized Caller");
+      revert BouncerBlockedCaller(msg.sender);
     }
 
     if (bytes4(msg.data) != selector) {
-      revert("Unauthorized Selector");
+      revert BouncerBlockedSelector(bytes4(msg.data));
     }
 
     address to_ = to;
