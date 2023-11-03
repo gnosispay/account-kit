@@ -19,6 +19,7 @@ import {
 } from "../src";
 
 import { IERC20__factory } from "../typechain-types";
+import { ZeroHash } from "ethers";
 
 describe("spend", () => {
   before(async () => {
@@ -75,13 +76,13 @@ describe("spend", () => {
     const amount = 10;
 
     const spendSignedByOther = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { token, to, amount },
       ({ domain, types, message }) =>
         relayer.signTypedData(domain, types, message)
     );
     const spendSignedBySpender = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { token, to, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
@@ -105,14 +106,14 @@ describe("spend", () => {
     const amount = 10;
 
     const txToOther = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { token, to: relayer.address, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
 
     const txToReceiver = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { token, to: receiver.address, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
@@ -136,7 +137,7 @@ describe("spend", () => {
     const amount = 2000;
 
     const txToReceiver = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { token, to: receiver.address, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
