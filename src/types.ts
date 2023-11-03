@@ -57,15 +57,10 @@ export type AccountQueryResult = {
   status: AccountIntegrityStatus;
   allowance: {
     balance: bigint;
-    nextRefill: bigint | null;
     refill: bigint;
+    maxRefill: bigint;
     period: bigint;
-    maxBalance: bigint;
-  };
-  nonces: {
-    account: bigint;
-    owner: bigint;
-    spender: bigint;
+    nextRefill: bigint | null;
   };
 };
 

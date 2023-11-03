@@ -307,18 +307,18 @@ function evaluateAllowance(
   const { iface } = deployments.rolesMastercopy;
 
   const blockTimestamp = BigInt(blockTimestampResult);
-  const [refill, maxBalance, period, balance, timestamp]: bigint[] =
+  const [refill, maxRefill, period, balance, timestamp]: bigint[] =
     iface.decodeFunctionResult("allowances", allowanceResult);
 
   assert(typeof refill == "bigint");
-  assert(typeof maxBalance == "bigint");
+  assert(typeof maxRefill == "bigint");
   assert(typeof period == "bigint");
   assert(typeof balance == "bigint");
   assert(typeof timestamp == "bigint");
 
   const allowance = {
     refill,
-    maxBalance,
+    maxRefill,
     period,
     balance,
     timestamp,
@@ -327,16 +327,16 @@ function evaluateAllowance(
 
   return {
     balance: accruedBalance(allowance),
-    nextRefill: nextRefill(allowance),
-    maxBalance,
     refill,
+    maxRefill,
     period,
+    nextRefill: nextRefill(allowance),
   };
 }
 
 interface AllowanceResult {
   balance: bigint;
-  maxBalance: bigint;
+  maxRefill: bigint;
   refill: bigint;
   period: bigint;
   timestamp: bigint;
@@ -345,7 +345,7 @@ interface AllowanceResult {
 
 function accruedBalance({
   refill,
-  maxBalance,
+  maxRefill,
   period,
   balance,
   timestamp,
@@ -355,13 +355,13 @@ function accruedBalance({
     return balance;
   }
 
-  if (balance >= maxBalance) {
+  if (balance >= maxRefill) {
     return balance;
   }
 
   const elapsedIntervals = (blockTimestamp - timestamp) / period;
   const balanceUncapped = balance + refill * elapsedIntervals;
-  return balanceUncapped < maxBalance ? balanceUncapped : maxBalance;
+  return balanceUncapped < maxRefill ? balanceUncapped : maxRefill;
 }
 
 function nextRefill({
