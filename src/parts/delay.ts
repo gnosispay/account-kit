@@ -3,7 +3,7 @@ import { AbiCoder, ZeroHash } from "ethers";
 import { _predictZodiacModAddress } from "./_zodiacMod";
 
 import deployments from "../deployments";
-import { OperationType, TransactionData } from "../types";
+import { OperationType, TransactionRequest } from "../types";
 
 export function predictDelayAddress(safe: string): string {
   return _predictZodiacModAddress(
@@ -12,11 +12,12 @@ export function predictDelayAddress(safe: string): string {
   );
 }
 
-export function populateDelayCreation(safe: string): TransactionData {
+export function populateDelayCreation(safe: string): TransactionRequest {
   const { moduleProxyFactory } = deployments;
 
   return {
     to: moduleProxyFactory.address,
+    value: 0,
     data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
       deployments.delayMastercopy.address,
       encodeSetUp(safe),
@@ -27,8 +28,8 @@ export function populateDelayCreation(safe: string): TransactionData {
 
 export function populateDelayEnqueue(
   safe: string,
-  { to, value, data }: TransactionData
-): TransactionData {
+  { to, value, data }: TransactionRequest
+): TransactionRequest {
   const delay = {
     address: predictDelayAddress(safe),
     iface: deployments.delayMastercopy.iface,
@@ -36,6 +37,7 @@ export function populateDelayEnqueue(
 
   return {
     to: delay.address,
+    value: 0,
     data: delay.iface.encodeFunctionData("execTransactionFromModule", [
       to,
       value || 0,
@@ -47,8 +49,8 @@ export function populateDelayEnqueue(
 
 export function populateDelayDispatch(
   safe: string,
-  { to, value, data }: TransactionData
-): TransactionData {
+  { to, value, data }: TransactionRequest
+): TransactionRequest {
   const delay = {
     address: predictDelayAddress(safe),
     iface: deployments.delayMastercopy.iface,
@@ -56,6 +58,7 @@ export function populateDelayDispatch(
 
   return {
     to: delay.address,
+    value: 0,
     data: delay.iface.encodeFunctionData("executeNextTx", [
       to,
       value || 0,

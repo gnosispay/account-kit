@@ -2,7 +2,7 @@ import { AbiCoder, ZeroHash } from "ethers";
 
 import { _predictZodiacModAddress } from "./_zodiacMod";
 import deployments from "../deployments";
-import { TransactionData } from "../types";
+import { TransactionRequest } from "../types";
 
 export function predictRolesAddress(safe: string): string {
   return _predictZodiacModAddress(
@@ -11,11 +11,12 @@ export function predictRolesAddress(safe: string): string {
   );
 }
 
-export function populateRolesCreation(safe: string): TransactionData {
+export function populateRolesCreation(safe: string): TransactionRequest {
   const { moduleProxyFactory } = deployments;
 
   return {
     to: moduleProxyFactory.address,
+    value: 0,
     data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
       deployments.rolesMastercopy.address,
       encodeSetUp(safe),

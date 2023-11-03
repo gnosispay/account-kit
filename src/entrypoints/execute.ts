@@ -8,7 +8,7 @@ import {
   predictDelayAddress,
 } from "../parts";
 
-import { SignTypedData, TransactionData } from "../types";
+import { SignTypedData, TransactionRequest } from "../types";
 
 export async function populateExecuteEnqueue(
   {
@@ -16,9 +16,9 @@ export async function populateExecuteEnqueue(
     chainId,
     salt,
   }: { account: string; chainId: number; salt?: string },
-  transaction: TransactionData,
+  transaction: TransactionRequest,
   sign: SignTypedData
-): Promise<TransactionData> {
+): Promise<TransactionRequest> {
   account = getAddress(account);
   salt = salt || randomBytes32();
 
@@ -42,8 +42,8 @@ export async function populateExecuteEnqueue(
 
 export function populateExecuteDispatch(
   account: string,
-  transaction: TransactionData
-): TransactionData {
+  transaction: TransactionRequest
+): TransactionRequest {
   account = getAddress(account);
   return populateDelayDispatch(account, transaction);
 }

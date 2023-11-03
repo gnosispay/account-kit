@@ -12,7 +12,7 @@ import {
 import {
   AccountIntegrityStatus,
   AccountQueryResult,
-  TransactionData,
+  TransactionRequest,
 } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
@@ -34,7 +34,7 @@ export default async function accountQuery(
     account: string;
     cooldown: number;
   },
-  doEthCall: (request: TransactionData) => Promise<string>
+  doEthCall: (request: TransactionRequest) => Promise<string>
 ): Promise<AccountQueryResult> {
   account = getAddress(account);
 
@@ -43,7 +43,7 @@ export default async function accountQuery(
   return evaluateResult(account, cooldown, resultData);
 }
 
-function createRequest(account: string): TransactionData {
+function createRequest(account: string): TransactionRequest {
   const { iface } = deployments.safeMastercopy;
   const delay = {
     address: predictDelayAddress(account),
@@ -120,6 +120,7 @@ function createRequest(account: string): TransactionData {
 
   return {
     to: multicall.address,
+    value: 0,
     data,
   };
 }

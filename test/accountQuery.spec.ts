@@ -237,6 +237,7 @@ describe("account-query", () => {
 
     const updateLimitTx = {
       to: predictBouncerAddress(account),
+      value: 0,
       data: roles.interface.encodeFunctionData("setAllowance", [
         SPENDING_ALLOWANCE_KEY,
         AMOUNT * 2,
@@ -277,10 +278,13 @@ describe("account-query", () => {
     let result = await evaluateAccount(account, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
-    const reconfigTx = await safe.addOwnerWithThreshold.populateTransaction(
-      await spender.getAddress(),
-      2
-    );
+    const reconfigTx = {
+      value: 0,
+      ...(await safe.addOwnerWithThreshold.populateTransaction(
+        await spender.getAddress(),
+        2
+      )),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
@@ -308,9 +312,12 @@ describe("account-query", () => {
     const { account, owner, relayer, safe, config } =
       await loadFixture(setupAccount);
 
-    const reconfig = await safe.enableModule.populateTransaction(
-      "0x0000000000000000000000000000000000000005"
-    );
+    const reconfig = {
+      value: 0,
+      ...(await safe.enableModule.populateTransaction(
+        "0x0000000000000000000000000000000000000005"
+      )),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
@@ -335,10 +342,13 @@ describe("account-query", () => {
     const delayAddress = predictDelayAddress(account);
     const rolesAddress = predictRolesAddress(account);
 
-    const reconfig = await safe.disableModule.populateTransaction(
-      delayAddress,
-      rolesAddress
-    );
+    const reconfig = {
+      value: 0,
+      ...(await safe.disableModule.populateTransaction(
+        delayAddress,
+        rolesAddress
+      )),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
@@ -362,10 +372,13 @@ describe("account-query", () => {
 
     const delayAddress = predictDelayAddress(account);
 
-    const reconfig = await safe.disableModule.populateTransaction(
-      AddressOne,
-      delayAddress
-    );
+    const reconfig = {
+      value: 0,
+      ...(await safe.disableModule.populateTransaction(
+        AddressOne,
+        delayAddress
+      )),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
@@ -389,9 +402,12 @@ describe("account-query", () => {
 
     await expect(await delay.owner()).to.equal(account);
 
-    const reconfig = await delay.transferOwnership.populateTransaction(
-      "0x000000000000000000000000000000000000000f"
-    );
+    const reconfig = {
+      value: 0,
+      ...(await delay.transferOwnership.populateTransaction(
+        "0x000000000000000000000000000000000000000f"
+      )),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
@@ -417,7 +433,10 @@ describe("account-query", () => {
     const { account, owner, relayer, delay, config } =
       await loadFixture(setupAccount);
 
-    const reconfig = await delay.setTxCooldown.populateTransaction(5);
+    const reconfig = {
+      value: 0,
+      ...(await delay.setTxCooldown.populateTransaction(5)),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
@@ -439,7 +458,10 @@ describe("account-query", () => {
     const { account, owner, relayer, delay, config } =
       await loadFixture(setupAccount);
 
-    const reconfig = await delay.setTxCooldown.populateTransaction(5);
+    const reconfig = {
+      value: 0,
+      ...(await delay.setTxCooldown.populateTransaction(5)),
+    };
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(

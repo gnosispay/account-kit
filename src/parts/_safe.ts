@@ -7,7 +7,7 @@ import {
 } from "ethers";
 
 import deployments, { proxyCreationBytecode } from "../deployments";
-import { TransactionData } from "../types";
+import { TransactionRequest } from "../types";
 
 export function _predictSafeAddress(owner: string, saltNonce: bigint): string {
   const { address: factory } = deployments.safeProxyFactory;
@@ -33,12 +33,13 @@ export function _predictSafeAddress(owner: string, saltNonce: bigint): string {
 export function _populateSafeCreation(
   owner: string,
   seed: bigint
-): TransactionData {
+): TransactionRequest {
   const { iface, address: factory } = deployments.safeProxyFactory;
   const mastercopy = deployments.safeMastercopy.address;
 
   return {
     to: factory,
+    value: 0,
     /*
      * Safe Proxy Creation works by calling proxy factory, and including an
      * embedded setup call (the initializer)

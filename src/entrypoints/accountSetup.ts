@@ -20,16 +20,16 @@ import {
 } from "../parts";
 
 import {
-  SafeTransactionData,
-  SetupConfig,
-  SignTypedData,
-  TransactionData,
-} from "../types";
-import {
   RolesExecutionOptions,
   RolesOperator,
   RolesParameterType,
 } from "../parts/roles";
+import {
+  SafeTransactionRequest,
+  SetupConfig,
+  SignTypedData,
+  TransactionRequest,
+} from "../types";
 
 const AddressTwo = "0x0000000000000000000000000000000000000002";
 
@@ -42,7 +42,7 @@ export default async function populateAccountSetup(
   }: { account: string; owner: string; chainId: number; nonce: number },
   config: SetupConfig,
   sign: SignTypedData
-): Promise<TransactionData> {
+): Promise<TransactionRequest> {
   account = getAddress(account);
   owner = getAddress(owner);
 
@@ -62,6 +62,7 @@ export default async function populateAccountSetup(
 
   return {
     to: account,
+    value: 0,
     data: iface.encodeFunctionData("execTransaction", [
       to,
       value,
@@ -86,7 +87,7 @@ function populateInitMultisend(
     allowance: { refill, period, timestamp },
     delay: { cooldown, expiration },
   }: SetupConfig
-): SafeTransactionData {
+): SafeTransactionRequest {
   const abi = AbiCoder.defaultAbiCoder();
 
   const { iface } = deployments.safeMastercopy;
@@ -109,6 +110,7 @@ function populateInitMultisend(
     // renounce ownership
     {
       to: account,
+      value: 0,
       data: iface.encodeFunctionData("swapOwner", [
         SENTINEL,
         owner,
@@ -118,11 +120,13 @@ function populateInitMultisend(
     // enable roles as module on safe
     {
       to: account,
+      value: 0,
       data: iface.encodeFunctionData("enableModule", [roles.address]),
     },
     // enable delay as module on safe
     {
       to: account,
+      value: 0,
       data: iface.encodeFunctionData("enableModule", [delay.address]),
     },
     /**
@@ -134,16 +138,19 @@ function populateInitMultisend(
     // configure cooldown on delay
     {
       to: delay.address,
+      value: 0,
       data: delay.iface.encodeFunctionData("setTxCooldown", [cooldown]),
     },
     // configure expiration on delay
     {
       to: delay.address,
+      value: 0,
       data: delay.iface.encodeFunctionData("setTxExpiration", [expiration]),
     },
     // enable owner on the delay as module
     {
       to: delay.address,
+      value: 0,
       data: delay.iface.encodeFunctionData("enableModule", [owner]),
     },
     /**
@@ -152,6 +159,7 @@ function populateInitMultisend(
     populateRolesCreation(account),
     {
       to: roles.address,
+      value: 0,
       data: roles.iface.encodeFunctionData("setAllowance", [
         SPENDING_ALLOWANCE_KEY,
         // balance
@@ -168,6 +176,7 @@ function populateInitMultisend(
     },
     {
       to: roles.address,
+      value: 0,
       data: roles.iface.encodeFunctionData("assignRoles", [
         spender,
         [SPENDING_ROLE_KEY],
@@ -176,6 +185,7 @@ function populateInitMultisend(
     },
     {
       to: roles.address,
+      value: 0,
       data: roles.iface.encodeFunctionData("scopeTarget", [
         SPENDING_ROLE_KEY,
         token,
@@ -183,6 +193,7 @@ function populateInitMultisend(
     },
     {
       to: roles.address,
+      value: 0,
       data: roles.iface.encodeFunctionData("scopeFunction", [
         SPENDING_ROLE_KEY,
         token,
@@ -212,6 +223,7 @@ function populateInitMultisend(
     },
     {
       to: roles.address,
+      value: 0,
       data: roles.iface.encodeFunctionData("transferOwnership", [
         bouncerAddress,
       ]),

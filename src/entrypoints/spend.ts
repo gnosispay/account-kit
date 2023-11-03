@@ -8,9 +8,9 @@ import typedDataForModifierTransaction, { randomBytes32 } from "../eip712";
 import { predictRolesAddress } from "../parts";
 
 import {
+  TransactionRequest,
   OperationType,
   SignTypedData,
-  TransactionData,
   Transfer,
 } from "../types";
 
@@ -22,7 +22,7 @@ export default async function populateSpend(
   }: { account: string; chainId: number; salt?: string },
   transfer: Transfer,
   sign: SignTypedData
-): Promise<TransactionData> {
+): Promise<TransactionRequest> {
   account = getAddress(account);
   salt = salt || randomBytes32();
 
@@ -47,7 +47,7 @@ export default async function populateSpend(
 function populateSpendTransaction(
   account: string,
   { token, to, amount }: Transfer
-): TransactionData {
+): TransactionRequest {
   const roles = {
     address: predictRolesAddress(account),
     iface: deployments.rolesMastercopy.iface,
@@ -55,6 +55,7 @@ function populateSpendTransaction(
 
   return {
     to: roles.address,
+    value: 0,
     data: roles.iface.encodeFunctionData("execTransactionWithRole", [
       token,
       0,

@@ -13,7 +13,7 @@ import {
   IRolesModifier__factory,
 } from "../../typechain-types";
 import deployments from "../deployments";
-import { TransactionData } from "../types";
+import { TransactionRequest } from "../types";
 
 export function predictBouncerAddress(safe: string) {
   const salt = ZeroHash;
@@ -25,9 +25,10 @@ export function predictBouncerAddress(safe: string) {
   );
 }
 
-export function populateBouncerCreation(safe: string): TransactionData {
+export function populateBouncerCreation(safe: string): TransactionRequest {
   return {
     to: deployments.singletonFactory.address,
+    value: 0,
     data: `${ZeroHash}${creationBytecode(safe).slice(2)}`,
   };
 }

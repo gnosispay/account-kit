@@ -7,9 +7,9 @@ import { typedDataForSafeTransaction } from "../eip712";
 import { _populateSafeCreation, _predictSafeAddress } from "../parts";
 
 import {
+  TransactionRequest,
   OperationType,
   SignTypedData,
-  TransactionData,
   Transfer,
 } from "../types";
 
@@ -23,7 +23,7 @@ export function predictAccountAddress(
 export default function populateAccountCreation(
   owner: string,
   seed: bigint = ACCOUNT_SALT_NONCE
-): TransactionData {
+): TransactionRequest {
   owner = getAddress(owner);
 
   return _populateSafeCreation(owner, seed);
@@ -37,7 +37,7 @@ export async function populateDirectTransfer(
   }: { account: string; chainId: number; nonce: number },
   transfer: Transfer,
   sign: SignTypedData
-): Promise<TransactionData> {
+): Promise<TransactionRequest> {
   account = getAddress(account);
 
   const { to, value, data, operation } = {

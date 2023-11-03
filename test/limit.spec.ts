@@ -1,5 +1,6 @@
 import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import { keccak256, toUtf8Bytes } from "ethers";
 import hre from "hardhat";
 
 import {
@@ -22,7 +23,6 @@ import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { predictRolesAddress } from "../src/parts/roles";
 
 import { IRolesModifier__factory } from "../typechain-types";
-import { keccak256, toUtf8Bytes } from "ethers";
 
 const PERIOD = 12345;
 const AMOUNT = 76543;
@@ -145,18 +145,18 @@ describe("limit", () => {
   it("reverts on replayed set allowance tx", async () => {
     const { account, owner, relayer, roles } = await loadFixture(setupAccount);
 
-    let allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(12345);
     expect(allowance.refill).to.equal(76543);
 
-    let enqueueTx = await populateLimitEnqueue(
+    const enqueueTx = await populateLimitEnqueue(
       { account, chainId: 31337 },
       { refill: 1, period: 1 },
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
 
-    let enqueueTxWithSalt = await populateLimitEnqueue(
+    const enqueueTxWithSalt = await populateLimitEnqueue(
       { account, chainId: 31337, salt: keccak256(toUtf8Bytes("Hello World!")) },
       { refill: 1, period: 1 },
       ({ domain, types, message }) =>
