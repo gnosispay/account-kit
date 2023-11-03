@@ -19,14 +19,10 @@ import {
   predictAccountAddress,
 } from "../src";
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
-import { predictDelayAddress } from "../src/parts/delay";
 import { predictRolesAddress } from "../src/parts/roles";
 
-import {
-  IDelayModule__factory,
-  IRolesModifier__factory,
-  ISafe__factory,
-} from "../typechain-types";
+import { IRolesModifier__factory } from "../typechain-types";
+import { keccak256, toUtf8Bytes } from "ethers";
 
 const PERIOD = 12345;
 const AMOUNT = 76543;
@@ -53,9 +49,7 @@ describe("limit", () => {
       cooldown: COOLDOWN,
     });
     const account = predictAccountAddress(owner.address);
-    const delayAddress = predictDelayAddress(account);
     const rolesAddress = predictRolesAddress(account);
-    await moveERC20(GNO_WHALE, account, GNO, 2000);
 
     const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
@@ -67,6 +61,7 @@ describe("limit", () => {
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
+    await moveERC20(GNO_WHALE, account, GNO, 2000);
 
     return {
       account,
@@ -74,8 +69,6 @@ describe("limit", () => {
       spender,
       receiver,
       relayer,
-      safe: ISafe__factory.connect(account, relayer),
-      delay: IDelayModule__factory.connect(delayAddress, relayer),
       roles: IRolesModifier__factory.connect(rolesAddress, relayer),
       config,
     };
@@ -116,8 +109,7 @@ describe("limit", () => {
     expect(allowance.period).to.equal(1);
     expect(allowance.balance).to.equal(1);
   });
-
-  it("only eoa can set allowance", async () => {
+  it("only owner can set allowance", async () => {
     const { account, owner, spender, relayer, roles } =
       await loadFixture(setupAccount);
 
@@ -148,5 +140,38 @@ describe("limit", () => {
     const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(7);
     expect(allowance.balance).to.equal(7);
+  });
+
+  it("reverts on replayed set allowance tx", async () => {
+    const { account, owner, relayer, roles } = await loadFixture(setupAccount);
+
+    let allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    expect(allowance.period).to.equal(12345);
+    expect(allowance.refill).to.equal(76543);
+
+    let enqueueTx = await populateLimitEnqueue(
+      { account, chainId: 31337 },
+      { refill: 1, period: 1 },
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
+    );
+
+    let enqueueTxWithSalt = await populateLimitEnqueue(
+      { account, chainId: 31337, salt: keccak256(toUtf8Bytes("Hello World!")) },
+      { refill: 1, period: 1 },
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
+    );
+
+    await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
+    await expect(relayer.sendTransaction(enqueueTxWithSalt)).to.not.be.reverted;
+
+    await expect(
+      relayer.sendTransaction(enqueueTx)
+    ).to.be.revertedWithCustomError(roles, "HashAlreadyConsumed");
+
+    await expect(
+      relayer.sendTransaction(enqueueTxWithSalt)
+    ).to.be.revertedWithCustomError(roles, "HashAlreadyConsumed");
   });
 });

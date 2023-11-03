@@ -19,12 +19,11 @@ const AddressOne = "0x0000000000000000000000000000000000000001";
 const empty = {
   allowance: {
     balance: BigInt(0),
-    nextRefill: null,
     refill: BigInt(0),
+    maxRefill: BigInt(0),
     period: BigInt(0),
-    maxBalance: BigInt(0),
+    nextRefill: null,
   },
-  nonces: { account: BigInt(0), owner: BigInt(0), spender: BigInt(0) },
 };
 
 export default async function accountQuery(
