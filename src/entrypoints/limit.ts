@@ -20,8 +20,11 @@ export async function populateLimitEnqueue(
   account = getAddress(account);
   salt = salt || randomBytes32();
 
-  const transaction = populateSetAllowance(account, config);
-  return populateExecuteEnqueue({ account, chainId, salt }, transaction, sign);
+  return populateExecuteEnqueue(
+    { account, chainId, salt },
+    populateSetAllowance(account, config),
+    sign
+  );
 }
 
 export function populateLimitDispatch(
@@ -30,8 +33,10 @@ export function populateLimitDispatch(
 ): TransactionRequest {
   account = getAddress(account);
 
-  const transaction = populateSetAllowance(account, config);
-  return populateExecuteDispatch(account, transaction);
+  return populateExecuteDispatch(
+    account,
+    populateSetAllowance(account, config)
+  );
 }
 
 function populateSetAllowance(

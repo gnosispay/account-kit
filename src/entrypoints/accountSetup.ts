@@ -48,7 +48,7 @@ export default async function populateAccountSetup(
 
   const { iface } = deployments.safeMastercopy;
 
-  const { to, data, value, operation } = populateInitMultisend(
+  const { to, data, value, operation } = populateSetupTransaction(
     { account, owner },
     config
   );
@@ -78,7 +78,7 @@ export default async function populateAccountSetup(
   };
 }
 
-function populateInitMultisend(
+function populateSetupTransaction(
   { account, owner }: { account: string; owner: string },
   {
     spender,
@@ -89,7 +89,6 @@ function populateInitMultisend(
   }: SetupConfig
 ): SafeTransactionRequest {
   const abi = AbiCoder.defaultAbiCoder();
-
   const { iface } = deployments.safeMastercopy;
 
   const delay = {
