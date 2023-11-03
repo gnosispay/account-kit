@@ -38,9 +38,9 @@ describe("Bouncer", () => {
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
 
-    await expect(
-      notTheCaller.sendTransaction({ ...transaction, to })
-    ).to.be.revertedWith("Unauthorized Caller");
+    await expect(notTheCaller.sendTransaction({ ...transaction, to }))
+      .to.be.revertedWithCustomError(bouncer, "BouncerBlockedCaller")
+      .withArgs(notTheCaller.address);
 
     await expect(caller.sendTransaction({ ...transaction, to })).to.not.be
       .reverted;
@@ -54,9 +54,9 @@ describe("Bouncer", () => {
     const transaction =
       await testContract.fnThatMaybeReverts.populateTransaction(false);
 
-    await expect(
-      caller.sendTransaction({ ...transactionOther, to })
-    ).to.be.to.be.revertedWith("Unauthorized Selector");
+    await expect(caller.sendTransaction({ ...transactionOther, to }))
+      .to.be.revertedWithCustomError(bouncer, "BouncerBlockedSelector")
+      .withArgs(await testContract.fnOther.getFragment().selector);
 
     await expect(caller.sendTransaction({ ...transaction, to })).to.not.be
       .reverted;
