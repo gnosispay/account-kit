@@ -22,7 +22,7 @@ import { IERC20__factory } from "../typechain-types";
 
 describe("spend", () => {
   before(async () => {
-    await fork(29800000);
+    await fork(parseInt(process.env.FORK_BLOCK as string));
   });
 
   after(async () => {

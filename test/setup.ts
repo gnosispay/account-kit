@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import hre from "hardhat";
 import { SetupConfig } from "../src/types";
 import { IERC20__factory } from "../typechain-types";
+import { parseUnits } from "ethers";
 
 export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.
@@ -36,6 +37,13 @@ export async function moveERC20(
   tokenAddress: string,
   balance?: bigint | number
 ) {
+  const [, , , , , , , , , john] = await hre.ethers.getSigners();
+
+  await john.sendTransaction({
+    to: from,
+    value: parseUnits("1"),
+  });
+
   const impersonator = await hre.ethers.getImpersonatedSigner(from);
 
   const token = IERC20__factory.connect(tokenAddress, impersonator);
@@ -57,12 +65,14 @@ export function createSetupConfig({
   period = 60 * 60 * 24, // in seconds, 1 day
   cooldown = 60 * 3, // in seconds, 3 minutes
   expiration = 60 * 30, // in seconds, 30 minutes
+  timestamp,
 }: {
   spender: string;
   receiver: string;
   token?: string;
   allowance?: number | bigint;
   period?: number;
+  timestamp?: number;
   cooldown?: number;
   expiration?: number;
 }): SetupConfig {
@@ -73,6 +83,7 @@ export function createSetupConfig({
     allowance: {
       refill: allowance,
       period,
+      timestamp,
     },
     delay: {
       cooldown,

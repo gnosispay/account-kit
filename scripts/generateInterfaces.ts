@@ -1,4 +1,3 @@
-import { ContractAbis, KnownContracts } from "@gnosis.pm/zodiac";
 import {
   getMultiSendDeployment,
   getProxyFactoryDeployment,
@@ -8,6 +7,10 @@ import { generateSolidity } from "abi-to-sol";
 import fs from "fs";
 import path from "path";
 
+import delayAbi from "./abi/delay.json";
+import moduleProxyFactoryAbi from "./abi/moduleProxyFactory.json";
+import rolesAbi from "./abi/roles.json";
+
 const VERSION = "v1.3.0";
 
 const isCheck = process.argv
@@ -15,9 +18,10 @@ const isCheck = process.argv
   .map((v) => v.toLowerCase())
   .some((v) => v == "--check" || v == "-c");
 
-// generate("IDelayModule", ContractAbis[KnownContracts.DELAY], "^0.8.0");
-// generate("IRolesModifier", ContractAbis[KnownContracts.ROLES]);
-generate("IModuleProxyFactory", ContractAbis[KnownContracts.FACTORY]);
+generate("IDelayModule", delayAbi);
+generate("IModuleProxyFactory", moduleProxyFactoryAbi);
+generate("IRolesModifier", rolesAbi);
+
 generate("IMultisend", getMultiSendDeployment({ version: VERSION })?.abi);
 generate("ISafe", getSafeSingletonDeployment({ version: VERSION })?.abi);
 generate(

@@ -37,7 +37,7 @@ const AddressOne = "0x0000000000000000000000000000000000000001";
 
 describe("account-query", () => {
   before(async () => {
-    await fork(29800000);
+    await fork(parseInt(process.env.FORK_BLOCK as string));
   });
 
   after(async () => {

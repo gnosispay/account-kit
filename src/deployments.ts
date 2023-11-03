@@ -1,4 +1,4 @@
-import { ContractAddresses, KnownContracts } from "@gnosis.pm/zodiac";
+import { getAddress } from "ethers";
 import {
   getFallbackHandlerDeployment,
   getMultiSendDeployment,
@@ -39,17 +39,17 @@ export default {
   },
   moduleProxyFactory: {
     // 1 and 100 same address
-    address: ContractAddresses[1][KnownContracts.FACTORY],
+    address: getAddress("0x000000000000addb49795b0f9ba5bc298cdda236"),
     iface: IModuleProxyFactory__factory.createInterface(),
   },
   delayMastercopy: {
     // 1 and 100 same address
-    address: ContractAddresses[1][KnownContracts.DELAY],
+    address: getAddress("0x177D7CDBcc7E9C408d3A66eB473658D63B18B554"),
     iface: IDelayModule__factory.createInterface(),
   },
   rolesMastercopy: {
     // 1 and 100 same address
-    address: ContractAddresses[1][KnownContracts.ROLES],
+    address: getAddress("0x26DA7F5a385BA7c96456Ea6273d715ebF90feba8"),
     iface: IRolesModifier__factory.createInterface(),
   },
   multisend: {
@@ -58,7 +58,7 @@ export default {
     iface: IMultisend__factory.createInterface(),
   },
   multicall: {
-    address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+    address: getAddress("0xcA11bde05977b3631167028862bE2a173976CA11"),
     iface: IMulticall__factory.createInterface(),
   },
   singletonFactory: {
