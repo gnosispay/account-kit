@@ -12,14 +12,14 @@ import { IERC20__factory, ISafe__factory } from "../typechain-types";
 
 describe("account-creation", () => {
   before(async () => {
-    await fork(29800000);
+    await fork(parseInt(process.env.FORK_BLOCK as string));
   });
 
   after(async () => {
     await forkReset();
   });
 
-  it("the default saltNonce is correct", async () => {
+  it("the default creation nonce used in the create function is correct", async () => {
     const owner = "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd";
     const account = "0xa2F31c16B55a9392E515273D7F35cb8aA1F0a3D6";
 

@@ -26,7 +26,7 @@ import {
 
 describe("account-setup", () => {
   before(async () => {
-    await fork(29800000);
+    await fork(parseInt(process.env.FORK_BLOCK as string));
   });
 
   after(async () => {
@@ -212,6 +212,7 @@ describe("account-setup", () => {
     const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
+      timestamp: 432,
       period: PERIOD,
       token: GNO,
       allowance: AMOUNT,
@@ -240,19 +241,14 @@ describe("account-setup", () => {
     expect(await roles.isModuleEnabled(spenderChannelAddress)).to.be.true;
     expect(await roles.owner()).to.equal(bouncerAddress);
 
-    const {
-      refillAmount,
-      refillInterval,
-      refillTimestamp,
-      balance,
-      maxBalance,
-    } = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    const { balance, refill, maxRefill, period, timestamp } =
+      await roles.allowances(SPENDING_ALLOWANCE_KEY);
 
-    expect(refillAmount).to.equal(AMOUNT);
-    expect(refillInterval).to.equal(PERIOD);
-    expect(refillTimestamp).to.equal(0);
     expect(balance).to.equal(AMOUNT);
-    expect(maxBalance).to.equal(AMOUNT);
+    expect(refill).to.equal(AMOUNT);
+    expect(maxRefill).to.equal(AMOUNT);
+    expect(period).to.equal(PERIOD);
+    expect(timestamp).to.equal(432);
   });
 
   it("correctly configures Delay", async () => {

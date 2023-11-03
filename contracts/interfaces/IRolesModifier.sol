@@ -9,14 +9,18 @@ interface IRolesModifier {
     error CalldataOutOfBounds();
     error ConditionViolation(uint8 status, bytes32 info);
     error FunctionSignatureTooShort();
+    error HashAlreadyConsumed(bytes32);
+    error InvalidInitialization();
     error InvalidModule(address module);
+    error InvalidPageSize();
     error MalformedMultiEntrypoint();
     error ModuleTransactionFailed();
     error NoMembership();
     error NotAuthorized(address sender);
-    error NotIERC165Compliant(address guard_);
+    error NotInitializing();
+    error OwnableInvalidOwner(address owner);
+    error OwnableUnauthorizedAccount(address account);
     error SetupModulesAlreadyCalled();
-    error UnsuitableMaxBalanceForAllowance();
     event AllowFunction(
         bytes32 roleKey,
         address targetAddress,
@@ -26,7 +30,6 @@ interface IRolesModifier {
     event AllowTarget(bytes32 roleKey, address targetAddress, uint8 options);
     event AssignRoles(address module, bytes32[] roleKeys, bool[] memberOf);
     event AvatarSet(address indexed previousAvatar, address indexed newAvatar);
-    event ChangedGuard(address guard);
     event ConsumeAllowance(
         bytes32 allowanceKey,
         uint128 consumed,
@@ -36,7 +39,9 @@ interface IRolesModifier {
     event EnabledModule(address module);
     event ExecutionFromModuleFailure(address indexed module);
     event ExecutionFromModuleSuccess(address indexed module);
-    event Initialized(uint8 version);
+    event HashExecuted(bytes32);
+    event HashInvalidated(bytes32);
+    event Initialized(uint64 version);
     event OwnershipTransferred(
         address indexed previousOwner,
         address indexed newOwner
@@ -64,10 +69,10 @@ interface IRolesModifier {
     event SetAllowance(
         bytes32 allowanceKey,
         uint128 balance,
-        uint128 maxBalance,
-        uint128 refillAmount,
-        uint64 refillInterval,
-        uint64 refillTimestamp
+        uint128 maxRefill,
+        uint128 refill,
+        uint64 period,
+        uint64 timestamp
     );
     event SetDefaultRole(address module, bytes32 defaultRoleKey);
     event SetUnwrapAdapter(address to, bytes4 selector, address adapter);
@@ -92,11 +97,11 @@ interface IRolesModifier {
         external
         view
         returns (
-            uint128 refillAmount,
-            uint128 maxBalance,
-            uint64 refillInterval,
+            uint128 refill,
+            uint128 maxRefill,
+            uint64 period,
             uint128 balance,
-            uint64 refillTimestamp
+            uint64 timestamp
         );
 
     function assignRoles(
@@ -106,6 +111,8 @@ interface IRolesModifier {
     ) external;
 
     function avatar() external view returns (address);
+
+    function consumed(address, bytes32) external view returns (bool);
 
     function defaultRoles(address) external view returns (bytes32);
 
@@ -145,16 +152,19 @@ interface IRolesModifier {
         bool shouldRevert
     ) external returns (bool success, bytes memory returnData);
 
-    function getGuard() external view returns (address _guard);
-
     function getModulesPaginated(
         address start,
         uint256 pageSize
     ) external view returns (address[] memory array, address next);
 
-    function guard() external view returns (address);
+    function invalidate(bytes32 hash) external;
 
     function isModuleEnabled(address _module) external view returns (bool);
+
+    function moduleTxHash(
+        bytes memory data,
+        bytes32 salt
+    ) external view returns (bytes32);
 
     function owner() external view returns (address);
 
@@ -181,17 +191,15 @@ interface IRolesModifier {
     function setAllowance(
         bytes32 key,
         uint128 balance,
-        uint128 maxBalance,
-        uint128 refillAmount,
-        uint64 refillInterval,
-        uint64 refillTimestamp
+        uint128 maxRefill,
+        uint128 refill,
+        uint64 period,
+        uint64 timestamp
     ) external;
 
     function setAvatar(address _avatar) external;
 
     function setDefaultRole(address module, bytes32 roleKey) external;
-
-    function setGuard(address _guard) external;
 
     function setTarget(address _target) external;
 
@@ -202,8 +210,6 @@ interface IRolesModifier {
     ) external;
 
     function setUp(bytes memory initParams) external;
-
-    // function target() external view returns (address);
 
     function transferOwnership(address newOwner) external;
 

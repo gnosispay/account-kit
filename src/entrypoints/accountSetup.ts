@@ -82,7 +82,7 @@ function populateInitMultisend(
     spender,
     receiver,
     token,
-    allowance: { refill, period },
+    allowance: { refill, period, timestamp },
     delay: { cooldown, expiration },
   }: SetupConfig
 ): SafeTransactionData {
@@ -172,7 +172,7 @@ function populateInitMultisend(
         // period,
         period,
         // timestamp
-        0,
+        timestamp || 0,
       ]),
     },
     {

@@ -34,7 +34,7 @@ const COOLDOWN = 120;
 
 describe("limit", () => {
   before(async () => {
-    await fork(29800000);
+    await fork(parseInt(process.env.FORK_BLOCK as string));
   });
 
   after(async () => {
@@ -85,8 +85,8 @@ describe("limit", () => {
     const { account, owner, relayer, roles } = await loadFixture(setupAccount);
 
     let allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
-    expect(allowance.refillInterval).to.equal(12345);
-    expect(allowance.refillAmount).to.equal(76543);
+    expect(allowance.period).to.equal(12345);
+    expect(allowance.refill).to.equal(76543);
 
     const enqueueTx = await populateLimitEnqueue(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
@@ -103,8 +103,8 @@ describe("limit", () => {
     await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
 
     allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
-    expect(allowance.refillInterval).to.equal(12345);
-    expect(allowance.refillAmount).to.equal(76543);
+    expect(allowance.period).to.equal(12345);
+    expect(allowance.balance).to.equal(76543);
 
     // is reverted before cooldown
     await expect(relayer.sendTransaction(executeTx)).to.be.reverted;
@@ -113,8 +113,8 @@ describe("limit", () => {
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
     allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
-    expect(allowance.refillInterval).to.equal(1);
-    expect(allowance.refillAmount).to.equal(1);
+    expect(allowance.period).to.equal(1);
+    expect(allowance.balance).to.equal(1);
   });
 
   it("only eoa can set allowance", async () => {
@@ -146,7 +146,7 @@ describe("limit", () => {
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
     const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
-    expect(allowance.refillInterval).to.equal(7);
-    expect(allowance.refillAmount).to.equal(7);
+    expect(allowance.period).to.equal(7);
+    expect(allowance.balance).to.equal(7);
   });
 });
