@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
+import { parseUnits } from "ethers";
 import hre from "hardhat";
 import { SetupConfig } from "../src/types";
 import { IERC20__factory } from "../typechain-types";
-import { parseUnits } from "ethers";
 
 export async function fork(blockNumber: number): Promise<void> {
   // Load environment variables.

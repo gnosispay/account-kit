@@ -1,4 +1,4 @@
-import { AbiCoder, ZeroAddress } from "ethers";
+import { AbiCoder, ZeroAddress, getAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
 import {
@@ -41,6 +41,9 @@ export default async function populateAccountSetup(
   config: SetupConfig,
   sign: SignTypedData
 ): Promise<TransactionData> {
+  account = getAddress(account);
+  owner = getAddress(owner);
+
   const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = populateInitMultisend(

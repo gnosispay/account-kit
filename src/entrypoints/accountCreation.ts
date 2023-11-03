@@ -1,4 +1,4 @@
-import { ZeroAddress } from "ethers";
+import { ZeroAddress, getAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
 import { ACCOUNT_SALT_NONCE } from "../constants";
@@ -24,6 +24,8 @@ export default function populateAccountCreation(
   owner: string,
   seed: bigint = ACCOUNT_SALT_NONCE
 ): TransactionData {
+  owner = getAddress(owner);
+
   return _populateSafeCreation(owner, seed);
 }
 
@@ -36,6 +38,8 @@ export async function populateDirectTransfer(
   transfer: Transfer,
   sign: SignTypedData
 ): Promise<TransactionData> {
+  account = getAddress(account);
+
   const { to, value, data, operation } = {
     to: transfer.token,
     data: IERC20__factory.createInterface().encodeFunctionData("transfer", [

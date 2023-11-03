@@ -4,7 +4,7 @@ import { IERC20__factory } from "../../typechain-types";
 
 import { SPENDING_ROLE_KEY } from "../constants";
 import deployments from "../deployments";
-import typedDataForModifierTransaction from "../eip712";
+import typedDataForModifierTransaction, { randomBytes32 } from "../eip712";
 import { predictRolesAddress } from "../parts";
 
 import {
@@ -19,11 +19,12 @@ export default async function populateSpend(
     account,
     chainId,
     salt,
-  }: { account: string; chainId: number; salt: string },
+  }: { account: string; chainId: number; salt?: string },
   transfer: Transfer,
   sign: SignTypedData
 ): Promise<TransactionData> {
   account = getAddress(account);
+  salt = salt || randomBytes32();
 
   const roles = {
     address: predictRolesAddress(account),

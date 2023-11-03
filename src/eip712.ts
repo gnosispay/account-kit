@@ -1,10 +1,5 @@
-import { ZeroAddress } from "ethers";
+import { ZeroAddress, keccak256, toUtf8Bytes } from "ethers";
 import { SafeTransactionData } from "./types";
-import { HASH_REGEX } from "./constants";
-
-/*
- * produces the parameters to be passed to signer_signTypedData()
- */
 
 export function typedDataForSafeTransaction(
   {
@@ -50,8 +45,6 @@ export function typedDataForSafeTransaction(
   return { domain, primaryType, types, message };
 }
 
-const HASH_REGEX = /^(0x)?[0-9a-fA-F]{64}$/;
-
 export default function typedDataForModifierTransaction(
   {
     modifier,
@@ -62,7 +55,7 @@ export default function typedDataForModifierTransaction(
   },
   { data, salt }: { data: string; salt: string }
 ) {
-  if (!HASH_REGEX.test(salt)) {
+  if (!BYTES32_REGEX.test(salt)) {
     throw new Error(`Salt is not a bytes32 string ${salt}`);
   }
 
@@ -80,4 +73,10 @@ export default function typedDataForModifierTransaction(
   };
 
   return { domain, primaryType, types, message };
+}
+
+const BYTES32_REGEX = /^(0x)?[0-9a-fA-F]{64}$/;
+
+export function randomBytes32() {
+  return keccak256(toUtf8Bytes(String(Date.now())));
 }

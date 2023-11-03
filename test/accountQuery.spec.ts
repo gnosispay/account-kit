@@ -1,6 +1,6 @@
 import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { getAddress } from "ethers";
+import { ZeroHash, getAddress } from "ethers";
 import hre from "hardhat";
 
 import {
@@ -62,7 +62,7 @@ describe("account-query", () => {
 
     const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, owner: owner.address, chainId: 31337, nonce: 0 },
       config,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -85,9 +85,9 @@ describe("account-query", () => {
   }
 
   it("passes for a well configured account", async () => {
-    const { account, owner, config } = await loadFixture(setupAccount);
+    const { account, config } = await loadFixture(setupAccount);
 
-    const result = await evaluateAccount(account, owner.address, config);
+    const result = await evaluateAccount(account, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(123);
@@ -105,7 +105,7 @@ describe("account-query", () => {
     const spent = 50;
 
     const enqueue = await populateLimitEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { period: oneDay, refill },
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -121,11 +121,11 @@ describe("account-query", () => {
     });
     await relayer.sendTransaction(dispatch);
 
-    let result = await evaluateAccount(account, owner.address, config);
+    let result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill);
 
     const spendTx = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       {
         token: config.token,
         to: receiver.address,
@@ -136,21 +136,21 @@ describe("account-query", () => {
     );
     await relayer.sendTransaction(spendTx);
 
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill - spent);
 
     // go forward 12 hours
     await mine(13, { interval: 60 * 60 });
 
     // still no replenish
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill - spent);
 
     // go forward 12 hours more
     await mine(13, { interval: 60 * 60 });
 
     // yes it replenished
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill);
   });
 
@@ -167,7 +167,7 @@ describe("account-query", () => {
     const oneDay = 60 * 60 * 24;
     const refill = 1000;
     const enqueue = await populateLimitEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       { period: oneDay, refill, timestamp: startOfDay },
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -184,29 +184,29 @@ describe("account-query", () => {
     });
     await relayer.sendTransaction(dispatch);
 
-    let result = await evaluateAccount(account, owner.address, config);
+    let result = await evaluateAccount(account, config);
     expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay);
 
     // go forward 24 hours
     await mine(25, { interval: 60 * 60 });
 
     // refill is next day
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay + oneDay);
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { account, owner, spender, receiver, relayer, config } =
+    const { account, spender, receiver, relayer, config } =
       await loadFixture(setupAccount);
 
-    let result = await evaluateAccount(account, owner.address, config);
+    let result = await evaluateAccount(account, config);
 
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(config.allowance.refill);
 
     const justSpent = 23;
     const transaction = await populateSpend(
-      { account, spender: spender.address, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       { token: GNO, to: receiver.address, amount: justSpent },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
@@ -215,7 +215,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(
       Number(config.allowance.refill) - justSpent
@@ -246,9 +246,7 @@ describe("account-query", () => {
     const enqueueTx = await populateExecuteEnqueue(
       {
         account,
-        owner: await owner.address,
         chainId: hre.network.config.chainId as number,
-        nonce: 0,
       },
       updateLimitTx,
       ({ domain, types, message }) =>
@@ -262,7 +260,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(dispatchTx);
 
     // we should handle this correctly
-    const result = await evaluateAccount(account, owner.address, config);
+    const result = await evaluateAccount(account, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(AMOUNT * 2);
   });
@@ -272,7 +270,7 @@ describe("account-query", () => {
       await loadFixture(setupAccount);
 
     // ACCOUNT starts OK
-    let result = await evaluateAccount(account, owner.address, config);
+    let result = await evaluateAccount(account, config);
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
 
     const reconfigTx = await safe.addOwnerWithThreshold.populateTransaction(
@@ -282,7 +280,7 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       reconfigTx,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -290,7 +288,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     // FAIL: queue not empty
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
 
     // move 3 minutes forward, cooldown is 2 minutes
@@ -299,7 +297,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(dispatch);
 
     // FAIL: no renounce ownership
-    result = await evaluateAccount(account, owner.address, config);
+    result = await evaluateAccount(account, config);
     expect(result.status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when the number of modules enabled is not two", async () => {
@@ -312,7 +310,7 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       reconfig,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -323,7 +321,7 @@ describe("account-query", () => {
     const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, owner.address, config);
+    const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when roles module is not enabled", async () => {
@@ -340,7 +338,7 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       reconfig,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -351,7 +349,7 @@ describe("account-query", () => {
     const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, owner.address, config);
+    const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when delay module is not enabled", async () => {
@@ -367,7 +365,7 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       reconfig,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -378,7 +376,7 @@ describe("account-query", () => {
     const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, owner.address, config);
+    const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
   });
   it("fails when the safe is not the owner of delay", async () => {
@@ -393,7 +391,7 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       reconfig,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -408,7 +406,7 @@ describe("account-query", () => {
       getAddress("0x000000000000000000000000000000000000000f")
     );
 
-    const { status } = await evaluateAccount(account, owner.address, config);
+    const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
   it("fails when cooldown is too short", async () => {
@@ -419,7 +417,7 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       reconfig,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -430,7 +428,7 @@ describe("account-query", () => {
     const dispatch = populateExecuteDispatch(account, reconfig);
     await relayer.sendTransaction(dispatch);
 
-    const { status } = await evaluateAccount(account, owner.address, config);
+    const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayMisconfigured);
   });
   it("fails when queue is not empty", async () => {
@@ -441,28 +439,22 @@ describe("account-query", () => {
 
     // enqueue the change
     const enqueue = await populateExecuteEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337 },
       reconfig,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(enqueue);
 
-    const { status } = await evaluateAccount(account, owner.address, config);
+    const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
   });
 });
 
-async function evaluateAccount(
-  account: string,
-  owner: string,
-  config: SetupConfig
-) {
+async function evaluateAccount(account: string, config: SetupConfig) {
   return accountQuery(
     {
       account,
-      owner,
-      spender: config.spender,
       cooldown: config.delay.cooldown,
     },
     ({ to, data }) => hre.ethers.provider.send("eth_call", [{ to, data }])
