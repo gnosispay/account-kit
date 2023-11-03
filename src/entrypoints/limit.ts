@@ -12,7 +12,7 @@ export async function populateLimitEnqueue(
     account,
     chainId,
     salt,
-  }: { account: string; owner: string; chainId: number; salt: string },
+  }: { account: string; chainId: number; salt: string },
   config: AllowanceConfig,
   sign: SignTypedData
 ): Promise<TransactionData> {

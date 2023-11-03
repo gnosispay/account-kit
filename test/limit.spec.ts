@@ -27,6 +27,7 @@ import {
   IRolesModifier__factory,
   ISafe__factory,
 } from "../typechain-types";
+import { ZeroHash } from "ethers";
 
 const PERIOD = 12345;
 const AMOUNT = 76543;
@@ -89,7 +90,7 @@ describe("limit", () => {
     expect(allowance.refill).to.equal(76543);
 
     const enqueueTx = await populateLimitEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { refill: 1, period: 1 },
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
@@ -122,7 +123,7 @@ describe("limit", () => {
       await loadFixture(setupAccount);
 
     let enqueueTx = await populateLimitEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { refill: 7, period: 7 },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
@@ -130,7 +131,7 @@ describe("limit", () => {
     await expect(relayer.sendTransaction(enqueueTx)).to.be.reverted;
 
     enqueueTx = await populateLimitEnqueue(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { account, chainId: 31337, salt: ZeroHash },
       { refill: 7, period: 7 },
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
