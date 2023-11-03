@@ -1,12 +1,6 @@
 import { _predictSafeAddress, _populateSafeCreation } from "./_safe";
 
 import { populateBouncerCreation, predictBouncerAddress } from "./bouncer";
-import {
-  populateOwnerChannelCreation,
-  populateSpenderChannelCreation,
-  predictOwnerChannelAddress,
-  predictSpenderChannelAddress,
-} from "./channel";
 
 import {
   populateDelayCreation,
@@ -24,12 +18,8 @@ export {
   populateDelayDispatch,
   populateDelayEnqueue,
   populateBouncerCreation,
-  populateOwnerChannelCreation,
   populateRolesCreation,
-  populateSpenderChannelCreation,
   predictDelayAddress,
   predictBouncerAddress,
-  predictOwnerChannelAddress,
   predictRolesAddress,
-  predictSpenderChannelAddress,
 };

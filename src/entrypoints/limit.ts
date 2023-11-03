@@ -4,30 +4,30 @@ import deployments from "../deployments";
 import { predictBouncerAddress } from "../parts";
 
 import { AllowanceConfig, SignTypedData, TransactionData } from "../types";
+import { getAddress } from "ethers";
+import assert from "assert";
 
 export async function populateLimitEnqueue(
   {
     account,
-    owner,
     chainId,
-    nonce,
-  }: { account: string; owner: string; chainId: number; nonce: number },
+    salt,
+  }: { account: string; owner: string; chainId: number; salt: string },
   config: AllowanceConfig,
   sign: SignTypedData
 ): Promise<TransactionData> {
-  const transaction = populateSetAllowance(account, config);
+  account = getAddress(account);
 
-  return populateExecuteEnqueue(
-    { account, owner, chainId, nonce },
-    transaction,
-    sign
-  );
+  const transaction = populateSetAllowance(account, config);
+  return populateExecuteEnqueue({ account, chainId, salt }, transaction, sign);
 }
 
 export function populateLimitDispatch(
   account: string,
   config: AllowanceConfig
 ): TransactionData {
+  account = getAddress(account);
+
   const transaction = populateSetAllowance(account, config);
   return populateExecuteDispatch(account, transaction);
 }
@@ -36,6 +36,8 @@ function populateSetAllowance(
   account: string,
   { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionData {
+  assert(account == getAddress(account));
+
   const address = predictBouncerAddress(account);
   const iface = deployments.rolesMastercopy.iface;
 

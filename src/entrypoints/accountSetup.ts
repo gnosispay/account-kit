@@ -13,14 +13,10 @@ import multisendEncode from "../multisend";
 import {
   populateBouncerCreation,
   populateDelayCreation,
-  populateOwnerChannelCreation,
   populateRolesCreation,
-  populateSpenderChannelCreation,
   predictBouncerAddress,
   predictDelayAddress,
-  predictOwnerChannelAddress,
   predictRolesAddress,
-  predictSpenderChannelAddress,
 } from "../parts";
 
 import {
@@ -100,14 +96,6 @@ function populateInitMultisend(
   };
 
   const bouncerAddress = predictBouncerAddress(account);
-  const ownerChannelAddress = predictOwnerChannelAddress({
-    owner,
-    account,
-  });
-  const spenderChannelAddress = predictSpenderChannelAddress({
-    spender,
-    account,
-  });
 
   return multisendEncode([
     /**
@@ -151,9 +139,7 @@ function populateInitMultisend(
     // enable owner on the delay as module
     {
       to: delay.address,
-      data: delay.iface.encodeFunctionData("enableModule", [
-        ownerChannelAddress,
-      ]),
+      data: delay.iface.encodeFunctionData("enableModule", [owner]),
     },
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
@@ -178,7 +164,7 @@ function populateInitMultisend(
     {
       to: roles.address,
       data: roles.iface.encodeFunctionData("assignRoles", [
-        spenderChannelAddress,
+        spender,
         [SPENDING_ROLE_KEY],
         [true],
       ]),
@@ -227,7 +213,5 @@ function populateInitMultisend(
     },
     // Deploy Misc
     populateBouncerCreation(account),
-    populateOwnerChannelCreation({ owner, account }),
-    populateSpenderChannelCreation({ spender, account }),
   ]);
 }
