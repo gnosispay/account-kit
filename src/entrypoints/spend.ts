@@ -1,11 +1,11 @@
-import { ZeroAddress } from "ethers";
+import { concat, getAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
 
 import { SPENDING_ROLE_KEY } from "../constants";
 import deployments from "../deployments";
-import { typedDataForSafeTransaction } from "../eip712";
-import { predictRolesAddress, predictSpenderChannelAddress } from "../parts";
+import typedDataForModifierTransaction from "../eip712";
+import { predictRolesAddress } from "../parts";
 
 import {
   OperationType,
@@ -17,41 +17,30 @@ import {
 export default async function populateSpend(
   {
     account,
-    spender,
     chainId,
-    nonce,
-  }: { account: string; spender: string; chainId: number; nonce: number },
+    salt,
+  }: { account: string; chainId: number; salt: string },
   transfer: Transfer,
   sign: SignTypedData
 ): Promise<TransactionData> {
-  const channel = {
-    address: predictSpenderChannelAddress({ account, spender }),
-    iface: deployments.safeMastercopy.iface,
+  account = getAddress(account);
+
+  const roles = {
+    address: predictRolesAddress(account),
+    iface: deployments.rolesMastercopy.iface,
   };
+
   const { to, value = 0, data } = populateSpendTransaction(account, transfer);
 
-  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
-    { safe: channel.address, chainId, nonce },
-    { to, value, data, operation: OperationType.Call }
-  );
+  const { domain, primaryType, types, message } =
+    typedDataForModifierTransaction(
+      { modifier: roles.address, chainId },
+      { data, salt }
+    );
 
   const signature = await sign({ domain, primaryType, types, message });
 
-  return {
-    to: channel.address,
-    data: channel.iface.encodeFunctionData("execTransaction", [
-      to,
-      value,
-      data,
-      OperationType.Call,
-      0,
-      0,
-      0,
-      ZeroAddress,
-      ZeroAddress,
-      signature,
-    ]),
-  };
+  return { to, value, data: concat([data, salt, signature]) };
 }
 
 function populateSpendTransaction(

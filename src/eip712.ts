@@ -1,5 +1,6 @@
 import { ZeroAddress } from "ethers";
 import { SafeTransactionData } from "./types";
+import { HASH_REGEX } from "./constants";
 
 /*
  * produces the parameters to be passed to signer_signTypedData()
@@ -49,40 +50,34 @@ export function typedDataForSafeTransaction(
   return { domain, primaryType, types, message };
 }
 
-/*
- * Until the outcome of this issue https://github.com/safe-global/safe-modules/issues/70
- * isn't merged and deployed, we have to use EIP-191 signature instead of EIP-712
- */
-// export function typedDataForAllowanceTransfer(
-//   safeAddress: string,
-//   chainId: number,
-//   { token, to, amount }: { token: string; to: string; amount: number | bigint },
-//   nonce: number
-// ) {
-//   const allowanceModAddress = deployments.allowanceSingleton.defaultAddress;
+const HASH_REGEX = /^(0x)?[0-9a-fA-F]{64}$/;
 
-//   const domain = { chainId, verifyingContract: allowanceModAddress };
-//   const primaryType = "AllowanceTransfer";
-//   const types = {
-//     AllowanceTransfer: [
-//       { type: "address", name: "safe" },
-//       { type: "address", name: "token" },
-//       { type: "address", name: "to" },
-//       { type: "uint96", name: "amount" },
-//       { type: "address", name: "paymentToken" },
-//       { type: "uint96", name: "payment" },
-//       { type: "uint16", name: "nonce" },
-//     ],
-//   };
-//   const message = {
-//     safe: safeAddress,
-//     token,
-//     to,
-//     amount,
-//     paymentToken: AddressZero,
-//     payment: 0,
-//     nonce,
-//   };
+export default function typedDataForModifierTransaction(
+  {
+    modifier,
+    chainId,
+  }: {
+    modifier: string;
+    chainId: bigint | number;
+  },
+  { data, salt }: { data: string; salt: string }
+) {
+  if (!HASH_REGEX.test(salt)) {
+    throw new Error(`Salt is not a bytes32 string ${salt}`);
+  }
 
-//   return { domain, primaryType, types, message };
-// }
+  const domain = { verifyingContract: modifier, chainId };
+  const primaryType = "ModuleTx" as const;
+  const types = {
+    ModuleTx: [
+      { type: "bytes", name: "data" },
+      { type: "bytes32", name: "salt" },
+    ],
+  };
+  const message = {
+    data,
+    salt,
+  };
+
+  return { domain, primaryType, types, message };
+}

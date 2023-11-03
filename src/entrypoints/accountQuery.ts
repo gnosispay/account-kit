@@ -6,9 +6,7 @@ import deployments from "../deployments";
 import {
   predictBouncerAddress,
   predictDelayAddress,
-  predictOwnerChannelAddress,
   predictRolesAddress,
-  predictSpenderChannelAddress,
 } from "../parts";
 
 import {
@@ -126,16 +124,6 @@ function createRequest(
       },
       {
         target: account,
-        allowFailure: true,
-        callData: iface.encodeFunctionData("nonce"),
-      },
-      {
-        target: predictOwnerChannelAddress({ account, owner }),
-        allowFailure: true,
-        callData: iface.encodeFunctionData("nonce"),
-      },
-      {
-        target: predictSpenderChannelAddress({ account, spender }),
         allowFailure: true,
         callData: iface.encodeFunctionData("nonce"),
       },
