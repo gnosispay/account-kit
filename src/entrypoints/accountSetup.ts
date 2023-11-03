@@ -20,14 +20,16 @@ import {
 } from "../parts";
 
 import {
-  RolesExecutionOptions,
-  RolesOperator,
-  RolesParameterType,
   SafeTransactionData,
   SetupConfig,
   SignTypedData,
   TransactionData,
 } from "../types";
+import {
+  RolesExecutionOptions,
+  RolesOperator,
+  RolesParameterType,
+} from "../parts/roles";
 
 const AddressTwo = "0x0000000000000000000000000000000000000002";
 
