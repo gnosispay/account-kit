@@ -2,7 +2,11 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { GNO, createSetupConfig, fork, forkReset } from "./setup";
+import {
+  createSetupConfig,
+  postFixture,
+  preFixture,
+} from "./test-helpers/index";
 import {
   populateAccountCreation,
   populateAccountSetup,
@@ -19,19 +23,25 @@ import {
   IDelayModule__factory,
   IRolesModifier__factory,
   ISafe__factory,
+  TestERC20__factory,
 } from "../typechain-types";
 
 describe("account-setup", () => {
   before(async () => {
-    await fork(parseInt(process.env.FORK_BLOCK as string));
+    await preFixture();
   });
 
   after(async () => {
-    await forkReset();
+    await postFixture();
   });
 
   async function createAccount() {
     const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
+
+    const erc20 = await (
+      await hre.ethers.getContractFactory("TestERC20")
+    ).deploy();
+    const token = TestERC20__factory.connect(await erc20.getAddress(), relayer);
 
     const transaction = populateAccountCreation(owner.address);
 
@@ -47,6 +57,7 @@ describe("account-setup", () => {
       spender,
       receiver,
       relayer,
+      token,
       safe: ISafe__factory.connect(account, hre.ethers.provider),
       roles: IRolesModifier__factory.connect(rolesAddress, hre.ethers.provider),
       delay: IDelayModule__factory.connect(delayAddress, hre.ethers.provider),
@@ -56,11 +67,12 @@ describe("account-setup", () => {
   }
 
   it("deploys bouncer", async () => {
-    const { account, owner, spender, receiver, relayer, roles } =
+    const { account, owner, spender, receiver, relayer, token, roles } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
     const config = createSetupConfig({
+      token: await token.getAddress(),
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -91,10 +103,11 @@ describe("account-setup", () => {
   });
 
   it("renounces account ownership", async () => {
-    const { account, owner, spender, receiver, relayer, safe } =
+    const { account, owner, spender, receiver, relayer, token, safe } =
       await loadFixture(createAccount);
 
     const config = createSetupConfig({
+      token: await token.getAddress(),
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -114,11 +127,12 @@ describe("account-setup", () => {
   });
 
   it("deploys and enables two mods", async () => {
-    const { account, owner, spender, receiver, relayer, safe } =
+    const { account, owner, spender, receiver, relayer, token, safe } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
     const config = createSetupConfig({
+      token: await token.getAddress(),
       spender: spender.address,
       receiver: receiver.address,
     });
@@ -154,6 +168,7 @@ describe("account-setup", () => {
       spender,
       receiver,
       relayer,
+      token,
       safe,
       roles,
       rolesAddress,
@@ -167,7 +182,7 @@ describe("account-setup", () => {
       receiver: receiver.address,
       timestamp: 432,
       period: PERIOD,
-      token: GNO,
+      token: await token.getAddress(),
       allowance: AMOUNT,
     });
 
@@ -202,7 +217,7 @@ describe("account-setup", () => {
   });
 
   it("correctly configures Delay", async () => {
-    const { account, owner, spender, receiver, relayer, safe, delay } =
+    const { account, owner, spender, receiver, relayer, token, safe, delay } =
       await loadFixture(createAccount);
 
     const delayAddress = await delay.getAddress();
@@ -210,6 +225,7 @@ describe("account-setup", () => {
     const EXPIRATION = 60 * 30;
 
     const config = createSetupConfig({
+      token: await token.getAddress(),
       spender: spender.address,
       receiver: receiver.address,
       cooldown: COOLDOWN,

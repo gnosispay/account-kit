@@ -4,13 +4,10 @@ import { ZeroHash, getAddress } from "ethers";
 import hre from "hardhat";
 
 import {
-  GNO,
-  GNO_WHALE,
   createSetupConfig,
-  fork,
-  forkReset,
-  moveERC20,
-} from "./setup";
+  postFixture,
+  preFixture,
+} from "./test-helpers/index";
 
 import {
   populateAccountCreation,
@@ -35,27 +32,37 @@ import {
   IDelayModule__factory,
   IRolesModifier__factory,
   ISafe__factory,
+  TestERC20__factory,
 } from "../typechain-types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 
 describe("account-query", () => {
   before(async () => {
-    await fork(parseInt(process.env.FORK_BLOCK as string));
+    await preFixture();
   });
 
   after(async () => {
-    await forkReset();
+    await postFixture();
   });
 
   async function setupAccount() {
     const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
+    const testERC20 = await (
+      await hre.ethers.getContractFactory("TestERC20")
+    ).deploy();
+
+    const token = TestERC20__factory.connect(
+      await testERC20.getAddress(),
+      relayer
+    );
+
     const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       period: 60 * 60 * 24, // 86400 seconds one day
-      token: GNO,
+      token: await token.getAddress(),
       allowance: 123,
       cooldown: 120, // 120 seconds
       expiration: 120 * 1000,
@@ -63,7 +70,6 @@ describe("account-query", () => {
     const account = predictAccountAddress(owner.address);
     const delayAddress = predictDelayAddress(account);
     const rolesAddress = predictRolesAddress(account);
-    await moveERC20(GNO_WHALE, account, GNO, 2000);
 
     const creationTx = populateAccountCreation(owner.address);
     const setupTx = await populateAccountSetup(
@@ -75,6 +81,7 @@ describe("account-query", () => {
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
+    await token.mint(account, 2000);
 
     return {
       account,
@@ -82,6 +89,7 @@ describe("account-query", () => {
       spender,
       receiver,
       relayer,
+      token,
       safe: ISafe__factory.connect(account, relayer),
       delay: IDelayModule__factory.connect(delayAddress, relayer),
       roles: IRolesModifier__factory.connect(rolesAddress, relayer),
@@ -201,7 +209,7 @@ describe("account-query", () => {
   });
 
   it("passes and reflects recent spending on the result", async () => {
-    const { account, spender, receiver, relayer, config } =
+    const { account, spender, receiver, relayer, token, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(account, config);
@@ -212,7 +220,11 @@ describe("account-query", () => {
     const justSpent = 23;
     const transaction = await populateSpend(
       { account, chainId: 31337 },
-      { token: GNO, to: receiver.address, amount: justSpent },
+      {
+        token: await token.getAddress(),
+        to: receiver.address,
+        amount: justSpent,
+      },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );

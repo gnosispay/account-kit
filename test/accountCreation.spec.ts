@@ -2,21 +2,21 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { GNO, GNO_WHALE, fork, forkReset, moveERC20 } from "./setup";
+import { postFixture, preFixture } from "./test-helpers";
 import {
   populateAccountCreation,
   populateDirectTransfer,
   predictAccountAddress,
 } from "../src";
-import { IERC20__factory, ISafe__factory } from "../typechain-types";
+import { ISafe__factory, TestERC20__factory } from "../typechain-types";
 
 describe("account-creation", () => {
   before(async () => {
-    await fork(parseInt(process.env.FORK_BLOCK as string));
+    await preFixture();
   });
 
   after(async () => {
-    await forkReset();
+    await postFixture();
   });
 
   it("the default creation nonce used in the create function is correct", async () => {
@@ -29,7 +29,15 @@ describe("account-creation", () => {
   async function setup() {
     const [owner, , , relayer] = await hre.ethers.getSigners();
 
-    return { owner, relayer };
+    const erc20 = await (
+      await hre.ethers.getContractFactory("TestERC20")
+    ).deploy();
+
+    return {
+      owner,
+      relayer,
+      token: TestERC20__factory.connect(await erc20.getAddress(), relayer),
+    };
   }
 
   it("sets up a 1/1 safe", async () => {
@@ -59,22 +67,19 @@ describe("account-creation", () => {
   });
 
   it("correctly transfer an ERC20 from a fresh safe", async () => {
-    const { owner, relayer } = await loadFixture(setup);
+    const { owner, relayer, token } = await loadFixture(setup);
 
     const safeAddress = predictAccountAddress(owner.address);
     await relayer.sendTransaction(populateAccountCreation(owner.address));
 
-    await moveERC20(GNO_WHALE, safeAddress, GNO);
-
-    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
-
     const AddressThree = "0x0000000000000000000000000000000000000003";
-    const balance = await gno.balanceOf(safeAddress);
+    const balance = 987654;
+    await token.mint(safeAddress, balance);
 
     const transaction = await populateDirectTransfer(
       { account: safeAddress, chainId: 31337, nonce: 0 },
       {
-        token: GNO,
+        token: await token.getAddress(),
         to: AddressThree,
         amount: balance,
       },
@@ -82,12 +87,12 @@ describe("account-creation", () => {
         owner.signTypedData(domain, types, message)
     );
 
-    expect(await gno.balanceOf(safeAddress)).to.be.equal(balance);
-    expect(await gno.balanceOf(AddressThree)).to.equal(0);
+    expect(await token.balanceOf(safeAddress)).to.be.equal(balance);
+    expect(await token.balanceOf(AddressThree)).to.equal(0);
 
     await relayer.sendTransaction(transaction);
 
-    expect(await gno.balanceOf(safeAddress)).to.equal(0);
-    expect(await gno.balanceOf(AddressThree)).to.be.equal(balance);
+    expect(await token.balanceOf(safeAddress)).to.equal(0);
+    expect(await token.balanceOf(AddressThree)).to.be.equal(balance);
   });
 });

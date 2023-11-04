@@ -12,5 +12,5 @@ export default {
     deploy: "src/deploy",
     sources: "contracts",
   },
-  solidity: "0.8.19",
+  solidity: "0.8.20",
 };
