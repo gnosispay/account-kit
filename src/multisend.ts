@@ -1,6 +1,4 @@
-import { hexDataLength } from "@ethersproject/bytes";
-import { pack } from "@ethersproject/solidity";
-
+import { dataLength, solidityPacked } from "ethers";
 import deployments from "./deployments";
 import {
   OperationType,
@@ -26,8 +24,8 @@ export default function encode(
 }
 
 function packOneTransaction({ to, value, data }: TransactionRequest) {
-  return pack(
+  return solidityPacked(
     ["uint8", "address", "uint256", "uint256", "bytes"],
-    [OperationType.Call, to, value || 0, hexDataLength(data as string), data]
+    [OperationType.Call, to, value || 0, dataLength(data), data]
   );
 }
