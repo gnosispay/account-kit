@@ -20,17 +20,9 @@ import {
 const VERSION = "v1.3.0";
 
 export default {
-  safeProxyFactory: {
-    address: getProxyFactoryDeployment({
-      version: VERSION,
-    })?.defaultAddress as string,
-    iface: ISafeProxyFactory__factory.createInterface(),
-  },
-  safeMastercopy: {
-    address: getSafeSingletonDeployment({
-      version: VERSION,
-    })?.defaultAddress as string,
-    iface: ISafe__factory.createInterface(),
+  delayMastercopy: {
+    address: getAddress("0x4A97E65188A950Dd4b0f21F9b5434dAeE0BBF9f5"),
+    iface: IDelayModule__factory.createInterface(),
   },
   fallbackHandler: {
     address: getFallbackHandlerDeployment({
@@ -38,29 +30,35 @@ export default {
     })?.defaultAddress as string,
   },
   moduleProxyFactory: {
-    // 1 and 100 same address
     address: getAddress("0x000000000000addb49795b0f9ba5bc298cdda236"),
     iface: IModuleProxyFactory__factory.createInterface(),
   },
-  delayMastercopy: {
-    // 1 and 100 same address
-    address: getAddress("0x177D7CDBcc7E9C408d3A66eB473658D63B18B554"),
-    iface: IDelayModule__factory.createInterface(),
-  },
-  rolesMastercopy: {
-    // 1 and 100 same address
-    address: getAddress("0x26DA7F5a385BA7c96456Ea6273d715ebF90feba8"),
-    iface: IRolesModifier__factory.createInterface(),
+  multicall: {
+    address: getAddress("0xcA11bde05977b3631167028862bE2a173976CA11"),
+    iface: IMulticall__factory.createInterface(),
   },
   multisend: {
     address: getMultiSendDeployment({ version: VERSION })
       ?.defaultAddress as string,
     iface: IMultisend__factory.createInterface(),
   },
-  multicall: {
-    address: getAddress("0xcA11bde05977b3631167028862bE2a173976CA11"),
-    iface: IMulticall__factory.createInterface(),
+  rolesMastercopy: {
+    address: getAddress("0x26DA7F5a385BA7c96456Ea6273d715ebF90feba8"),
+    iface: IRolesModifier__factory.createInterface(),
   },
+  safeMastercopy: {
+    address: getSafeSingletonDeployment({
+      version: VERSION,
+    })?.defaultAddress as string,
+    iface: ISafe__factory.createInterface(),
+  },
+  safeProxyFactory: {
+    address: getProxyFactoryDeployment({
+      version: VERSION,
+    })?.defaultAddress as string,
+    iface: ISafeProxyFactory__factory.createInterface(),
+  },
+
   singletonFactory: {
     address: getSingletonFactoryInfo(1)?.address as string,
   },

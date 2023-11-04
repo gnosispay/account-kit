@@ -4,13 +4,10 @@ import { keccak256, toUtf8Bytes } from "ethers";
 import hre from "hardhat";
 
 import {
-  GNO,
-  GNO_WHALE,
   createSetupConfig,
-  fork,
-  forkReset,
-  moveERC20,
-} from "./setup";
+  preFixture,
+  postFixture,
+} from "./test-helpers/index";
 
 import {
   populateAccountCreation,
@@ -30,21 +27,25 @@ const COOLDOWN = 120;
 
 describe("limit", () => {
   before(async () => {
-    await fork(parseInt(process.env.FORK_BLOCK as string));
+    await preFixture();
   });
 
   after(async () => {
-    await forkReset();
+    await postFixture();
   });
 
   async function setupAccount() {
     const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
+    const erc20 = await (
+      await hre.ethers.getContractFactory("TestERC20")
+    ).deploy();
+
     const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
       period: PERIOD,
-      token: GNO,
+      token: await erc20.getAddress(),
       allowance: AMOUNT,
       cooldown: COOLDOWN,
     });
@@ -61,7 +62,6 @@ describe("limit", () => {
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
-    await moveERC20(GNO_WHALE, account, GNO, 2000);
 
     return {
       account,

@@ -4,13 +4,10 @@ import { ZeroAddress, ZeroHash, keccak256, toUtf8Bytes } from "ethers";
 import hre from "hardhat";
 
 import {
-  GNO,
-  GNO_WHALE,
   createSetupConfig,
-  fork,
-  forkReset,
-  moveERC20,
-} from "./setup";
+  postFixture,
+  preFixture,
+} from "./test-helpers/index";
 
 import {
   populateAccountCreation,
@@ -21,24 +18,31 @@ import {
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { RolesConditionStatus } from "../src/parts/roles";
-import { IERC20__factory, IRolesModifier__factory } from "../typechain-types";
+import {
+  IRolesModifier__factory,
+  TestERC20__factory,
+} from "../typechain-types";
 
 describe("spend", () => {
   before(async () => {
-    await fork(parseInt(process.env.FORK_BLOCK as string));
+    await preFixture();
   });
 
   after(async () => {
-    await forkReset();
+    await postFixture;
   });
 
   async function createAccount() {
     const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
 
+    const erc20 = await (
+      await hre.ethers.getContractFactory("TestERC20")
+    ).deploy();
+
     const config = createSetupConfig({
       spender: spender.address,
       receiver: receiver.address,
-      token: GNO,
+      token: await erc20.getAddress(),
       allowance: 1000,
     });
     const account = predictAccountAddress(owner.address);
@@ -52,7 +56,6 @@ describe("spend", () => {
 
     await relayer.sendTransaction(createTx);
     await relayer.sendTransaction(setupTx);
-    await moveERC20(GNO_WHALE, account, GNO);
 
     return {
       account,
@@ -60,29 +63,29 @@ describe("spend", () => {
       spender,
       receiver,
       relayer,
+      token: TestERC20__factory.connect(await erc20.getAddress(), relayer),
       roles: IRolesModifier__factory.connect(ZeroAddress),
     };
   }
 
   it("enforces configured spender as signer on spend tx", async () => {
-    const { account, spender, receiver, relayer, roles } =
+    const { account, spender, receiver, relayer, token, roles } =
       await loadFixture(createAccount);
 
-    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
+    await token.mint(account, 10);
 
-    const token = GNO;
     const to = receiver.address;
     const amount = 10;
 
     const spendSignedByOther = await populateSpend(
       { account, chainId: 31337 },
-      { token, to, amount },
+      { token: await token.getAddress(), to, amount },
       ({ domain, types, message }) =>
         relayer.signTypedData(domain, types, message)
     );
     const spendSignedBySpender = await populateSpend(
       { account, chainId: 31337 },
-      { token, to, amount },
+      { token: await token.getAddress(), to, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
@@ -91,29 +94,27 @@ describe("spend", () => {
       relayer.sendTransaction(spendSignedByOther)
     ).to.be.revertedWithCustomError(roles, "NotAuthorized");
 
-    expect(await gno.balanceOf(to)).to.be.equal(0);
+    expect(await token.balanceOf(to)).to.be.equal(0);
     await relayer.sendTransaction(spendSignedBySpender);
-    expect(await gno.balanceOf(to)).to.be.equal(amount);
+    expect(await token.balanceOf(to)).to.be.equal(amount);
   });
   it("enforces configured receiver as to on spend tx", async () => {
-    const { account, spender, receiver, relayer, roles } =
+    const { account, spender, receiver, relayer, token, roles } =
       await loadFixture(createAccount);
 
-    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
-
-    const token = GNO;
+    await token.mint(account, 10);
     const amount = 10;
 
     const txToOther = await populateSpend(
       { account, chainId: 31337 },
-      { token, to: relayer.address, amount },
+      { token: await token.getAddress(), to: relayer.address, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
 
     const txToReceiver = await populateSpend(
       { account, chainId: 31337 },
-      { token, to: receiver.address, amount },
+      { token: await token.getAddress(), to: receiver.address, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
@@ -122,28 +123,26 @@ describe("spend", () => {
       .to.be.revertedWithCustomError(roles, "ConditionViolation")
       .withArgs(RolesConditionStatus.ParameterNotAllowed, ZeroHash);
 
-    expect(await gno.balanceOf(receiver.address)).to.be.equal(0);
+    expect(await token.balanceOf(receiver.address)).to.be.equal(0);
     await relayer.sendTransaction(txToReceiver);
-    expect(await gno.balanceOf(receiver.address)).to.be.equal(amount);
+    expect(await token.balanceOf(receiver.address)).to.be.equal(amount);
   });
   it("spend overusing allowance fails", async () => {
-    const { account, spender, receiver, relayer, roles } =
+    const { account, spender, receiver, relayer, token, roles } =
       await loadFixture(createAccount);
 
-    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
-
-    const token = GNO;
+    await token.mint(account, 2000);
     const amount = 2000;
 
     const txOverspending = await populateSpend(
       { account, chainId: 31337 },
-      { token, to: receiver.address, amount },
+      { token: await token.getAddress(), to: receiver.address, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
     const txUnderspending = await populateSpend(
       { account, chainId: 31337 },
-      { token, to: receiver.address, amount: 10 },
+      { token: await token.getAddress(), to: receiver.address, amount: 10 },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
@@ -152,31 +151,27 @@ describe("spend", () => {
       .to.be.revertedWithCustomError(roles, "ConditionViolation")
       .withArgs(RolesConditionStatus.AllowanceExceeded, SPENDING_ALLOWANCE_KEY);
 
-    expect(await gno.balanceOf(receiver.address)).to.be.equal(0);
+    expect(await token.balanceOf(receiver.address)).to.be.equal(0);
     await relayer.sendTransaction(txUnderspending);
-    expect(await gno.balanceOf(receiver.address)).to.be.equal(10);
+    expect(await token.balanceOf(receiver.address)).to.be.equal(10);
   });
   it("reverts on replayed spend tx", async () => {
-    const { account, spender, receiver, relayer } =
+    const { account, spender, receiver, relayer, token, roles } =
       await loadFixture(createAccount);
 
-    const gno = IERC20__factory.connect(GNO, hre.ethers.provider);
-
-    const token = GNO;
+    await token.mint(account, 10);
     const to = receiver.address;
     const amount = 10;
 
     const spendSignedBySpender = await populateSpend(
       { account, chainId: 31337, salt: keccak256(toUtf8Bytes("Some Salt")) },
-      { token, to, amount },
+      { token: await token.getAddress(), to, amount },
       ({ domain, types, message }) =>
         spender.signTypedData(domain, types, message)
     );
 
-    const roles = IRolesModifier__factory.connect(spendSignedBySpender.to);
-
     await relayer.sendTransaction(spendSignedBySpender);
-    expect(await gno.balanceOf(to)).to.be.equal(amount);
+    expect(await token.balanceOf(to)).to.be.equal(amount);
 
     // sending the same transaction fails
     await expect(
