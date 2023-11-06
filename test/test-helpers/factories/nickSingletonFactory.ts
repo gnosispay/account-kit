@@ -2,11 +2,9 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { getCreate2Address, keccak256, parseEther, ZeroHash } from "ethers";
 
 export async function deployViaFactory(
-  bytecode: string,
+  { bytecode, salt = ZeroHash }: { bytecode: string; salt?: string },
   signer: SignerWithAddress
 ) {
-  const salt = ZeroHash;
-
   await signer.sendTransaction({
     to: factory.address,
     data: `${salt}${bytecode.slice(2)}`,

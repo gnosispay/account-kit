@@ -4,14 +4,14 @@ import assert from "assert";
 import {
   Contract,
   Signer,
+  ZeroHash,
   getCreate2Address,
   keccak256,
   parseEther,
 } from "ethers";
 
 export async function deployViaFactory(
-  creationBytecode: string,
-  salt: string,
+  { bytecode, salt = ZeroHash }: { bytecode: string; salt?: string },
   deployer: Signer,
   displayName?: string
 ): Promise<string> {
@@ -29,12 +29,12 @@ export async function deployViaFactory(
   const computedAddress = getCreate2Address(
     factoryInfo.address,
     salt,
-    keccak256(creationBytecode)
+    keccak256(bytecode)
   );
 
   if ((await provider.getCode(computedAddress)) == "0x") {
     const receipt = await (
-      await factory.deploy(creationBytecode, salt, { gasLimit: 10000000 })
+      await factory.deploy(bytecode, salt, { gasLimit: 10000000 })
     ).wait();
 
     if (receipt?.status != 1) {

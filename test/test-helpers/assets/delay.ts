@@ -4,7 +4,10 @@ import deployments from "../../../src/deployments";
 import { deployViaFactory } from "../factories/eip2470";
 
 export default async function (signer: SignerWithAddress) {
-  const address = await deployViaFactory(creationBytecode, salt, signer);
+  const address = await deployViaFactory(
+    { bytecode: creationBytecode, salt },
+    signer
+  );
 
   if (address !== deployments.delayMastercopy.address) {
     throw new Error("Delay did not match mainnet deployment");
