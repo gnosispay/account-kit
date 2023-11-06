@@ -35,8 +35,8 @@ type DispatchParameters = {
 
 /**
  * Generates a payload that wraps a transaction, and posts it to the Delay Mod
- * queue. The populated transaction is already prepared for relay and does not
- * need any additional signing.
+ * queue. The populated transaction is relay ready, and does not require
+ * additional signing.
  *
  * @param parameters - {@link EnqueueParameters}
  * @param transaction - {@link TransactionRequest}
@@ -93,9 +93,9 @@ export async function populateExecuteEnqueue(
 
 /**
  * Generates a payload that executes a transaction previously posted to the
- * Delay Mod. Only works after cooldown seconds have elapsed, and before
- * expiration. The populated transaction is already prepared for relay and does
- * not need any additional signing.
+ * Delay Mod. Only works after cooldown seconds have passed, and before
+ * expiration.  The populated transaction is relay ready,  and does not require
+ * additional signing.
  *
  * @param parameters - {@link DispatchParameters}
  * @param transaction - {@link TransactionRequest}

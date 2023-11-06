@@ -54,7 +54,7 @@ type AccountSetupParameters = {
 
 /**
  * Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is
- * already prepared for relay and does not require any additional signing.
+ * relay ready, and does not require additional signing.
  *
  * @param parameters - {@link AccountSetupParameters}
  * @param config - {@link SetupConfig}
@@ -138,7 +138,7 @@ const TEMPORARY_RECEIVER = getAddress(
 );
 
 /**
- * Creates a config object for account setup, with all defaults filled in
+ * Creates a config object for account setup. Defaults config values filled in
  */
 export function createSetupConfig({
   token,

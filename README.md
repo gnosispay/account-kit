@@ -1,8 +1,8 @@
 # Account Kit
 
-Software development kit that facilitates the interaction with onchain Gnosis Pay accounts.
+Software development kit that facilitates the interaction with on-chain Gnosis Pay accounts.
 
-For each relevant account action, this SDK provides a function that populates transaction payloads. The generated payloads are relay ready, and require no additional signing.
+For each account action, this SDK provides a function that populates transaction payloads. The generated transactions are ready to be relayed, and do not require additional signing.
 
 ## Table of contents
 
@@ -30,7 +30,7 @@ await relayer.sendTransaction(createTx);
 
 ## <a name="direct-transfer">Direct Transfer</a>
 
-Signs a ERC20 token transfer out of the account. To be used on newly created 1/1 safes (before setup). The populated transaction is already prepared for relay and does not need any additional signing.
+Signs a ERC20 token transfer out of the account. To be used on newly created 1/1 safes (before setup). The populated transaction is relay ready, and does not require additional signing.
 
 ```js
 import { populateDirectTransfer } from "@gnosispay/account-kit";
@@ -50,7 +50,7 @@ await relayer.sendTransaction(transaction);
 
 ## <a name="account-setup">Account Setup</a>
 
-Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is already prepared for relay and does not need any additional signing.
+Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is relay ready, and does not require additional signing.
 
 ```js
 import {
@@ -91,7 +91,7 @@ await relayer.sendTransaction(transaction);
 
 ## <a name="execute">Execute</a>
 
-This function generates a payload that encapsulates a given transaction and submits it to the Delay Mod's queue. Once the cooldown period has elapsed, the transaction can be executed. The populated transactions are already prepared for relay and do not need any additional signing.
+This function generates a payload to initiate a transaction execution in the Delay Mod's queue. After the cooldown period has passed, the transaction can be executed. The populated transactions are relay ready, and do not require additional signing.
 
 ```js
 import {
@@ -125,7 +125,7 @@ await relayer.sendTransaction(dispatchTx);
 
 ## <a name="limit">Limit</a>
 
-This function generates a payload to initiate an allowance change in the Delay Mod's queue. Once the cooldown period has elapsed, the allowance change can be executed. The user maintains unilateral control over the Allowance configuration. The populated transactions are already prepared for relay and do not need any additional signing.
+This function generates a payload to initiate an allowance change in the Delay Mod's queue. After the cooldown period has passed, the allowance change can be executed. The owner maintains unilateral control over the Allowance configuration. The populated transactions are relay ready, and do not require additional signing.
 
 ```js
 import {
@@ -157,7 +157,7 @@ await relayer.sendTransaction(dispatchTx);
 
 ## <a name="spend">Spend</a>
 
-This function generates the spend payload to be submitted to the Roles Mod. The spender has permissionless access as long as they stay within the configured Allowance limits. The populated transaction is already prepared for relay and does not need any additional signing.
+This function generates the spend payload to be submitted to the Roles Mod. The spender has permissionless access as long as they stay within the configured Allowance limits. The populated transaction is relay ready, and does not require additional signing.
 
 ```js
 import { populateSpend } from "@gnosispay/account-kit";
@@ -180,7 +180,7 @@ await relayer.sendTransaction(spendTx);
 
 ## <a name="account-query">Account Query</a>
 
-Creates a multicall payload that collects all data required to assess if a given GnosisPay account passes integrity requirements. Calculates and returns the accrued allowance balance
+This function generates a multicall payload that gathers all the necessary data to evaluate whether a given Gnosis Pay account meets the integrity requirements. It then returns an integrity status code along with the accrued Allowance balance.
 
 ```js
 import { accountQuery } from "@gnosispay/account-kit";

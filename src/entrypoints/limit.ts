@@ -37,8 +37,8 @@ type DispatchParameters = {
 
 /**
  * This function generates a payload to initiate an allowance change in the
- * Delay Mod's queue. The populated transaction is already prepared for relay
- * and does not need any additional signing.
+ * Delay Mod's queue. The populated transaction is relay ready, and does not
+ * require additional signing.
  *
  * @param parameters - {@link EnqueueParameters}
  * @param config - {@link AllowanceConfig}
@@ -76,8 +76,8 @@ export async function populateLimitEnqueue(
 /**
  * Generates a payload that executes an allowance change previously posted to
  * the Delay Mod. Only works after cooldown seconds and have passed, and before
- * expiration. The populated transaction is already prepared for relay and does
- * not need any additional signing.
+ * expiration. The populated transaction is relay ready, and does not require
+ * additional signing.
  *
  * @param parameters - {@link DispatchParameters}
  * @param transaction - {@link AllowanceConfig}
