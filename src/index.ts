@@ -3,7 +3,9 @@ import populateAccountCreation, {
   populateDirectTransfer,
 } from "./entrypoints/accountCreation";
 import accountQuery from "./entrypoints/accountQuery";
-import populateAccountSetup from "./entrypoints/accountSetup";
+import populateAccountSetup, {
+  createSetupConfig,
+} from "./entrypoints/accountSetup";
 import {
   populateExecuteEnqueue,
   populateExecuteDispatch,
@@ -28,6 +30,7 @@ export {
   populateSpend,
   // predict account setup addresses
   predictAccountAddress,
+  createSetupConfig,
   // integrity, status and info query
   accountQuery,
 };
