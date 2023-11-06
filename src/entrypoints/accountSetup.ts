@@ -1,4 +1,4 @@
-import { AbiCoder, ZeroAddress, getAddress } from "ethers";
+import { AbiCoder, ZeroAddress, getAddress, parseUnits } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
 import {
@@ -127,6 +127,49 @@ export default async function populateAccountSetup(
   };
 }
 
+// TODO: not yet the final value
+const TEMPORARY_SPENDER = getAddress(
+  "0xb32fd82d584a8d40ebe8e11dbfe6d6dfbeed344a"
+);
+
+// TODO: not yet the final valueSo yo
+const TEMPORARY_RECEIVER = getAddress(
+  "0xca24637dd035a086DA120EE5c07C085eAA1fa37e"
+);
+
+/**
+ * Creates a config object for account setup, with all defaults filled in
+ */
+export function createSetupConfig({
+  token,
+  chainId,
+}: {
+  token: string;
+  chainId: number;
+}): SetupConfig {
+  if (
+    chainId == 100 &&
+    getAddress(token) ==
+      getAddress("0xcb444e90d8198415266c6a2724b7900fb12fc56e")
+  ) {
+    return {
+      spender: TEMPORARY_SPENDER,
+      receiver: TEMPORARY_RECEIVER,
+      token,
+      allowance: {
+        period: 60 * 60 * 24, // one day in seconds
+        refill: parseUnits("1000", 18), // 1000 dollars in 18 decimals (EURe decimals)
+      },
+      delay: {
+        cooldown: 60 * 3, // three minutes in seconds
+        expiration: 60 * 60 * 24 * 7, // one week in seconds
+      },
+    };
+  }
+
+  throw new Error(`Unsupported tokend and chainId combination`);
+}
+
 function populateSetupTransaction(
   { account, owner }: { account: string; owner: string },
   {
@@ -139,6 +182,10 @@ function populateSetupTransaction(
 ): SafeTransactionRequest {
   const abi = AbiCoder.defaultAbiCoder();
   const { iface } = deployments.safeMastercopy;
+
+  spender = getAddress(spender);
+  receiver = getAddress(receiver);
+  token = getAddress(token);
 
   const delay = {
     address: predictDelayAddress(account),

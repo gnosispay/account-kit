@@ -53,29 +53,15 @@ await relayer.sendTransaction(transaction);
 Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is already prepared for relay and does not need any additional signing.
 
 ```js
-import { populateAccountSetup } from "@gnosispay/account-kit";
+import {
+  createSetupConfig, populateAccountSetup,
+} from "@gnosispay/account-kit";
 
 const owner: Signer = {}; // the account owner
 
-const config: SetupConfig = {
-  // the gnosis signer
-  spender: `0x<address>`,
-  // the settlement safe
-  receiver: `0x<address>`,
-  // token used for payments
-  token: `0x<address>`,
-  // allowance settings
-  allowance: {
-    refill: `<bigint>`, // amount refilled per period
-    period: `<number>`, // duration in seconds
-    timestamp?: `<number>`, // optional, useful to align timezones
-  },
-  // delay mod  settings
-  delay: {
-    cooldown: `<number>`, // in seconds
-    expiration: `<number>`, // in seconds
-  },
-};
+const config: SetupConfig = createSetupConfig({
+  token: `0x<address>`, chainId: `<number>`
+})
 
 const transaction = await populateAccountSetup(
   {
