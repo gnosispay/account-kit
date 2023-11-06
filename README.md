@@ -23,7 +23,7 @@ Creates a new 1/1 safe.
 import { populateAccountCreation } from "@gnosispay/account-kit";
 
 const createTx = populateAccountCreation({
-  owner: `0x<address>`, // the owner of the account
+  owner: `0x<address>`,
 });
 await relayer.sendTransaction(createTx);
 ```
@@ -36,7 +36,7 @@ Signs a ERC20 token transfer out of the account. To be used on newly created 1/1
 import { populateDirectTransfer } from "@gnosispay/account-kit";
 
 const owner : Signer = {};
-const nonce = `<number>`; // See Account Setup section, nonce comment
+const nonce = `<number>`; // see Account Setup section, nonce comment
 
 const transaction = await populateDirectTransfer(
   { safe: `0x<address>`, chainId: `<number>`, nonce: nonce },
@@ -135,8 +135,8 @@ import {
 
 const owner : Signer = {};
 const allowanceConfig : AllowanceConfig = {
-  period: `<number>`, // Duration, in seconds
-  refill: `<bigint>`, // Amount added to balance, per period
+  period: `<number>`, // duration, in seconds
+  refill: `<bigint>`, // amount added to balance, per period
 };
 
 const enqueueTx = await populateLimitEnqueue(
@@ -163,7 +163,7 @@ This function generates the spend payload to be submitted to the Roles Mod. The 
 ```js
 import { populateSpend } from "@gnosispay/account-kit";
 
-const spender : Signer = {}; // system wide config, the gnosis signer
+const spender : Signer = {}; // the gnosis signer
 const transfer : Transfer= {
   token: `0x<address>`,
   to: `0x<address>`,
@@ -191,7 +191,7 @@ const {
   allowance: { balance, refill, period, maxRefill, nextRefill },
 } = await accountQuery(
   { account: `0x<address>`, cooldown: `<number>` },
-  // a function that receives that and performs eth_call, library agnostic
+  // a function that receives a tx and performs eth_call, library agnostic
   ({ to, data }) => provider.send("eth_call", [{ to, data }])
 );
 ```
