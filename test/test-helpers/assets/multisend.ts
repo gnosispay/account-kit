@@ -4,7 +4,10 @@ import deployments from "../../../src/deployments";
 import { deployViaFactory } from "../factories/nickSingletonFactory";
 
 export default async function (signer: SignerWithAddress) {
-  const address = await deployViaFactory(creationBytecode, signer);
+  const address = await deployViaFactory(
+    { bytecode: creationBytecode },
+    signer
+  );
 
   if (address !== deployments.multisend.address) {
     throw new Error("Multisend did not match live mainnet deployment");

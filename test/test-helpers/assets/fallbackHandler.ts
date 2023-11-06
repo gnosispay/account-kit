@@ -3,7 +3,7 @@ import deployments from "../../../src/deployments";
 import { deployViaFactory } from "../factories/nickSingletonFactory";
 
 export default async function (signer: SignerWithAddress) {
-  const address = await deployViaFactory(bytecode, signer);
+  const address = await deployViaFactory({ bytecode }, signer);
 
   if (address !== deployments.fallbackHandler.address) {
     throw new Error("FallbackHandler did not match live mainnet deployment");

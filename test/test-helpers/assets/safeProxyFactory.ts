@@ -6,7 +6,7 @@ import { deployViaFactory } from "../factories/nickSingletonFactory";
 
 export default async function (signer: SignerWithAddress) {
   const address = await deployViaFactory(
-    ArtifactGnosisSafeProxyFactory.bytecode,
+    { bytecode: ArtifactGnosisSafeProxyFactory.bytecode },
     signer
   );
 
