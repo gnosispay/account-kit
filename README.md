@@ -35,11 +35,11 @@ Signs a ERC20 token transfer out of the account. To be used on newly created 1/1
 ```js
 import { populateDirectTransfer } from "@gnosispay/account-kit";
 
-const owner : Signer = {}; // the account owner
-const nonce = `<number>`; // the current safe onchain nonce value
+const owner : Signer = {};
+const nonce = `<number>`; // See Account Setup section, nonce comment
 
 const transaction = await populateDirectTransfer(
-  { safe: `0x<address>`, chainId: `<number>`, nonce },
+  { safe: `0x<address>`, chainId: `<number>`, nonce: nonce },
   { token: `0x<address>`, to: `0x<address>`, amount: `<bigint>` },
   // callback that wraps an eip-712 signature by owner
   ({ domain, primaryType, types, message }) => owner.signTypedData(...)
@@ -58,6 +58,17 @@ import {
 } from "@gnosispay/account-kit";
 
 const owner: Signer = {}; // the account owner
+/*
+ * NOTE: on the nonce argument for "Account Setup":
+ * Unlike limit, spend or execute, this operation is performed on a basic safe.
+ * As a result, it depends on safe-core signatures and the safe-core nonce.
+ * Must query the on-chain safe nonce value and use it to sign the transaction.
+ *
+ * In contrast, limit/spend/execute actions run on Zodiac Modifier signatures,
+ * which use signer-proposed salts for replay protection and do not require
+ * on-chain querying of the nonce.
+ */
+const nonce = `<number>`;
 
 const config: SetupConfig = createSetupConfig({
   token: `0x<address>`, chainId: `<number>`
@@ -68,7 +79,7 @@ const transaction = await populateAccountSetup(
     account: `0x<address>`,
     owner: owner.address,
     chainId: `<number>`,
-    nonce: `<number>`; // the account's onchain nonce value
+    nonce: nonce
   },
   config,
   // callback that wraps an eip-712 signature !!owner signs!!
