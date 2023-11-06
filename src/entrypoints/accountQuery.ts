@@ -26,15 +26,47 @@ const empty = {
   },
 };
 
+type AccountQueryParameters = {
+  /**
+   * The address of the account
+   */
+  account: string;
+  /*
+   * The expected cooldown config value (see SetupConfig)
+   */
+  cooldown: number;
+};
+
+/**
+ * Callback that performs an eth_call for a transaction request. Output is
+ * transaction returnData
+ */
+type EthCallCallback = (request: TransactionRequest) => Promise<string>;
+
+/**
+ * Creates a multicall payload that collects all data required to assess if a
+ * given GnosisPay account passes integrity requirements. Calculates and
+ * returns the accrued allowance balance
+ *
+ * @param parameters - {@link AccountQueryParameters}
+ * @param doEthCall - {@link EthCallCallback}
+ * @returns Status and Allowance information. {@link AccountQueryResult}
+ *
+ * @example
+ * import { accountQuery } from "@gnosispay/account-kit";
+ *
+ * const {
+ *   status,
+ *   allowance: { balance, refill, period, maxRefill, nextRefill },
+ * } = await accountQuery(
+ *   { account, cooldown },
+ *   ({ to, data }) => provider.send("eth_call", [{ to, data }])
+ * );
+ *
+ */
 export default async function accountQuery(
-  {
-    account,
-    cooldown,
-  }: {
-    account: string;
-    cooldown: number;
-  },
-  doEthCall: (request: TransactionRequest) => Promise<string>
+  { account, cooldown }: AccountQueryParameters,
+  doEthCall: EthCallCallback
 ): Promise<AccountQueryResult> {
   account = getAddress(account);
 

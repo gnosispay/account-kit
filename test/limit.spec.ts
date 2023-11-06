@@ -49,10 +49,10 @@ describe("limit", () => {
       allowance: AMOUNT,
       cooldown: COOLDOWN,
     });
-    const account = predictAccountAddress(owner.address);
+    const account = predictAccountAddress({ owner: owner.address });
     const rolesAddress = predictRolesAddress(account);
 
-    const creationTx = populateAccountCreation(owner.address);
+    const creationTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
@@ -88,10 +88,13 @@ describe("limit", () => {
         owner.signTypedData(domain, types, message)
     );
 
-    const executeTx = populateLimitDispatch(account, {
-      refill: 1,
-      period: 1,
-    });
+    const executeTx = populateLimitDispatch(
+      { account },
+      {
+        refill: 1,
+        period: 1,
+      }
+    );
 
     await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
 
@@ -131,10 +134,13 @@ describe("limit", () => {
 
     await mine(2, { interval: 120 });
 
-    const executeTx = populateLimitDispatch(account, {
-      refill: 7,
-      period: 7,
-    });
+    const executeTx = populateLimitDispatch(
+      { account },
+      {
+        refill: 7,
+        period: 7,
+      }
+    );
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
     const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);

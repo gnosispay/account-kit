@@ -23,7 +23,12 @@ describe("account-creation", () => {
     const owner = "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd";
     const account = "0xa2F31c16B55a9392E515273D7F35cb8aA1F0a3D6";
 
-    expect(predictAccountAddress(owner)).to.equal(account);
+    // equals
+    expect(predictAccountAddress({ owner })).to.equal(account);
+    // does not
+    expect(
+      predictAccountAddress({ owner, creationNonce: BigInt(0) })
+    ).to.not.equal(account);
   });
 
   async function setup() {
@@ -43,14 +48,18 @@ describe("account-creation", () => {
   it("sets up a 1/1 safe", async () => {
     const { owner, relayer } = await loadFixture(setup);
 
-    const predictedSafeAddress = predictAccountAddress(owner.address);
+    const predictedSafeAddress = predictAccountAddress({
+      owner: owner.address,
+    });
 
     // account not deployed
     expect(await hre.ethers.provider.getCode(predictedSafeAddress)).to.equal(
       "0x"
     );
 
-    const accountCreationTransaction = populateAccountCreation(owner.address);
+    const accountCreationTransaction = populateAccountCreation({
+      owner: owner.address,
+    });
     await relayer.sendTransaction(accountCreationTransaction);
 
     // account deployed
@@ -69,8 +78,10 @@ describe("account-creation", () => {
   it("correctly transfer an ERC20 from a fresh safe", async () => {
     const { owner, relayer, token } = await loadFixture(setup);
 
-    const safeAddress = predictAccountAddress(owner.address);
-    await relayer.sendTransaction(populateAccountCreation(owner.address));
+    const safeAddress = predictAccountAddress({ owner: owner.address });
+    await relayer.sendTransaction(
+      populateAccountCreation({ owner: owner.address })
+    );
 
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = 987654;

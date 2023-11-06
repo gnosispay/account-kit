@@ -45,8 +45,8 @@ describe("spend", () => {
       token: await erc20.getAddress(),
       allowance: 1000,
     });
-    const account = predictAccountAddress(owner.address);
-    const createTx = populateAccountCreation(owner.address);
+    const account = predictAccountAddress({ owner: owner.address });
+    const createTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,

@@ -4,16 +4,62 @@ import deployments from "../deployments";
 import typedDataForModifierTransaction, { randomBytes32 } from "../eip712";
 import { predictDelayAddress } from "../parts";
 
-import { OperationType, SignTypedData, TransactionRequest } from "../types";
+import {
+  OperationType,
+  SignTypedDataCallback,
+  TransactionRequest,
+} from "../types";
 
+type EnqueueParameters = {
+  /**
+   * The address of the account
+   */
+  account: string;
+  /*
+   * ID associated with the current network.
+   */
+  chainId: number;
+  /*
+   * An optional bytes32 string that will be used for signature replay protection
+   * (Should be omitted, and in that case, a random salt will be generated)
+   */
+  salt?: string;
+};
+
+type DispatchParameters = {
+  /**
+   * The address of the account
+   */
+  account: string;
+};
+
+/**
+ * Generates a payload that wraps a transaction, and posts it to the Delay Mod
+ * queue. The populated transaction is already prepared for relay and does not
+ * need any additional signing.
+ *
+ * @param parameters - {@link EnqueueParameters}
+ * @param transaction - {@link TransactionRequest}
+ * @param sign - {@link SignTypedDataCallback}
+ * @returns The signed transaction payload {@link TransactionRequest}
+ *
+ * @example
+ * import { populateExecuteEnqueue } from "@gnosispay/account-kit";
+ *
+ * const owner: Signer = {};
+ * const enqueueTx = await populateExecuteEnqueue(
+ *  { account: `0x<address>`, chainId: `<number>` },
+ *  { to: `0x<address>`, value: `<bigint>`, data: `0x<bytes>` },
+ *  // callback that wraps an eip-712 signature
+ *  ({ domain, primaryType, types, message }) =>
+ *    owner.signTypedData(domain, primaryType, types, message)
+ * );
+ * await relayer.sendTransaction(enqueueTx);
+ */
 export async function populateExecuteEnqueue(
-  {
-    account,
-    chainId,
-    salt,
-  }: { account: string; chainId: number; salt?: string },
+  { account, chainId, salt }: EnqueueParameters,
   transaction: TransactionRequest,
-  sign: SignTypedData
+  sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
   salt = salt || randomBytes32();
@@ -45,8 +91,27 @@ export async function populateExecuteEnqueue(
   return { to, value, data: concat([data, salt, signature]) };
 }
 
+/**
+ * Generates a payload that executes a transaction previously posted to the
+ * Delay Mod. Only works after cooldown seconds have elapsed, and before
+ * expiration. The populated transaction is already prepared for relay and does
+ * not need any additional signing.
+ *
+ * @param parameters - {@link DispatchParameters}
+ * @param transaction - {@link TransactionRequest}
+ * @returns The signed transaction payload {@link TransactionRequest}
+ *
+ * @example
+ * import { populateExecuteDispatch } from "@gnosispay/account-kit";
+ *
+ * const dispatchTx = await populateExecuteDispatch(
+ *  { account: `0x<address>` },
+ *  { to: `0x<address>`, value: `<bigint>`, data: `0x<bytes>` },
+ * );
+ * await relayer.sendTransaction(enqueueTx);
+ */
 export function populateExecuteDispatch(
-  account: string,
+  { account }: DispatchParameters,
   transaction: TransactionRequest
 ): TransactionRequest {
   account = getAddress(account);

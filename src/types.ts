@@ -16,7 +16,10 @@ export enum OperationType {
   DelegateCall = 1,
 }
 
-export type SignTypedData = (param: {
+/**
+ * callback that wraps an eip-712 signature. Library agnostic
+ */
+export type SignTypedDataCallback = (params: {
   domain: any;
   primaryType: any;
   types: any;

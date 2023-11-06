@@ -67,11 +67,11 @@ describe("account-query", () => {
       cooldown: 120, // 120 seconds
       expiration: 120 * 1000,
     });
-    const account = predictAccountAddress(owner.address);
+    const account = predictAccountAddress({ owner: owner.address });
     const delayAddress = predictDelayAddress(account);
     const rolesAddress = predictRolesAddress(account);
 
-    const creationTx = populateAccountCreation(owner.address);
+    const creationTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
       { account, owner: owner.address, chainId: 31337, nonce: 0 },
       config,
@@ -128,10 +128,13 @@ describe("account-query", () => {
     // go forward3 minutes
     await mine(3, { interval: 60 });
 
-    const dispatch = populateLimitDispatch(account, {
-      period: oneDay,
-      refill,
-    });
+    const dispatch = populateLimitDispatch(
+      { account },
+      {
+        period: oneDay,
+        refill,
+      }
+    );
     await relayer.sendTransaction(dispatch);
 
     let result = await evaluateAccount(account, config);
@@ -190,11 +193,14 @@ describe("account-query", () => {
     // go forward3 minutes
     await mine(3, { interval: 60 });
 
-    const dispatch = populateLimitDispatch(account, {
-      period: oneDay,
-      refill,
-      timestamp: startOfDay,
-    });
+    const dispatch = populateLimitDispatch(
+      { account },
+      {
+        period: oneDay,
+        refill,
+        timestamp: startOfDay,
+      }
+    );
     await relayer.sendTransaction(dispatch);
 
     let result = await evaluateAccount(account, config);
@@ -273,7 +279,10 @@ describe("account-query", () => {
 
     // wait for cooldown & dispatch
     await mine(2, { interval: config.delay.cooldown });
-    const dispatchTx = await populateExecuteDispatch(account, updateLimitTx);
+    const dispatchTx = await populateExecuteDispatch(
+      { account },
+      updateLimitTx
+    );
     await relayer.sendTransaction(dispatchTx);
 
     // we should handle this correctly
@@ -313,7 +322,7 @@ describe("account-query", () => {
 
     // move 3 minutes forward, cooldown is 2 minutes
     await mine(4, { interval: 60 });
-    const dispatch = populateExecuteDispatch(account, reconfigTx);
+    const dispatch = populateExecuteDispatch({ account }, reconfigTx);
     await relayer.sendTransaction(dispatch);
 
     // FAIL: no renounce ownership
@@ -341,7 +350,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch({ account }, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, config);
@@ -372,7 +381,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch({ account }, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, config);
@@ -402,7 +411,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch({ account }, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, config);
@@ -431,7 +440,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch({ account }, reconfig);
     await relayer.sendTransaction(dispatch);
 
     expect(await delay.owner()).to.equal(
@@ -460,7 +469,7 @@ describe("account-query", () => {
     await relayer.sendTransaction(enqueue);
 
     await mine(4, { interval: 60 });
-    const dispatch = populateExecuteDispatch(account, reconfig);
+    const dispatch = populateExecuteDispatch({ account }, reconfig);
     await relayer.sendTransaction(dispatch);
 
     const { status } = await evaluateAccount(account, config);

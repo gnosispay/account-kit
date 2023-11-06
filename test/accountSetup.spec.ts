@@ -43,9 +43,9 @@ describe("account-setup", () => {
     ).deploy();
     const token = TestERC20__factory.connect(await erc20.getAddress(), relayer);
 
-    const transaction = populateAccountCreation(owner.address);
+    const transaction = populateAccountCreation({ owner: owner.address });
 
-    const account = predictAccountAddress(owner.address);
+    const account = predictAccountAddress({ owner: owner.address });
     const rolesAddress = predictRolesAddress(account);
     const delayAddress = predictDelayAddress(account);
 

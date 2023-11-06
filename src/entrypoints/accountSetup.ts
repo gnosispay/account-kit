@@ -27,21 +27,70 @@ import {
 import {
   SafeTransactionRequest,
   SetupConfig,
-  SignTypedData,
+  SignTypedDataCallback,
   TransactionRequest,
 } from "../types";
 
 const AddressTwo = "0x0000000000000000000000000000000000000002";
 
+type AccountSetupParameters = {
+  /**
+   * The address of the account
+   */
+  account: string;
+  /**
+   * The address of the owner
+   */
+  owner: string;
+  /*
+   * ID associated with the current network.
+   */
+  chainId: number;
+  /*
+   * The current nonce value of the safe that is to be setup
+   */
+  nonce: number;
+};
+
+/**
+ * Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is
+ * already prepared for relay and does not require any additional signing.
+ *
+ * @param parameters - {@link AccountSetupParameters}
+ * @param config - {@link SetupConfig}
+ * @param sign - {@link SignTypedDataCallback}
+ * @returns The signed transaction payload {@link TransactionRequest}
+ *
+ * @example
+ * import { populateAccountSetup } from "@gnosispay/account-kit";
+ *
+ * const owner: Signer = {...}
+ * const config = {
+ *   spender: "0x<address>",
+ *   receiver: "0x<address>",
+ *   token: "0x<address>",
+ *   allowance: {
+ *     refill: parseEther("1000"),
+ *     period: 60 * 60 * 24, // duration in seconds
+ *     timestamp?: 12726372637 // optional, useful to align timezones
+ *   },
+ *   delay: {
+ *     cooldown: 60 * 3, // 3 minutes in in seconds
+ *     expiration: 60 * 60 * 24 * 7 // a week in seconds
+ *   }
+ * }
+ * const transaction = await populateAccountSetup(
+ *   { account, owner: owner.address, chainId, nonce },
+ *   config,
+ *   ({ domain, primaryType, types, message }) =>
+ *   owner.signTypedData(domain, primaryType, types, message)
+ * );
+ * await relayer.sendTransaction(transaction);
+ */
 export default async function populateAccountSetup(
-  {
-    account,
-    owner,
-    chainId,
-    nonce,
-  }: { account: string; owner: string; chainId: number; nonce: number },
+  { account, owner, chainId, nonce }: AccountSetupParameters,
   config: SetupConfig,
-  sign: SignTypedData
+  sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
   owner = getAddress(owner);
