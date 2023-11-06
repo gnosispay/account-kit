@@ -10,18 +10,51 @@ import { predictRolesAddress } from "../parts";
 import {
   TransactionRequest,
   OperationType,
-  SignTypedData,
+  SignTypedDataCallback,
   Transfer,
 } from "../types";
 
+type SpendParameters = {
+  /**
+   * The address of the account
+   */
+  account: string;
+  /*
+   * ID associated with the current network.
+   */
+  chainId: number;
+  /*
+   * An optional bytes32 string that will be used for signature replay protection
+   * (Should be omitted, and in that case, a random salt will be generated)
+   */
+  salt?: string;
+};
+
+/**
+ * This function generates the spend payload to be submitted to the Roles Mod.
+ *
+ * @param parameters - {@link EnqueueParameters}
+ * @param transfer - {@link Transfer}
+ * @param sign - {@link SignTypedDataCallback}
+ * @returns The signed transaction payload {@link TransactionRequest}
+ *
+ * @example
+ * import { populateSpend } from "@gnosispay/account-kit";
+ *
+ * const spender: Signer = {};
+ * const spendTx = await populateSpend(
+ *  { account: `0x<address>`, chainId: `<number>` },
+ *  { token: `0x<address>`, to: `0x<address>`, amount: `<bigint>` },
+ *  // callback that wraps an eip-712 signature
+ *  ({ domain, primaryType, types, message }) =>
+ *    spender.signTypedData(domain, primaryType, types, message)
+ * );
+ * await relayer.sendTransaction(spendTx);
+ */
 export default async function populateSpend(
-  {
-    account,
-    chainId,
-    salt,
-  }: { account: string; chainId: number; salt?: string },
+  { account, chainId, salt }: SpendParameters,
   transfer: Transfer,
-  sign: SignTypedData
+  sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
   salt = salt || randomBytes32();
