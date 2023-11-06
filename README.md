@@ -57,7 +57,7 @@ import {
   createSetupConfig, populateAccountSetup,
 } from "@gnosispay/account-kit";
 
-const owner: Signer = {}; // the account owner
+const owner: Signer = {};
 /*
  * NOTE: on the nonce argument for "Account Setup":
  * Unlike limit, spend or execute, this operation is performed on a basic safe.
@@ -133,12 +133,10 @@ import {
   populateLimitDispatch,
 } from "@gnosispay/account-kit";
 
-const owner : Signer = {}; // the account owner
+const owner : Signer = {};
 const allowanceConfig : AllowanceConfig = {
-  // Duration, in seconds, before a refill occurs
-  period: `<number>`,
-  /// Amount added to balance after each period elapses.
-  refill: `<bigint>`,
+  period: `<number>`, // Duration, in seconds
+  refill: `<bigint>`, // Amount added to balance, per period
 };
 
 const enqueueTx = await populateLimitEnqueue(
@@ -151,7 +149,10 @@ await relayer.sendTransaction(enqueueTx);
 
 // ⏳ wait cooldown seconds ⏳
 
-const dispatchTx = populateLimitDispatch(account, allowanceConfig);
+const dispatchTx = populateLimitDispatch(
+  { account: `0x<address>` },
+  allowanceConfig
+);
 await relayer.sendTransaction(dispatchTx);
 ```
 
