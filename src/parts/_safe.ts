@@ -1,3 +1,4 @@
+import { bytecode as creationBytecode } from "@gnosis.pm/safe-contracts/build/artifacts/contracts/proxies/GnosisSafeProxy.sol/GnosisSafeProxy.json";
 import {
   AbiCoder,
   ZeroAddress,
@@ -6,7 +7,7 @@ import {
   keccak256,
 } from "ethers";
 
-import deployments, { proxyCreationBytecode } from "../deployments";
+import deployments from "../deployments";
 
 import { TransactionRequest } from "../types";
 
@@ -27,7 +28,7 @@ export function _predictSafeAddress(
   );
 
   const deploymentData = concat([
-    proxyCreationBytecode,
+    creationBytecode,
     abi.encode(["address"], [mastercopy]),
   ]);
 
