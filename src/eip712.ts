@@ -1,4 +1,4 @@
-import { ZeroAddress, keccak256, toUtf8Bytes } from "ethers";
+import { ZeroAddress } from "ethers";
 import { SafeTransactionRequest } from "./types";
 
 export function typedDataForSafeTransaction(
@@ -56,7 +56,7 @@ export default function typedDataForModifierTransaction(
   { data, salt }: { data: string; salt: string }
 ) {
   if (!BYTES32_REGEX.test(salt)) {
-    throw new Error(`Salt is not a bytes32 string ${salt}`);
+    throw new Error(`Salt is not a 32 bytes hex string ${salt}`);
   }
 
   const domain = { verifyingContract: modifier, chainId };
@@ -76,7 +76,3 @@ export default function typedDataForModifierTransaction(
 }
 
 const BYTES32_REGEX = /^(0x)?[0-9a-fA-F]{64}$/;
-
-export function randomBytes32() {
-  return keccak256(toUtf8Bytes(String(Date.now())));
-}

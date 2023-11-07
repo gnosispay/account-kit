@@ -1,9 +1,12 @@
 import { getAddress } from "ethers";
 
-import { populateExecuteDispatch, populateExecuteEnqueue } from "./execute";
+import {
+  populateExecuteDispatch,
+  populateExecuteEnqueue,
+  saltFromTimestamp,
+} from "./execute";
 import { SPENDING_ALLOWANCE_KEY } from "../constants";
 import deployments from "../deployments";
-import { randomBytes32 } from "../eip712";
 import { predictBouncerAddress } from "../parts";
 
 import {
@@ -64,7 +67,7 @@ export async function populateLimitEnqueue(
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
-  salt = salt || randomBytes32();
+  salt = salt || saltFromTimestamp();
 
   return populateExecuteEnqueue(
     { account, chainId, salt },
