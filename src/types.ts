@@ -42,11 +42,11 @@ export type SetupConfig = {
 
 export type AllowanceConfig = {
   /// Duration, in seconds, before a refill occurs
-  period: bigint | number;
+  period: number;
   /// Amount added to balance after each period elapses.
   refill: bigint | number;
   /// Timestamp of the initial period start, useful for bringing the period in sync with the user's local timezone
-  timestamp?: bigint | number;
+  timestamp?: number;
 };
 
 export type DelayConfig = {

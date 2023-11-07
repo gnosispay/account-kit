@@ -1,8 +1,8 @@
 import { AbiCoder, ZeroHash } from "ethers";
 
 import { _predictZodiacModAddress } from "./_zodiacMod";
-
 import deployments from "../deployments";
+
 import { TransactionRequest } from "../types";
 
 export function predictDelayAddress(safe: string): string {

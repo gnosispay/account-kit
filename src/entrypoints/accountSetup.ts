@@ -1,11 +1,7 @@
 import { AbiCoder, ZeroAddress, getAddress, parseUnits } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
-import {
-  SENTINEL,
-  SPENDING_ALLOWANCE_KEY,
-  SPENDING_ROLE_KEY,
-} from "../constants";
+import { SPENDING_ALLOWANCE_KEY, SPENDING_ROLE_KEY } from "../constants";
 
 import deployments from "../deployments";
 import { typedDataForSafeTransaction } from "../eip712";
@@ -24,6 +20,7 @@ import {
   RolesOperator,
   RolesParameterType,
 } from "../parts/roles";
+
 import {
   SafeTransactionRequest,
   SetupConfig,
@@ -31,6 +28,7 @@ import {
   TransactionRequest,
 } from "../types";
 
+const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressTwo = "0x0000000000000000000000000000000000000002";
 
 type AccountSetupParameters = {
@@ -127,49 +125,6 @@ export default async function populateAccountSetup(
   };
 }
 
-// TODO: not yet the final value
-const TEMPORARY_SPENDER = getAddress(
-  "0xb32fd82d584a8d40ebe8e11dbfe6d6dfbeed344a"
-);
-
-// TODO: not yet the final valueSo yo
-const TEMPORARY_RECEIVER = getAddress(
-  "0xca24637dd035a086DA120EE5c07C085eAA1fa37e"
-);
-
-/**
- * Creates a config object for account setup. Defaults config values filled in
- */
-export function createSetupConfig({
-  token,
-  chainId,
-}: {
-  token: string;
-  chainId: number;
-}): SetupConfig {
-  if (
-    chainId == 100 &&
-    getAddress(token) ==
-      getAddress("0xcb444e90d8198415266c6a2724b7900fb12fc56e")
-  ) {
-    return {
-      spender: TEMPORARY_SPENDER,
-      receiver: TEMPORARY_RECEIVER,
-      token,
-      allowance: {
-        period: 60 * 60 * 24, // one day in seconds
-        refill: parseUnits("1000", 18), // 1000 dollars in 18 decimals (EURe decimals)
-      },
-      delay: {
-        cooldown: 60 * 3, // three minutes in seconds
-        expiration: 60 * 60 * 24 * 7, // one week in seconds
-      },
-    };
-  }
-
-  throw new Error(`Unsupported tokend and chainId combination`);
-}
-
 function populateSetupTransaction(
   { account, owner }: { account: string; owner: string },
   {
@@ -180,9 +135,6 @@ function populateSetupTransaction(
     delay: { cooldown, expiration },
   }: SetupConfig
 ): SafeTransactionRequest {
-  const abi = AbiCoder.defaultAbiCoder();
-  const { iface } = deployments.safeMastercopy;
-
   spender = getAddress(spender);
   receiver = getAddress(receiver);
   token = getAddress(token);
@@ -196,7 +148,7 @@ function populateSetupTransaction(
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const bouncerAddress = predictBouncerAddress(account);
+  const { iface } = deployments.safeMastercopy;
 
   return multisendEncode([
     /**
@@ -207,7 +159,7 @@ function populateSetupTransaction(
       to: account,
       value: 0,
       data: iface.encodeFunctionData("swapOwner", [
-        SENTINEL,
+        AddressOne,
         owner,
         AddressTwo,
       ]),
@@ -304,7 +256,10 @@ function populateSetupTransaction(
             parent: 0,
             paramType: RolesParameterType.Static,
             operator: RolesOperator.EqualTo,
-            compValue: abi.encode(["address"], [receiver]),
+            compValue: AbiCoder.defaultAbiCoder().encode(
+              ["address"],
+              [receiver]
+            ),
           },
           {
             parent: 0,
@@ -320,10 +275,52 @@ function populateSetupTransaction(
       to: roles.address,
       value: 0,
       data: roles.iface.encodeFunctionData("transferOwnership", [
-        bouncerAddress,
+        predictBouncerAddress(account),
       ]),
     },
     // Deploy Misc
     populateBouncerCreation(account),
   ]);
+}
+
+/**
+ * Creates a config object for account setup. Defaults config values filled in
+ */
+export function createSetupConfig({
+  token,
+  chainId,
+}: {
+  token: string;
+  chainId: number;
+}): SetupConfig {
+  if (
+    chainId == 100 &&
+    getAddress(token) ==
+      getAddress("0xcb444e90d8198415266c6a2724b7900fb12fc56e")
+  ) {
+    // TODO: not yet the final value
+    const TEMPORARY_SPENDER = getAddress(
+      "0xb32fd82d584a8d40ebe8e11dbfe6d6dfbeed344a"
+    );
+
+    // TODO: not yet the final valueSo yo
+    const TEMPORARY_RECEIVER = getAddress(
+      "0xca24637dd035a086DA120EE5c07C085eAA1fa37e"
+    );
+    return {
+      spender: TEMPORARY_SPENDER,
+      receiver: TEMPORARY_RECEIVER,
+      token,
+      allowance: {
+        period: 60 * 60 * 24, // one day in seconds
+        refill: parseUnits("1000", 18), // 1000 dollars in 18 decimals (EURe decimals)
+      },
+      delay: {
+        cooldown: 60 * 3, // three minutes in seconds
+        expiration: 60 * 60 * 24 * 7, // one week in seconds
+      },
+    };
+  }
+
+  throw new Error(`Unsupported tokend and chainId combination`);
 }

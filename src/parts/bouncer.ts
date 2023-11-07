@@ -8,11 +8,9 @@ import {
 
 import { predictRolesAddress } from "./roles";
 
-import {
-  Bouncer__factory,
-  IRolesModifier__factory,
-} from "../../typechain-types";
+import { Bouncer__factory } from "../../typechain-types";
 import deployments from "../deployments";
+
 import { TransactionRequest } from "../types";
 
 export function predictBouncerAddress(safe: string) {
@@ -36,10 +34,8 @@ export function populateBouncerCreation(safe: string): TransactionRequest {
 function creationBytecode(safe: string) {
   const from = safe;
   const to = predictRolesAddress(safe);
-  const selector =
-    IRolesModifier__factory.createInterface().getFunction(
-      "setAllowance"
-    ).selector;
+  const { selector } =
+    deployments.rolesMastercopy.iface.getFunction("setAllowance");
 
   // encode the creationBytecode
   return concat([

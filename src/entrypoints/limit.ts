@@ -68,7 +68,7 @@ export async function populateLimitEnqueue(
 
   return populateExecuteEnqueue(
     { account, chainId, salt },
-    populateSetAllowance(account, config),
+    populateLimitTransaction(account, config),
     sign
   );
 }
@@ -100,11 +100,11 @@ export function populateLimitDispatch(
 
   return populateExecuteDispatch(
     { account },
-    populateSetAllowance(account, config)
+    populateLimitTransaction(account, config)
   );
 }
 
-function populateSetAllowance(
+function populateLimitTransaction(
   account: string,
   { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionRequest {

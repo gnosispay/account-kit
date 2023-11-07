@@ -8,8 +8,8 @@ export function typedDataForSafeTransaction(
     nonce,
   }: {
     safe: string;
-    chainId: bigint | number;
-    nonce: bigint | number;
+    chainId: number;
+    nonce: number;
   },
   { to, value, data, operation }: SafeTransactionRequest
 ) {
@@ -51,7 +51,7 @@ export default function typedDataForModifierTransaction(
     chainId,
   }: {
     modifier: string;
-    chainId: bigint | number;
+    chainId: number;
   },
   { data, salt }: { data: string; salt: string }
 ) {

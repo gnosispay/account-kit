@@ -16,15 +16,6 @@ import {
 } from "../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
-const empty = {
-  allowance: {
-    balance: BigInt(0),
-    refill: BigInt(0),
-    maxRefill: BigInt(0),
-    period: BigInt(0),
-    nextRefill: null,
-  },
-};
 
 type AccountQueryParameters = {
   /**
@@ -162,6 +153,15 @@ function evaluateResult(
   cooldown: number,
   resultData: string
 ): AccountQueryResult {
+  const result = {
+    allowance: {
+      balance: BigInt(0),
+      refill: BigInt(0),
+      maxRefill: BigInt(0),
+      period: BigInt(0),
+      nextRefill: null,
+    },
+  };
   try {
     const multicall = deployments.multicall.iface;
 
@@ -189,7 +189,7 @@ function evaluateResult(
       modulesSuccess !== true
     ) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.SafeNotDeployed,
       };
     }
@@ -199,21 +199,21 @@ function evaluateResult(
       !evaluateModules(account, modulesResult)
     ) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.SafeMisconfigured,
       };
     }
 
     if (rolesOwnerSuccess !== true || allowanceSuccess != true) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.RolesNotDeployed,
       };
     }
 
     if (!evaluateRolesConfig(account, rolesOwnerResult)) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.RolesMisconfigured,
       };
     }
@@ -225,7 +225,7 @@ function evaluateResult(
       queueNonceSuccess != true
     ) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.DelayNotDeployed,
       };
     }
@@ -239,26 +239,26 @@ function evaluateResult(
       )
     ) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.DelayMisconfigured,
       };
     }
 
     if (!evaluateDelayQueue(txNonceResult, queueNonceResult)) {
       return {
-        ...empty,
+        ...result,
         status: AccountIntegrityStatus.DelayQueueNotEmpty,
       };
     }
 
     return {
-      ...empty,
+      ...result,
       status: AccountIntegrityStatus.Ok,
       allowance: evaluateAllowance(allowanceResult, blockTimestampResult),
     };
   } catch (e) {
     return {
-      ...empty,
+      ...result,
       status: AccountIntegrityStatus.UnexpectedError,
     };
   }

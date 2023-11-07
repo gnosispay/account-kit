@@ -7,9 +7,13 @@ import {
 } from "ethers";
 
 import deployments, { proxyCreationBytecode } from "../deployments";
+
 import { TransactionRequest } from "../types";
 
-export function _predictSafeAddress(owner: string, saltNonce: bigint): string {
+export function _predictSafeAddress(
+  owner: string,
+  creationNonce: bigint
+): string {
   const { address: factory } = deployments.safeProxyFactory;
   const { address: mastercopy } = deployments.safeMastercopy;
 
@@ -18,7 +22,7 @@ export function _predictSafeAddress(owner: string, saltNonce: bigint): string {
   const salt = keccak256(
     concat([
       keccak256(safeInitializer(owner)),
-      abi.encode(["uint256"], [saltNonce]),
+      abi.encode(["uint256"], [creationNonce]),
     ])
   );
 

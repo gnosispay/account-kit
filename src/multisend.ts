@@ -1,5 +1,7 @@
-import { dataLength, solidityPacked } from "ethers";
+import { concat, dataLength, solidityPacked } from "ethers";
+
 import deployments from "./deployments";
+
 import {
   OperationType,
   TransactionRequest,
@@ -9,23 +11,23 @@ import {
 export default function encode(
   transactions: TransactionRequest[]
 ): SafeTransactionRequest {
-  const remove0x = (s: string) => s.slice(2);
-  const transactionsEncoded =
-    "0x" + transactions.map(packOneTransaction).map(remove0x).join("");
+  const packedTransactions = transactions.reduce(
+    (prev, next) => concat([prev, packTransaction(next)]),
+    "0x"
+  );
 
   const { address, iface } = deployments.multisend;
-
   return {
     to: address,
-    data: iface.encodeFunctionData("multiSend", [transactionsEncoded]),
+    data: iface.encodeFunctionData("multiSend", [packedTransactions]),
     value: 0,
     operation: OperationType.DelegateCall,
   };
 }
 
-function packOneTransaction({ to, value, data }: TransactionRequest) {
+function packTransaction({ to, value, data }: TransactionRequest) {
   return solidityPacked(
     ["uint8", "address", "uint256", "uint256", "bytes"],
-    [OperationType.Call, to, value || 0, dataLength(data), data]
+    [OperationType.Call, to, value, dataLength(data), data]
   );
 }

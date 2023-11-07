@@ -7,9 +7,9 @@ import { typedDataForSafeTransaction } from "../eip712";
 import { _populateSafeCreation, _predictSafeAddress } from "../parts";
 
 import {
-  TransactionRequest,
   OperationType,
   SignTypedDataCallback,
+  TransactionRequest,
   Transfer,
 } from "../types";
 
@@ -54,6 +54,8 @@ export function predictAccountAddress({
   owner,
   creationNonce = ACCOUNT_CREATION_NONCE,
 }: AccountCreationParameters): string {
+  owner = getAddress(owner);
+
   return _predictSafeAddress(owner, creationNonce);
 }
 
