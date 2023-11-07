@@ -1,7 +1,7 @@
-import { concat, getAddress } from "ethers";
+import { AbiCoder, concat, getAddress } from "ethers";
 
 import deployments from "../deployments";
-import typedDataForModifierTransaction, { randomBytes32 } from "../eip712";
+import typedDataForModifierTransaction from "../eip712";
 import { predictDelayAddress } from "../parts";
 
 import {
@@ -62,7 +62,7 @@ export async function populateExecuteEnqueue(
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
-  salt = salt || randomBytes32();
+  salt = salt || saltFromTimestamp();
 
   const delay = {
     address: predictDelayAddress(account),
@@ -131,4 +131,8 @@ export function populateExecuteDispatch(
       OperationType.Call,
     ]),
   };
+}
+
+export function saltFromTimestamp() {
+  return AbiCoder.defaultAbiCoder().encode(["uint256"], [Date.now()]);
 }
