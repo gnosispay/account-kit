@@ -107,7 +107,7 @@ export function populateLimitDispatch(
   );
 }
 
-function populateLimitTransaction(
+export function populateLimitTransaction(
   account: string,
   { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionRequest {
