@@ -58,7 +58,7 @@ type DispatchParameters = {
  */
 export async function populateExecuteEnqueue(
   { account, chainId, salt }: EnqueueParameters,
-  transaction: TransactionRequest,
+  innerTransaction: TransactionRequest,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
@@ -73,9 +73,9 @@ export async function populateExecuteEnqueue(
     to: delay.address,
     value: 0,
     data: delay.iface.encodeFunctionData("execTransactionFromModule", [
-      transaction.to,
-      transaction.value || 0,
-      transaction.data,
+      innerTransaction.to,
+      innerTransaction.value || 0,
+      innerTransaction.data,
       OperationType.Call,
     ]),
   };
@@ -112,7 +112,7 @@ export async function populateExecuteEnqueue(
  */
 export function populateExecuteDispatch(
   { account }: DispatchParameters,
-  transaction: TransactionRequest
+  innerTransaction: TransactionRequest
 ): TransactionRequest {
   account = getAddress(account);
 
@@ -125,9 +125,9 @@ export function populateExecuteDispatch(
     to: delay.address,
     value: 0,
     data: delay.iface.encodeFunctionData("executeNextTx", [
-      transaction.to,
-      transaction.value || 0,
-      transaction.data,
+      innerTransaction.to,
+      innerTransaction.value || 0,
+      innerTransaction.data,
       OperationType.Call,
     ]),
   };

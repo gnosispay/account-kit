@@ -13,14 +13,14 @@ import {
 import {
   populateLimitEnqueue,
   populateLimitDispatch,
-  createInnerLimitTransaction,
+  createInnerTransaction as createInnerLimitTransaction,
 } from "./entrypoints/limit";
 import populateSpend from "./entrypoints/spend";
 
 export * from "./types";
 
 export {
-  // populate transactions
+  // account actions
   populateAccountCreation,
   populateDirectTransfer,
   populateAccountSetup,
@@ -28,11 +28,11 @@ export {
   populateExecuteEnqueue,
   populateLimitDispatch,
   populateLimitEnqueue,
-  createInnerLimitTransaction,
   populateSpend,
-  // predict account setup addresses
-  predictAccountAddress,
+  // helpers
+  createInnerLimitTransaction,
   createSetupConfig,
-  // integrity, status and info query
+  predictAccountAddress,
+  // integrity status and info query
   accountQuery,
 };

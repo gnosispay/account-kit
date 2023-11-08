@@ -65,7 +65,21 @@ export default async function populateSpend(
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const { to, value, data } = populateSpendTransaction(account, transfer);
+  const { to, value, data } = {
+    to: roles.address,
+    value: 0,
+    data: roles.iface.encodeFunctionData("execTransactionWithRole", [
+      transfer.token,
+      0,
+      IERC20__factory.createInterface().encodeFunctionData("transfer", [
+        transfer.to,
+        transfer.amount,
+      ]),
+      OperationType.Call,
+      SPENDING_ROLE_KEY,
+      true, // shouldRevert
+    ]),
+  };
 
   const { domain, primaryType, types, message } =
     typedDataForModifierTransaction(
@@ -76,30 +90,4 @@ export default async function populateSpend(
   const signature = await sign({ domain, primaryType, types, message });
 
   return { to, value, data: concat([data, salt, signature]) };
-}
-
-function populateSpendTransaction(
-  account: string,
-  { token, to, amount }: Transfer
-): TransactionRequest {
-  const roles = {
-    address: predictRolesAddress(account),
-    iface: deployments.rolesMastercopy.iface,
-  };
-
-  return {
-    to: roles.address,
-    value: 0,
-    data: roles.iface.encodeFunctionData("execTransactionWithRole", [
-      token,
-      0,
-      IERC20__factory.createInterface().encodeFunctionData("transfer", [
-        to,
-        amount,
-      ]),
-      OperationType.Call,
-      SPENDING_ROLE_KEY,
-      true, // shouldRevert
-    ]),
-  };
 }

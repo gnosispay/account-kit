@@ -71,7 +71,7 @@ export async function populateLimitEnqueue(
 
   return populateExecuteEnqueue(
     { account, chainId, salt },
-    createInnerLimitTransaction(account, config),
+    createInnerTransaction(account, config),
     sign
   );
 }
@@ -103,11 +103,27 @@ export function populateLimitDispatch(
 
   return populateExecuteDispatch(
     { account },
-    createInnerLimitTransaction(account, config)
+    createInnerTransaction(account, config)
   );
 }
 
-export function createInnerLimitTransaction(
+/**
+ * Generates the actual inner transaction that is to be posted to the Delay Mod
+ * queue. LimitEnqueue and LimitDispatch use this function as payload builder
+ *
+ * @param {string} account - the account's safe address
+ * @param config - {@link AllowanceConfig}
+ * @returns The inner transaction payload {@link TransactionRequest}
+ *
+ * @example
+ * import { createInnerLimitTransaction } from "@gnosispay/account-kit";
+ *
+ * const transaction = createInnerLimitTransaction(
+ *  { account: `0x<address>` },
+ *  { period: `<number>`, refill: `<bigint>` },
+ * );
+ */
+export function createInnerTransaction(
   account: string,
   { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionRequest {
@@ -120,7 +136,7 @@ export function createInnerLimitTransaction(
     data: iface.encodeFunctionData("setAllowance", [
       SPENDING_ALLOWANCE_KEY,
       refill, // balance
-      refill, // maxBalance
+      refill, // maxRefill
       refill, // refill
       period, // period
       timestamp, // timestamp

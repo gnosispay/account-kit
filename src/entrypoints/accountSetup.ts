@@ -95,7 +95,7 @@ export default async function populateAccountSetup(
 
   const { iface } = deployments.safeMastercopy;
 
-  const { to, data, value, operation } = populateSetupTransaction(
+  const { to, data, value, operation } = createInnerTransaction(
     { account, owner },
     config
   );
@@ -125,7 +125,7 @@ export default async function populateAccountSetup(
   };
 }
 
-function populateSetupTransaction(
+function createInnerTransaction(
   { account, owner }: { account: string; owner: string },
   {
     spender,
