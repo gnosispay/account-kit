@@ -13,7 +13,7 @@ import {
 import {
   populateLimitEnqueue,
   populateLimitDispatch,
-  populateLimitTransaction,
+  createInnerLimitTransaction,
 } from "./entrypoints/limit";
 import populateSpend from "./entrypoints/spend";
 
@@ -28,7 +28,7 @@ export {
   populateExecuteEnqueue,
   populateLimitDispatch,
   populateLimitEnqueue,
-  populateLimitTransaction,
+  createInnerLimitTransaction,
   populateSpend,
   // predict account setup addresses
   predictAccountAddress,
