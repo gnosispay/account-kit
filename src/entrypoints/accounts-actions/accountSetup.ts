@@ -1,11 +1,11 @@
 import { AbiCoder, ZeroAddress, getAddress, parseUnits } from "ethers";
 
-import { IERC20__factory } from "../../typechain-types";
-import { SPENDING_ALLOWANCE_KEY, SPENDING_ROLE_KEY } from "../constants";
+import { IERC20__factory } from "../../../typechain-types";
+import { SPENDING_ALLOWANCE_KEY, SPENDING_ROLE_KEY } from "../../constants";
 
-import deployments from "../deployments";
-import { typedDataForSafeTransaction } from "../eip712";
-import multisendEncode from "../multisend";
+import deployments from "../../deployments";
+import { typedDataForSafeTransaction } from "../../eip712";
+import multisendEncode from "../../multisend";
 import {
   populateBouncerCreation,
   populateDelayCreation,
@@ -13,20 +13,20 @@ import {
   predictBouncerAddress,
   predictDelayAddress,
   predictRolesAddress,
-} from "../parts";
+} from "../../parts";
 
 import {
   RolesExecutionOptions,
   RolesOperator,
   RolesParameterType,
-} from "../parts/roles";
+} from "../../parts/roles";
 
 import {
   SafeTransactionRequest,
   SetupConfig,
   SignTypedDataCallback,
   TransactionRequest,
-} from "../types";
+} from "../../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 const AddressTwo = "0x0000000000000000000000000000000000000002";

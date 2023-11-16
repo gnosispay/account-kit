@@ -1,19 +1,19 @@
 import { concat, getAddress } from "ethers";
 
 import { saltFromTimestamp } from "./execute";
-import { IERC20__factory } from "../../typechain-types";
+import { IERC20__factory } from "../../../typechain-types";
 
-import { SPENDING_ROLE_KEY } from "../constants";
-import deployments from "../deployments";
-import typedDataForModifierTransaction from "../eip712";
-import { predictRolesAddress } from "../parts";
+import { SPENDING_ROLE_KEY } from "../../constants";
+import deployments from "../../deployments";
+import typedDataForModifierTransaction from "../../eip712";
+import { predictRolesAddress } from "../../parts";
 
 import {
   TransactionRequest,
   OperationType,
   SignTypedDataCallback,
   Transfer,
-} from "../types";
+} from "../../types";
 
 type SpendParameters = {
   /**

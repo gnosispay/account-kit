@@ -1,21 +1,29 @@
 import populateAccountCreation, {
-  predictAccountAddress,
   populateDirectTransfer,
-} from "./entrypoints/accountCreation";
-import accountQuery from "./entrypoints/accountQuery";
+} from "./entrypoints/accounts-actions/accountCreation";
+import accountQuery from "./entrypoints/accounts-actions/accountQuery";
 import populateAccountSetup, {
   createSetupConfig,
-} from "./entrypoints/accountSetup";
+} from "./entrypoints/accounts-actions/accountSetup";
 import {
   populateExecuteEnqueue,
   populateExecuteDispatch,
-} from "./entrypoints/execute";
+} from "./entrypoints/accounts-actions/execute";
 import {
   populateLimitEnqueue,
   populateLimitDispatch,
   createInnerTransaction as createInnerLimitTransaction,
-} from "./entrypoints/limit";
-import populateSpend from "./entrypoints/spend";
+} from "./entrypoints/accounts-actions/limit";
+import populateSpend from "./entrypoints/accounts-actions/spend";
+
+import {
+  predictAccountAddress,
+  predictAddresses,
+} from "./entrypoints/predictAddresses";
+
+import profileDelayedTransaction, {
+  DelayedTransactionType,
+} from "./entrypoints/profileDelayedTransaction";
 
 export * from "./types";
 
@@ -29,10 +37,13 @@ export {
   populateLimitDispatch,
   populateLimitEnqueue,
   populateSpend,
-  // helpers
-  createInnerLimitTransaction,
-  createSetupConfig,
-  predictAccountAddress,
   // integrity status and info query
   accountQuery,
+  // helpers
+  createSetupConfig,
+  predictAccountAddress,
+  predictAddresses,
+  createInnerLimitTransaction,
+  profileDelayedTransaction,
+  DelayedTransactionType,
 };
