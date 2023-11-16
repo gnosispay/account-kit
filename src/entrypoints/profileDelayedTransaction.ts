@@ -5,7 +5,7 @@ import deployments from "../deployments";
 import { predictBouncerAddress } from "../parts";
 
 export enum DelayedTransactionType {
-  EtherTransfer,
+  NativeTransfer,
   ERC20Transfer,
   LimitChange,
   Other,
@@ -30,7 +30,7 @@ export default function profileDelayedTransaction(
   const roles = deployments.rolesMastercopy;
 
   if ((!data || data == "0x") && value) {
-    return DelayedTransactionType.EtherTransfer;
+    return DelayedTransactionType.NativeTransfer;
   }
 
   if (data?.slice(0, 10) == erc20.iface.getFunction("transfer").selector) {
