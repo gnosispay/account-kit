@@ -19,7 +19,7 @@ describe("profileDelayedTransaction", () => {
         to: ZeroAddress,
         value: 1,
       })
-    ).to.equal(DelayedTransactionType.EtherTransfer);
+    ).to.equal(DelayedTransactionType.NativeTransfer);
 
     expect(
       profileDelayedTransaction(account.address, {
@@ -27,7 +27,7 @@ describe("profileDelayedTransaction", () => {
         value: 1,
         data: "0x1234",
       })
-    ).to.not.equal(DelayedTransactionType.EtherTransfer);
+    ).to.not.equal(DelayedTransactionType.NativeTransfer);
   });
 
   it("identifies an erc20 transfer", async () => {
