@@ -1,17 +1,17 @@
 import { ZeroAddress, getAddress } from "ethers";
 
-import { IERC20__factory } from "../../typechain-types";
-import { ACCOUNT_CREATION_NONCE } from "../constants";
-import deployments from "../deployments";
-import { typedDataForSafeTransaction } from "../eip712";
-import { _populateSafeCreation, _predictSafeAddress } from "../parts";
+import { IERC20__factory } from "../../../typechain-types";
+import { ACCOUNT_CREATION_NONCE } from "../../constants";
+import deployments from "../../deployments";
+import { typedDataForSafeTransaction } from "../../eip712";
+import { _populateSafeCreation } from "../../parts";
 
 import {
   OperationType,
   SignTypedDataCallback,
   TransactionRequest,
   Transfer,
-} from "../types";
+} from "../../types";
 
 type AccountCreationParameters = {
   /**
@@ -25,39 +25,6 @@ type AccountCreationParameters = {
    */
   creationNonce?: bigint;
 };
-
-/**
- * Calculates the address of the account will be (or was) created by relaying
- * the output of populateAccountCreation.
- *
- * @param parameters - {@link AccountCreationParameters}
- * @returns The address of the resulting safe
- *
- * @example
- * import { predictAccountAddress } from "@gnosispay/account-kit";
- *
- * const account = predictAccountAddress({
- *    owner: "0x0000000000000000000000000123456789abcdef";
- * });
- *
- * // It is also possible to provide a custom creationNonce
- * // (however should be left blank, the default is correct configuration)
- *
- * const account = predictAccountAddress({
- *    owner: "0x0000000000000000000000000123456789abcdef",
- *    creationNonce: 987654321123456789n
- * });
- *
- */
-
-export function predictAccountAddress({
-  owner,
-  creationNonce = ACCOUNT_CREATION_NONCE,
-}: AccountCreationParameters): string {
-  owner = getAddress(owner);
-
-  return _predictSafeAddress(owner, creationNonce);
-}
 
 /**
  * Creates a new 1/1 safe

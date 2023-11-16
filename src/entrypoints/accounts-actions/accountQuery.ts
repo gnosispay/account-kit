@@ -1,19 +1,19 @@
 import assert from "assert";
 import { AbiCoder, getAddress } from "ethers";
 
-import { SPENDING_ALLOWANCE_KEY } from "../constants";
-import deployments from "../deployments";
+import { SPENDING_ALLOWANCE_KEY } from "../../constants";
+import deployments from "../../deployments";
 import {
   predictBouncerAddress,
   predictDelayAddress,
   predictRolesAddress,
-} from "../parts";
+} from "../../parts";
 
 import {
   AccountIntegrityStatus,
   AccountQueryResult,
   TransactionRequest,
-} from "../types";
+} from "../../types";
 
 const AddressOne = "0x0000000000000000000000000000000000000001";
 

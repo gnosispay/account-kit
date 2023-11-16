@@ -5,15 +5,15 @@ import {
   populateExecuteEnqueue,
   saltFromTimestamp,
 } from "./execute";
-import { SPENDING_ALLOWANCE_KEY } from "../constants";
-import deployments from "../deployments";
-import { predictBouncerAddress } from "../parts";
+import { SPENDING_ALLOWANCE_KEY } from "../../constants";
+import deployments from "../../deployments";
+import { predictBouncerAddress } from "../../parts";
 
 import {
   TransactionRequest,
   AllowanceConfig,
   SignTypedDataCallback,
-} from "../types";
+} from "../../types";
 
 type EnqueueParameters = {
   /**
