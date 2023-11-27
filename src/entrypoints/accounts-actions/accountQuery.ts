@@ -153,18 +153,8 @@ function evaluateResult(
   cooldown: number,
   resultData: string
 ): AccountQueryResult {
-  const result = {
-    allowance: {
-      balance: BigInt(0),
-      refill: BigInt(0),
-      maxRefill: BigInt(0),
-      period: BigInt(0),
-      nextRefill: null,
-    },
-  };
   try {
     const multicall = deployments.multicall.iface;
-
     const [aggregate3Result] = multicall.decodeFunctionResult(
       "aggregate3",
       resultData
@@ -182,6 +172,12 @@ function evaluateResult(
       [queueNonceSuccess, queueNonceResult],
       [, blockTimestampResult],
     ] = aggregate3Result;
+
+    const result = allowanceSuccess
+      ? { allowance: evaluateAllowance(allowanceResult, blockTimestampResult) }
+      : {
+          allowance: ZeroAllowance,
+        };
 
     if (
       ownersSuccess !== true ||
@@ -254,12 +250,11 @@ function evaluateResult(
     return {
       ...result,
       status: AccountIntegrityStatus.Ok,
-      allowance: evaluateAllowance(allowanceResult, blockTimestampResult),
     };
   } catch (e) {
     return {
-      ...result,
       status: AccountIntegrityStatus.UnexpectedError,
+      allowance: ZeroAllowance,
     };
   }
 }
@@ -332,6 +327,14 @@ function evaluateDelayQueue(nonceResult: string, queueResult: string) {
   return nonceResult == queueResult;
 }
 
+const ZeroAllowance = {
+  balance: BigInt(0),
+  refill: BigInt(0),
+  maxRefill: BigInt(0),
+  period: BigInt(0),
+  nextRefill: null,
+};
+
 function evaluateAllowance(
   allowanceResult: string,
   blockTimestampResult: string
@@ -339,7 +342,7 @@ function evaluateAllowance(
   const { iface } = deployments.rolesMastercopy;
 
   const blockTimestamp = BigInt(blockTimestampResult);
-  const [refill, maxRefill, period, balance, timestamp]: bigint[] =
+  const { refill, maxRefill, period, balance, timestamp } =
     iface.decodeFunctionResult("allowances", allowanceResult);
 
   assert(typeof refill == "bigint");
@@ -366,7 +369,7 @@ function evaluateAllowance(
   };
 }
 
-interface AllowanceResult {
+interface AllowanceState {
   balance: bigint;
   maxRefill: bigint;
   refill: bigint;
@@ -382,7 +385,7 @@ function accruedBalance({
   balance,
   timestamp,
   blockTimestamp,
-}: AllowanceResult) {
+}: AllowanceState) {
   if (period == BigInt(0) || blockTimestamp < timestamp + period) {
     return balance;
   }
@@ -401,7 +404,7 @@ function nextRefill({
   period,
   timestamp,
   blockTimestamp,
-}: AllowanceResult) {
+}: AllowanceState) {
   if (period == BigInt(0) || refill == BigInt(0)) {
     return null;
   }
