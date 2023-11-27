@@ -169,7 +169,6 @@ describe("account-query", () => {
     result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill);
   });
-
   it("calculates next refill timestamp", async () => {
     const { account, owner, relayer, config } = await loadFixture(setupAccount);
 
@@ -213,7 +212,6 @@ describe("account-query", () => {
     result = await evaluateAccount(account, config);
     expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay + oneDay);
   });
-
   it("passes and reflects recent spending on the result", async () => {
     const { account, spender, receiver, relayer, token, config } =
       await loadFixture(setupAccount);
@@ -244,7 +242,6 @@ describe("account-query", () => {
       Number(config.allowance.refill) - justSpent
     );
   });
-
   it("handles balances exceeding max refill", async () => {
     const { roles, account, owner, config, relayer } =
       await loadFixture(setupAccount);
@@ -290,7 +287,6 @@ describe("account-query", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(AMOUNT * 2);
   });
-
   it("fails when ownership isn't renounced", async () => {
     const { account, owner, spender, relayer, safe, config } =
       await loadFixture(setupAccount);
@@ -495,6 +491,38 @@ describe("account-query", () => {
 
     const { status } = await evaluateAccount(account, config);
     expect(status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
+  });
+  it("still computes allowance when queue is not empty", async () => {
+    const { account, owner, relayer, delay, config } =
+      await loadFixture(setupAccount);
+
+    let result = await evaluateAccount(account, config);
+    expect(result.status).to.equal(AccountIntegrityStatus.Ok);
+    expect(result.allowance.balance).to.equal(config.allowance.refill);
+    expect(result.allowance.refill).to.equal(config.allowance.refill);
+    expect(result.allowance.nextRefill).to.not.equal(BigInt(0));
+    expect(result.allowance.nextRefill != null).to.equal(true);
+
+    const reconfig = {
+      value: 0,
+      ...(await delay.setTxCooldown.populateTransaction(5)),
+    };
+
+    // enqueue the change
+    const enqueue = await populateExecuteEnqueue(
+      { account, chainId: 31337 },
+      reconfig,
+      ({ domain, types, message }) =>
+        owner.signTypedData(domain, types, message)
+    );
+    await relayer.sendTransaction(enqueue);
+
+    result = await evaluateAccount(account, config);
+    expect(result.status).to.equal(AccountIntegrityStatus.DelayQueueNotEmpty);
+    expect(result.allowance.balance).to.equal(config.allowance.refill);
+    expect(result.allowance.refill).to.equal(config.allowance.refill);
+    expect(result.allowance.nextRefill).to.not.equal(BigInt(0));
+    expect(result.allowance.nextRefill != null).to.equal(true);
   });
 });
 
