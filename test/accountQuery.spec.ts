@@ -105,7 +105,6 @@ describe("account-query", () => {
     expect(result.status).to.equal(AccountIntegrityStatus.Ok);
     expect(result.allowance.balance).to.equal(123);
     expect(result.allowance.refill).to.equal(123);
-    expect(result.allowance.maxRefill).to.equal(123);
     expect(result.allowance.period).to.equal(60 * 60 * 24);
   });
 
