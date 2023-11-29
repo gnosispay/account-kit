@@ -363,7 +363,6 @@ function evaluateAllowance(
   return {
     balance: accruedBalance(allowance),
     refill,
-    maxRefill,
     period,
     nextRefill: nextRefill(allowance),
   };
@@ -390,13 +389,12 @@ function accruedBalance({
     return balance;
   }
 
-  if (balance >= maxRefill) {
-    return balance;
+  if (balance < maxRefill) {
+    const elapsedIntervals = (blockTimestamp - timestamp) / period;
+    balance = balance + refill * elapsedIntervals;
+    return balance < maxRefill ? balance : maxRefill;
   }
-
-  const elapsedIntervals = (blockTimestamp - timestamp) / period;
-  const balanceUncapped = balance + refill * elapsedIntervals;
-  return balanceUncapped < maxRefill ? balanceUncapped : maxRefill;
+  return balance;
 }
 
 function nextRefill({

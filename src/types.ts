@@ -61,7 +61,6 @@ export type AccountQueryResult = {
   allowance: {
     balance: bigint;
     refill: bigint;
-    maxRefill: bigint;
     period: bigint;
     nextRefill: bigint | null;
   };
