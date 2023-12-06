@@ -19,7 +19,7 @@ const AddressOne = "0x0000000000000000000000000000000000000001";
 
 type AccountQueryParameters = {
   /**
-   * The address of the account
+   * The address of the account Safe
    */
   account: string;
   /*

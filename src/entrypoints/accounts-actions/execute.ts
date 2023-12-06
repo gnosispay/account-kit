@@ -12,7 +12,7 @@ import {
 
 type EnqueueParameters = {
   /**
-   * The address of the account
+   * The address of the account Safe
    */
   account: string;
   /*

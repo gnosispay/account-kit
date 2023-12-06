@@ -23,6 +23,8 @@ import {
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import {
+  _populateSafeCreation,
+  _predictSafeAddress,
   predictBouncerAddress,
   predictDelayAddress,
   predictRolesAddress,
@@ -47,11 +49,16 @@ describe("account-query", () => {
   });
 
   async function setupAccount() {
-    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
+    const [owner, signer, receiver, relayer] = await hre.ethers.getSigners();
 
     const testERC20 = await (
       await hre.ethers.getContractFactory("TestERC20")
     ).deploy();
+
+    // deploy a new spender safe
+    await relayer.sendTransaction(
+      _populateSafeCreation(signer.address, BigInt(1))
+    );
 
     const token = TestERC20__factory.connect(
       await testERC20.getAddress(),
@@ -59,7 +66,7 @@ describe("account-query", () => {
     );
 
     const config = createSetupConfig({
-      spender: spender.address,
+      spender: _predictSafeAddress(signer.address, BigInt(1)),
       receiver: receiver.address,
       period: 60 * 60 * 24, // 86400 seconds one day
       token: await token.getAddress(),
@@ -86,7 +93,7 @@ describe("account-query", () => {
     return {
       account,
       owner,
-      spender,
+      signer,
       receiver,
       relayer,
       token,
@@ -109,7 +116,7 @@ describe("account-query", () => {
   });
 
   it("calculates accrued allowance", async () => {
-    const { account, owner, spender, receiver, relayer, config } =
+    const { account, owner, signer, receiver, relayer, config } =
       await loadFixture(setupAccount);
 
     const oneDay = 60 * 60 * 24;
@@ -140,14 +147,14 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(refill);
 
     const spendTx = await populateSpend(
-      { account, chainId: 31337, salt: ZeroHash },
+      { account, spender: config.spender, chainId: 31337, nonce: 0 },
       {
         token: config.token,
         to: receiver.address,
         amount: spent,
       },
       ({ domain, types, message }) =>
-        spender.signTypedData(domain, types, message)
+        signer.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(spendTx);
 
@@ -212,7 +219,7 @@ describe("account-query", () => {
     expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay + oneDay);
   });
   it("passes and reflects recent spending on the result", async () => {
-    const { account, spender, receiver, relayer, token, config } =
+    const { account, signer, receiver, relayer, token, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(account, config);
@@ -222,14 +229,14 @@ describe("account-query", () => {
 
     const justSpent = 23;
     const transaction = await populateSpend(
-      { account, chainId: 31337 },
+      { account, spender: config.spender, chainId: 31337, nonce: 0 },
       {
         token: await token.getAddress(),
         to: receiver.address,
         amount: justSpent,
       },
       ({ domain, types, message }) =>
-        spender.signTypedData(domain, types, message)
+        signer.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(transaction);
@@ -287,7 +294,7 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(AMOUNT * 2);
   });
   it("fails when ownership isn't renounced", async () => {
-    const { account, owner, spender, relayer, safe, config } =
+    const { account, owner, signer, relayer, safe, config } =
       await loadFixture(setupAccount);
 
     // ACCOUNT starts OK
@@ -297,7 +304,7 @@ describe("account-query", () => {
     const reconfigTx = {
       value: 0,
       ...(await safe.addOwnerWithThreshold.populateTransaction(
-        await spender.getAddress(),
+        await signer.getAddress(),
         2
       )),
     };

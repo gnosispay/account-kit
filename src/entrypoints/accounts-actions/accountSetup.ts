@@ -33,11 +33,11 @@ const AddressTwo = "0x0000000000000000000000000000000000000002";
 
 type AccountSetupParameters = {
   /**
-   * The address of the account
+   * The address of the account Safe
    */
   account: string;
   /**
-   * The address of the owner
+   * The address of the owner EOA
    */
   owner: string;
   /*
@@ -45,13 +45,13 @@ type AccountSetupParameters = {
    */
   chainId: number;
   /*
-   * The current nonce value of the safe that is to be setup
+   * The current nonce value of the Safe that is to be configured
    */
   nonce: number;
 };
 
 /**
- * Upgrades a 1/1 safe to a Gnosis Pay account. The populated transaction is
+ * Upgrades a 1/1 Safe to a Gnosis Pay account. The populated transaction is
  * relay ready, and does not require additional signing.
  *
  * @param parameters - {@link AccountSetupParameters}
@@ -298,12 +298,12 @@ export function createSetupConfig({
     getAddress(token) ==
       getAddress("0xcb444e90d8198415266c6a2724b7900fb12fc56e")
   ) {
-    // TODO: not yet the final value
+    // TODO: temporary incorrect address, should be populated with the correct gnosis spender safe
     const TEMPORARY_SPENDER = getAddress(
       "0xb32fd82d584a8d40ebe8e11dbfe6d6dfbeed344a"
     );
 
-    // TODO: not yet the final valueSo yo
+    // TODO: temporary incorrect address, should be populated with the correct gnosis spender signer
     const TEMPORARY_RECEIVER = getAddress(
       "0xca24637dd035a086DA120EE5c07C085eAA1fa37e"
     );
