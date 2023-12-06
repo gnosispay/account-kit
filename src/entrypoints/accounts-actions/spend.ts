@@ -1,11 +1,9 @@
-import { concat, getAddress } from "ethers";
+import { ZeroAddress, getAddress } from "ethers";
 
-import { saltFromTimestamp } from "./execute";
 import { IERC20__factory } from "../../../typechain-types";
-
 import { SPENDING_ROLE_KEY } from "../../constants";
 import deployments from "../../deployments";
-import typedDataForModifierTransaction from "../../eip712";
+import { typedDataForSafeTransaction } from "../../eip712";
 import { predictRolesAddress } from "../../parts";
 
 import {
@@ -17,18 +15,21 @@ import {
 
 type SpendParameters = {
   /**
-   * The address of the account
+   * The address of the account Safe
    */
   account: string;
+  /**
+   * The address of the spender Safe
+   */
+  spender: string;
   /*
    * ID associated with the current network.
    */
   chainId: number;
   /*
-   * An optional bytes32 string that will be used for signature replay protection
-   * (Should be omitted, and in that case, a random salt will be generated)
+   * The current on chain spender safe nonce value
    */
-  salt?: string;
+  nonce: number;
 };
 
 /**
@@ -53,19 +54,18 @@ type SpendParameters = {
  * await relayer.sendTransaction(spendTx);
  */
 export default async function populateSpend(
-  { account, chainId, salt }: SpendParameters,
+  { account, spender, chainId, nonce }: SpendParameters,
   transfer: Transfer,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
-  salt = salt || saltFromTimestamp();
 
   const roles = {
     address: predictRolesAddress(account),
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const { to, value, data } = {
+  const { to, value, data, operation } = {
     to: roles.address,
     value: 0,
     data: roles.iface.encodeFunctionData("execTransactionWithRole", [
@@ -79,15 +79,31 @@ export default async function populateSpend(
       SPENDING_ROLE_KEY,
       true, // shouldRevert
     ]),
+    operation: OperationType.Call,
   };
 
-  const { domain, primaryType, types, message } =
-    typedDataForModifierTransaction(
-      { modifier: roles.address, chainId },
-      { data, salt }
-    );
+  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
+    { safe: spender, chainId, nonce },
+    { to, value, data, operation }
+  );
 
   const signature = await sign({ domain, primaryType, types, message });
 
-  return { to, value, data: concat([data, salt, signature]) };
+  const { iface } = deployments.safeMastercopy;
+  return {
+    to: spender,
+    data: iface.encodeFunctionData("execTransaction", [
+      to,
+      value,
+      data,
+      operation,
+      0,
+      0,
+      0,
+      ZeroAddress,
+      ZeroAddress,
+      signature,
+    ]),
+    value: 0,
+  };
 }
