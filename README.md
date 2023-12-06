@@ -158,20 +158,20 @@ await relayer.sendTransaction(dispatchTx);
 
 ## <a name="spend">Spend</a>
 
-This function generates the spend payload to be submitted to the Roles Mod. The spender has permissionless access as long as they stay within the configured Allowance limits. The populated transaction is relay ready, and does not require additional signing.
+This function generates the spend payload to be submitted to spender. Through Roles Mod, the spender has unilateral spend access as long as they stay within the configured Allowance limits. The populated transaction is relay ready, and does not require additional signing.
 
 ```js
 import { populateSpend } from "@gnosispay/account-kit";
 
-const spender : Signer = {}; // the gnosis signer
-const transfer : Transfer= {
+const signer: Signer = {}; // owner in spender Safe
+const transfer: Transfer = {
   token: `0x<address>`,
   to: `0x<address>`,
   amount: `<bigint>`,
 };
 
 const spendTx = await populateSpend(
-  { account: `0x<address>`, chainId: `<number>` },
+  { account: `0x<address>`, spender: `0x<address>`, chainId: `<number>`, nonce: `<number>` },
   transfer,
   // callback that wraps an eip-712 signature !!spender signs!!
   ({ domain, primaryType, types, message }) => spender.signTypedData(...)

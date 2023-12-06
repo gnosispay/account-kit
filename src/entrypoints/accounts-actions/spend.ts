@@ -43,9 +43,9 @@ type SpendParameters = {
  * @example
  * import { populateSpend } from "@gnosispay/account-kit";
  *
- * const spender: Signer = {};
+ * const signer: Signer = {}; // an owner in spender Safe
  * const spendTx = await populateSpend(
- *  { account: `0x<address>`, chainId: `<number>` },
+ *  { account: `0x<address>`, spender: `0x<address>`, chainId: `<number>`, nonce: `<number>` },
  *  { token: `0x<address>`, to: `0x<address>`, amount: `<bigint>` },
  *  // callback that wraps an eip-712 signature
  *  ({ domain, primaryType, types, message }) =>
