@@ -23,8 +23,19 @@ describe("account-creation", () => {
     const owner = "0x8d99F8b2710e6A3B94d9bf465A98E5273069aCBd";
     const account = "0xa2F31c16B55a9392E515273D7F35cb8aA1F0a3D6";
 
+    const creationNonce = BigInt(
+      "5114647649581446628743670001764890754687493338792207058163325042301318925668"
+    );
+
     // equals
     expect(predictAccountAddress({ owner })).to.equal(account);
+
+    expect(
+      predictAccountAddress({
+        owner,
+        creationNonce,
+      })
+    ).to.equal(account);
     // does not
     expect(
       predictAccountAddress({ owner, creationNonce: BigInt(0) })

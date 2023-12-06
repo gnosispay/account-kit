@@ -50,22 +50,22 @@ export function createSetupConfig({
   };
 }
 
-export async function fork(blockNumber: number): Promise<void> {
-  const { GATEWAY_API_KEY, GATEWAY_RPC_URL } = process.env;
-  // fork mainnet
-  await hre.network.provider.request({
-    method: "hardhat_reset",
-    params: [
-      {
-        forking: {
-          jsonRpcUrl: GATEWAY_RPC_URL,
-          httpHeaders: { Authorization: `Bearer ${GATEWAY_API_KEY}` },
-          blockNumber,
-        },
-      },
-    ],
-  });
-}
+// export async function fork(blockNumber: number): Promise<void> {
+//   const { GATEWAY_API_KEY, GATEWAY_RPC_URL } = process.env;
+//   // fork mainnet
+//   await hre.network.provider.request({
+//     method: "hardhat_reset",
+//     params: [
+//       {
+//         forking: {
+//           jsonRpcUrl: GATEWAY_RPC_URL,
+//           httpHeaders: { Authorization: `Bearer ${GATEWAY_API_KEY}` },
+//           blockNumber,
+//         },
+//       },
+//     ],
+//   });
+// }
 
 export async function forkReset(): Promise<void> {
   await hre.network.provider.request({
