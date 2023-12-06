@@ -33,7 +33,7 @@ export type Transfer = {
 };
 
 export type SetupConfig = {
-  spender: string; // gnosis signer
+  spender: string; // spender safe
   receiver: string; // settlement safe
   token: string; // token contract address used for payments
   allowance: AllowanceConfig;
