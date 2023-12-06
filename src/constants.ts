@@ -1,7 +1,9 @@
 import { toUtf8Bytes, keccak256 } from "ethers";
 
+// prod ->  BigInt(keccak256(toUtf8Bytes("gnosispay.com")));
+// dev  ->  BigInt(keccak256(toBytes("dev.gnosispay.com")));
 export const ACCOUNT_CREATION_NONCE = BigInt(
-  "5114647649581446628743670001764890754687493338792207058163325042301318925668"
+  keccak256(toUtf8Bytes("gnosispay.com"))
 );
 
 export const SPENDING_ROLE_KEY = keccak256(toUtf8Bytes("SPENDING_ROLE"));
