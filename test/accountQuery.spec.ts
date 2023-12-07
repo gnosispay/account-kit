@@ -222,7 +222,7 @@ describe("account-query", () => {
     expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay + oneDay);
   });
   it("passes and reflects recent spending on the result", async () => {
-    const { account, signer, receiver, relayer, token, config } =
+    const { account, signer, receiver, relayer, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(account, config);
