@@ -15,10 +15,6 @@ import {
 
 type SpendParameters = {
   /**
-   * The address of the account Safe
-   */
-  account: string;
-  /**
    * The address of the spender Safe
    */
   spender: string;
