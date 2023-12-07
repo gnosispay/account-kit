@@ -33,10 +33,10 @@ type SpendParameters = {
 };
 
 /**
- * This function generates the spend payload to be submitted to the Roles Mod.
+ * This function generates the spend payload to be submitted to Spender Safe.
  *
  * @param parameters - {@link EnqueueParameters}
- * @param transfer - {@link Transfer}
+ * @param innerTx - {@link TransactionRequest}
  * @param sign - {@link SignTypedDataCallback}
  * @returns The signed transaction payload {@link TransactionRequest}
  *
@@ -45,8 +45,8 @@ type SpendParameters = {
  *
  * const signer: Signer = {}; // an owner in spender Safe
  * const spendTx = await populateSpend(
- *  { account: `0x<address>`, spender: `0x<address>`, chainId: `<number>`, nonce: `<number>` },
- *  { token: `0x<address>`, to: `0x<address>`, amount: `<bigint>` },
+ *  { spender: `0x<address>`, chainId: `<number>`, nonce: `<number>` },
+ *  { to: `0x<address>`, data: `0x<payload>`, amount: `<bigint>` },
  *  // callback that wraps an eip-712 signature
  *  ({ domain, primaryType, types, message }) =>
  *    spender.signTypedData(domain, primaryType, types, message)
@@ -54,10 +54,59 @@ type SpendParameters = {
  * await relayer.sendTransaction(spendTx);
  */
 export default async function populateSpend(
-  { account, spender, chainId, nonce }: SpendParameters,
-  transfer: Transfer,
+  { spender, chainId, nonce }: SpendParameters,
+  { to, value, data }: TransactionRequest,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
+  spender = getAddress(spender);
+
+  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
+    { safe: spender, chainId, nonce },
+    { to, value, data, operation: OperationType.Call }
+  );
+
+  const signature = await sign({ domain, primaryType, types, message });
+
+  const { iface } = deployments.safeMastercopy;
+  return {
+    to: spender,
+    data: iface.encodeFunctionData("execTransaction", [
+      to,
+      value,
+      data,
+      OperationType.Call,
+      0,
+      0,
+      0,
+      ZeroAddress,
+      ZeroAddress,
+      signature,
+    ]),
+    value: 0,
+  };
+}
+
+/**
+ * This function generates the spend inner transaction that will be submitted to the Roles Mod.
+ *
+ * @param account - The Gnosis Pay Account Safe
+ * @param transfer - {@link TransactionRequest}
+ * @returns The inner transaction payload for spend {@link TransactionRequest}
+ *
+ * @example
+ * import { createInnerSpendTransaction } from "@gnosispay/account-kit";
+ *
+ * const account = `0x<address>`;
+ *
+ * const spendTx = createInnerSpendTransaction(
+ *  account,
+ *  { token: `0x<address>`, to: `0x<address>`, amount: `<bigint>` },
+ * );
+ */
+export function createInnerTransaction(
+  account: string,
+  transfer: Transfer
+): TransactionRequest {
   account = getAddress(account);
 
   const roles = {
@@ -65,7 +114,7 @@ export default async function populateSpend(
     iface: deployments.rolesMastercopy.iface,
   };
 
-  const { to, value, data, operation } = {
+  return {
     to: roles.address,
     value: 0,
     data: roles.iface.encodeFunctionData("execTransactionWithRole", [
@@ -79,31 +128,5 @@ export default async function populateSpend(
       SPENDING_ROLE_KEY,
       true, // shouldRevert
     ]),
-    operation: OperationType.Call,
-  };
-
-  const { domain, primaryType, types, message } = typedDataForSafeTransaction(
-    { safe: spender, chainId, nonce },
-    { to, value, data, operation }
-  );
-
-  const signature = await sign({ domain, primaryType, types, message });
-
-  const { iface } = deployments.safeMastercopy;
-  return {
-    to: spender,
-    data: iface.encodeFunctionData("execTransaction", [
-      to,
-      value,
-      data,
-      operation,
-      0,
-      0,
-      0,
-      ZeroAddress,
-      ZeroAddress,
-      signature,
-    ]),
-    value: 0,
   };
 }
