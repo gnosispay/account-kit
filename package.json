@@ -48,7 +48,7 @@
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-prettier": "^5.0.0",
-    "hardhat": "^2.19.1",
+    "hardhat": "2.19.2",
     "hardhat-gas-reporter": "^1.0.9",
     "prettier": "3.1.0",
     "prettier-plugin-solidity": "1.2.0",

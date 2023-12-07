@@ -43,7 +43,7 @@ export default {
     iface: IMultisend__factory.createInterface(),
   },
   rolesMastercopy: {
-    address: getAddress("0x26DA7F5a385BA7c96456Ea6273d715ebF90feba8"),
+    address: getAddress("0x9646fDAD06d3e24444381f44362a3B0eB343D337"),
     iface: IRolesModifier__factory.createInterface(),
   },
   safeMastercopy: {
