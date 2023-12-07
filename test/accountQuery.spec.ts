@@ -19,6 +19,7 @@ import {
   accountQuery,
   populateExecuteEnqueue,
   populateExecuteDispatch,
+  createInnerSpendTransaction,
 } from "../src";
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
@@ -146,13 +147,15 @@ describe("account-query", () => {
     let result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill);
 
+    const innerSpendTransaction = createInnerSpendTransaction(account, {
+      token: config.token,
+      to: receiver.address,
+      amount: spent,
+    });
+
     const spendTx = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      {
-        token: config.token,
-        to: receiver.address,
-        amount: spent,
-      },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      innerSpendTransaction,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
@@ -228,17 +231,18 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(config.allowance.refill);
 
     const justSpent = 23;
+    const innerSpendTransaction = createInnerSpendTransaction(account, {
+      token: config.token,
+      to: receiver.address,
+      amount: justSpent,
+    });
+
     const transaction = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      {
-        token: await token.getAddress(),
-        to: receiver.address,
-        amount: justSpent,
-      },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      innerSpendTransaction,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
-
     await relayer.sendTransaction(transaction);
 
     // run the query again, expect it to reflect the used amount
