@@ -10,6 +10,7 @@ import {
 } from "./test-helpers/index";
 
 import {
+  createInnerSpendTransaction,
   populateAccountCreation,
   populateAccountSetup,
   populateSpend,
@@ -82,16 +83,21 @@ describe("spend", () => {
 
     const to = receiver.address;
     const amount = 10;
+    const spendInnerTransaction = createInnerSpendTransaction(account, {
+      token: await token.getAddress(),
+      to,
+      amount,
+    });
 
     const spendSignedByOther = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      { token: await token.getAddress(), to, amount },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      spendInnerTransaction,
       ({ domain, types, message }) =>
         relayer.signTypedData(domain, types, message)
     );
     const spendSignedBySigner = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      { token: await token.getAddress(), to, amount },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      spendInnerTransaction,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
@@ -111,16 +117,28 @@ describe("spend", () => {
     await token.mint(account, 10);
     const amount = 10;
 
+    const spendTxToOther = createInnerSpendTransaction(account, {
+      token: await token.getAddress(),
+      to: relayer.address,
+      amount,
+    });
+
+    const spendTxToReceiver = createInnerSpendTransaction(account, {
+      token: await token.getAddress(),
+      to: receiver.address,
+      amount,
+    });
+
     const txToOther = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      { token: await token.getAddress(), to: relayer.address, amount },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      spendTxToOther,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
 
     const txToReceiver = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      { token: await token.getAddress(), to: receiver.address, amount },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      spendTxToReceiver,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
@@ -140,17 +158,28 @@ describe("spend", () => {
       await loadFixture(createAccount);
 
     await token.mint(account, 2000);
-    const amount = 2000;
+
+    const innerTxOverspending = createInnerSpendTransaction(account, {
+      token: await token.getAddress(),
+      to: receiver.address,
+      amount: 2000,
+    });
+
+    const innerTxUnderspending = createInnerSpendTransaction(account, {
+      token: await token.getAddress(),
+      to: receiver.address,
+      amount: 10,
+    });
 
     const txOverspending = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      { token: await token.getAddress(), to: receiver.address, amount },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      innerTxOverspending,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
     const txUnderspending = await populateSpend(
-      { account, spender: config.spender, chainId: 31337, nonce: 0 },
-      { token: await token.getAddress(), to: receiver.address, amount: 10 },
+      { spender: config.spender, chainId: 31337, nonce: 0 },
+      innerTxUnderspending,
       ({ domain, types, message }) =>
         signer.signTypedData(domain, types, message)
     );
