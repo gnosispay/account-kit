@@ -14,7 +14,9 @@ import {
   populateLimitDispatch,
   createInnerTransaction as createInnerLimitTransaction,
 } from "./entrypoints/accounts-actions/limit";
-import populateSpend from "./entrypoints/accounts-actions/spend";
+import populateSpend, {
+  createInnerTransaction as createInnerSpendTransaction,
+} from "./entrypoints/accounts-actions/spend";
 
 import {
   predictAccountAddress,
@@ -44,6 +46,7 @@ export {
   predictAccountAddress,
   predictAddresses,
   createInnerLimitTransaction,
+  createInnerSpendTransaction,
   profileDelayedTransaction,
   DelayedTransactionType,
 };
