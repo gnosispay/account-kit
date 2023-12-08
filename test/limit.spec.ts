@@ -69,15 +69,16 @@ describe("limit", () => {
       spender,
       receiver,
       relayer,
-      roles: IRolesModifier__factory.connect(rolesAddress, relayer),
+      rolesMod: IRolesModifier__factory.connect(rolesAddress, relayer),
       config,
     };
   }
 
   it("sets allowance", async () => {
-    const { account, owner, relayer, roles } = await loadFixture(setupAccount);
+    const { account, owner, relayer, rolesMod } =
+      await loadFixture(setupAccount);
 
-    let allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    let allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(12345);
     expect(allowance.refill).to.equal(76543);
 
@@ -98,7 +99,7 @@ describe("limit", () => {
 
     await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
 
-    allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(12345);
     expect(allowance.balance).to.equal(76543);
 
@@ -108,12 +109,12 @@ describe("limit", () => {
     // works after cooldown
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
-    allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(1);
     expect(allowance.balance).to.equal(1);
   });
   it("only owner can set allowance", async () => {
-    const { account, owner, spender, relayer, roles } =
+    const { account, owner, spender, relayer, rolesMod } =
       await loadFixture(setupAccount);
 
     let enqueueTx = await populateLimitEnqueue(
@@ -143,15 +144,16 @@ describe("limit", () => {
     );
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
-    const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    const allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(7);
     expect(allowance.balance).to.equal(7);
   });
 
   it("reverts on replayed set allowance tx", async () => {
-    const { account, owner, relayer, roles } = await loadFixture(setupAccount);
+    const { account, owner, relayer, rolesMod } =
+      await loadFixture(setupAccount);
 
-    const allowance = await roles.allowances(SPENDING_ALLOWANCE_KEY);
+    const allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(12345);
     expect(allowance.refill).to.equal(76543);
 
@@ -174,10 +176,10 @@ describe("limit", () => {
 
     await expect(
       relayer.sendTransaction(enqueueTx)
-    ).to.be.revertedWithCustomError(roles, "HashAlreadyConsumed");
+    ).to.be.revertedWithCustomError(rolesMod, "HashAlreadyConsumed");
 
     await expect(
       relayer.sendTransaction(enqueueTxWithSalt)
-    ).to.be.revertedWithCustomError(roles, "HashAlreadyConsumed");
+    ).to.be.revertedWithCustomError(rolesMod, "HashAlreadyConsumed");
   });
 });
