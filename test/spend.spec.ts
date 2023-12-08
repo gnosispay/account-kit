@@ -91,11 +91,8 @@ describe("spend", () => {
       payer,
       relayer,
       token: TestERC20__factory.connect(await erc20.getAddress(), relayer),
-      roles: IRolesModifier__factory.connect(ZeroAddress),
     };
   }
-
-  it("something", async () => {});
 
   it("enforces configured spender as signer on spend tx", async () => {
     const { account, payer, receiver, relayer, token, config } =
