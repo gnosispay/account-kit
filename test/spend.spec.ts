@@ -1,6 +1,5 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { ZeroAddress } from "ethers";
 import hre from "hardhat";
 
 import {
@@ -20,10 +19,7 @@ import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
 import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
 import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
 
-import {
-  IRolesModifier__factory,
-  TestERC20__factory,
-} from "../typechain-types";
+import { TestERC20__factory } from "../typechain-types";
 
 describe("spend", () => {
   before(async () => {
