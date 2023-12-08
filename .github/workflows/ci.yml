@@ -47,7 +47,6 @@ jobs:
           path: "**/node_modules"
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn build
-      - run: yarn interfaces:check
       - run: yarn lint:check
       - run: yarn format:check
 

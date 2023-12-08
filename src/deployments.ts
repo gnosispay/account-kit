@@ -8,13 +8,14 @@ import {
 import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
 import { getAddress } from "ethers";
 import {
-  IDelayModule__factory,
+  IDelayModifier__factory,
   IModuleProxyFactory__factory,
   IMulticall__factory,
   IMultisend__factory,
   IRolesModifier__factory,
-  ISafeProxyFactory__factory,
   ISafe__factory,
+  ISafeProxyFactory__factory,
+  ISpenderModifier__factory,
 } from "../typechain-types";
 
 const VERSION = "v1.3.0";
@@ -22,7 +23,7 @@ const VERSION = "v1.3.0";
 export default {
   delayMastercopy: {
     address: getAddress("0x4A97E65188A950Dd4b0f21F9b5434dAeE0BBF9f5"),
-    iface: IDelayModule__factory.createInterface(),
+    iface: IDelayModifier__factory.createInterface(),
   },
   fallbackHandler: {
     address: getFallbackHandlerDeployment({
@@ -58,7 +59,10 @@ export default {
     })?.defaultAddress as string,
     iface: ISafeProxyFactory__factory.createInterface(),
   },
-
+  spenderMastercopy: {
+    address: getAddress("0x734220dD4b8a4E48e65232356fAc63AfA374D719"),
+    iface: ISpenderModifier__factory.createInterface(),
+  },
   singletonFactory: {
     address: getSingletonFactoryInfo(1)?.address as string,
   },

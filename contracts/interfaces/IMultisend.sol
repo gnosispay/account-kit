@@ -3,11 +3,5 @@
 pragma solidity ^0.8.4;
 
 interface IMultisend {
-
-
-
-function multiSend( bytes memory transactions ) external payable  ;
+  function multiSend(bytes memory transactions) external payable;
 }
-
-
-

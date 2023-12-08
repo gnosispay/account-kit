@@ -20,7 +20,7 @@ import { predictDelayAddress } from "../src/parts/delay";
 import { predictRolesAddress } from "../src/parts/roles";
 import {
   Bouncer__factory,
-  IDelayModule__factory,
+  IDelayModifier__factory,
   IRolesModifier__factory,
   ISafe__factory,
   TestERC20__factory,
@@ -60,7 +60,7 @@ describe("account-setup", () => {
       token,
       safe: ISafe__factory.connect(account, hre.ethers.provider),
       roles: IRolesModifier__factory.connect(rolesAddress, hre.ethers.provider),
-      delay: IDelayModule__factory.connect(delayAddress, hre.ethers.provider),
+      delay: IDelayModifier__factory.connect(delayAddress, hre.ethers.provider),
       rolesAddress,
       delayAddress,
     };

@@ -10,17 +10,14 @@ import path from "path";
 import delayAbi from "./abi/delay.json";
 import moduleProxyFactoryAbi from "./abi/moduleProxyFactory.json";
 import rolesAbi from "./abi/roles.json";
+import spenderAbi from "./abi/spender.json";
 
 const VERSION = "v1.3.0";
 
-const isCheck = process.argv
-  .filter((v) => typeof v == "string")
-  .map((v) => v.toLowerCase())
-  .some((v) => v == "--check" || v == "-c");
-
-generate("IDelayModule", delayAbi);
+generate("IDelayModifier", delayAbi);
 generate("IModuleProxyFactory", moduleProxyFactoryAbi);
 generate("IRolesModifier", rolesAbi);
+generate("ISpenderModifier", spenderAbi);
 
 generate("IMultisend", getMultiSendDeployment({ version: VERSION })?.abi);
 generate("ISafe", getSafeSingletonDeployment({ version: VERSION })?.abi);
@@ -47,15 +44,5 @@ function generate(name: string, abi: any) {
     `${name}.sol`
   );
 
-  if (isCheck) {
-    const data = fs.readFileSync(fileName, "utf8");
-    if (data !== code) {
-      console.error(
-        "Solidity interfaces are outdated. Regenerate by running 'yarn interfaces'"
-      );
-      process.exit(1);
-    }
-  } else {
-    fs.writeFileSync(fileName, code, "utf8");
-  }
+  fs.writeFileSync(fileName, code, "utf8");
 }

@@ -32,7 +32,7 @@ import {
 } from "../src/parts";
 import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
-  IDelayModule__factory,
+  IDelayModifier__factory,
   IRolesModifier__factory,
   ISafe__factory,
   TestERC20__factory,
@@ -58,7 +58,10 @@ describe("account-query", () => {
 
     // deploy a new spender safe
     await relayer.sendTransaction(
-      _populateSafeCreation(signer.address, BigInt(1))
+      _populateSafeCreation({
+        owners: [signer.address],
+        creationNonce: BigInt(1),
+      })
     );
 
     const token = TestERC20__factory.connect(
@@ -67,7 +70,10 @@ describe("account-query", () => {
     );
 
     const config = createSetupConfig({
-      spender: _predictSafeAddress(signer.address, BigInt(1)),
+      spender: _predictSafeAddress({
+        owners: [signer.address],
+        creationNonce: BigInt(1),
+      }),
       receiver: receiver.address,
       period: 60 * 60 * 24, // 86400 seconds one day
       token: await token.getAddress(),
@@ -99,7 +105,7 @@ describe("account-query", () => {
       relayer,
       token,
       safe: ISafe__factory.connect(account, relayer),
-      delay: IDelayModule__factory.connect(delayAddress, relayer),
+      delay: IDelayModifier__factory.connect(delayAddress, relayer),
       roles: IRolesModifier__factory.connect(rolesAddress, relayer),
       config,
     };
