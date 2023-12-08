@@ -5,8 +5,8 @@ import { SPENDING_ALLOWANCE_KEY } from "../../constants";
 import deployments from "../../deployments";
 import {
   predictBouncerAddress,
-  predictDelayAddress,
-  predictRolesAddress,
+  predictDelayModAddress,
+  predictRolesModAddress,
 } from "../../parts";
 
 import {
@@ -69,11 +69,11 @@ export default async function accountQuery(
 function createRequest(account: string): TransactionRequest {
   const { iface } = deployments.safeMastercopy;
   const delayMod = {
-    address: predictDelayAddress(account),
+    address: predictDelayModAddress(account),
     iface: deployments.delayModMastercopy.iface,
   };
   const rolesMod = {
-    address: predictRolesAddress(account),
+    address: predictRolesModAddress(account),
     iface: deployments.rolesModMastercopy.iface,
   };
 
@@ -289,8 +289,8 @@ function evaluateModules(safe: string, result: string) {
     return false;
   }
 
-  const delayAddress = predictDelayAddress(safe);
-  const rolesAddress = predictRolesAddress(safe);
+  const delayAddress = predictDelayModAddress(safe);
+  const rolesAddress = predictRolesModAddress(safe);
 
   return (
     enabledModules.includes(delayAddress) &&

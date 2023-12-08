@@ -5,14 +5,14 @@ import deployments from "../deployments";
 
 import { TransactionRequest } from "../types";
 
-export function predictRolesAddress(safe: string): string {
+export function predictRolesModAddress(safe: string): string {
   return _predictZodiacModAddress(
     deployments.rolesModMastercopy.address,
     encodeSetUp(safe)
   );
 }
 
-export function populateRolesCreation(safe: string): TransactionRequest {
+export function populateRolesModCreation(safe: string): TransactionRequest {
   const { moduleProxyFactory } = deployments;
 
   return {

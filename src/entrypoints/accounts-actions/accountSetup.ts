@@ -8,18 +8,18 @@ import { typedDataForSafeTransaction } from "../../eip712";
 import multisendEncode from "../../multisend";
 import {
   populateBouncerCreation,
-  populateDelayCreation,
-  populateRolesCreation,
+  populateDelayModCreation,
+  populateRolesModCreation,
   predictBouncerAddress,
-  predictDelayAddress,
-  predictRolesAddress,
+  predictDelayModAddress,
+  predictRolesModAddress,
 } from "../../parts";
 
 import {
   RolesExecutionOptions,
   RolesOperator,
   RolesParameterType,
-} from "../../parts/roles";
+} from "../../parts/rolesMod";
 
 import {
   SafeTransactionRequest,
@@ -140,11 +140,11 @@ function createInnerTransaction(
   token = getAddress(token);
 
   const delayMod = {
-    address: predictDelayAddress(account),
+    address: predictDelayModAddress(account),
     iface: deployments.delayModMastercopy.iface,
   };
   const rolesMod = {
-    address: predictRolesAddress(account),
+    address: predictRolesModAddress(account),
     iface: deployments.rolesModMastercopy.iface,
   };
 
@@ -181,7 +181,7 @@ function createInnerTransaction(
      * note we deploy delay with 0, 0 as to be as stable as possible
      * with deployment address prediction. set afeter
      */
-    populateDelayCreation(account),
+    populateDelayModCreation(account),
     // configure cooldown on delay
     {
       to: delayMod.address,
@@ -203,7 +203,7 @@ function createInnerTransaction(
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
      */
-    populateRolesCreation(account),
+    populateRolesModCreation(account),
     {
       to: rolesMod.address,
       value: 0,

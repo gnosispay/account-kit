@@ -6,7 +6,7 @@ import {
   ZeroHash,
 } from "ethers";
 
-import { predictRolesAddress } from "./roles";
+import { predictRolesModAddress } from "./rolesMod";
 
 import { Bouncer__factory } from "../../typechain-types";
 import deployments from "../deployments";
@@ -33,7 +33,7 @@ export function populateBouncerCreation(safe: string): TransactionRequest {
 
 function creationBytecode(safe: string) {
   const from = safe;
-  const to = predictRolesAddress(safe);
+  const to = predictRolesModAddress(safe);
   const { selector } =
     deployments.rolesModMastercopy.iface.getFunction("setAllowance");
 

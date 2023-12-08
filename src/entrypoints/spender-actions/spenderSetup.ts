@@ -3,8 +3,8 @@ import deployments from "../../deployments";
 import { typedDataForSafeTransaction } from "../../eip712";
 import multisendEncode from "../../multisend";
 import {
-  populateSpenderModifierCreation,
-  predictSpenderModifierAddress,
+  populateSpenderModCreation,
+  predictSpenderModAddress,
 } from "../../parts";
 
 import {
@@ -79,7 +79,7 @@ function createInnerTransaction({
   delegate: string;
 }): SafeTransactionRequest {
   const spenderMod = {
-    address: predictSpenderModifierAddress(spender),
+    address: predictSpenderModAddress(spender),
     iface: deployments.spenderModMastercopy.iface,
   };
 
@@ -93,7 +93,7 @@ function createInnerTransaction({
       ]),
     },
     // deploy the spender modifier
-    populateSpenderModifierCreation(spender),
+    populateSpenderModCreation(spender),
     // enable delegate in spenderModifier
     {
       to: spenderMod.address,

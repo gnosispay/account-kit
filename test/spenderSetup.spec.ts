@@ -7,7 +7,7 @@ import { postFixture, preFixture } from "./test-helpers";
 import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
 import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
 import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
-import { predictSpenderModifierAddress } from "../src/parts";
+import { predictSpenderModAddress } from "../src/parts";
 import {
   ISafe__factory,
   ISpenderModifier__factory,
@@ -49,7 +49,7 @@ describe("spender setup", () => {
       threshold: 1,
     });
 
-    const modifierAddress = predictSpenderModifierAddress(spenderAddress);
+    const modifierAddress = predictSpenderModAddress(spenderAddress);
 
     const spenderCreationTransaction = populateSpenderCreation({
       owners: [owner1.address, owner2.address],
@@ -83,7 +83,7 @@ describe("spender setup", () => {
     expect(await modifier.isModuleEnabled(payer.address)).to.be.true;
   });
 
-  it.only("creates and enables a spender, threshold 2", async () => {
+  it("creates and enables a spender, threshold 2", async () => {
     const { owner1, owner2, payer, relayer } = await loadFixture(setup);
 
     const spenderAddress = predictSpenderAddress({
@@ -91,7 +91,7 @@ describe("spender setup", () => {
       threshold: 2,
     });
 
-    const modifierAddress = predictSpenderModifierAddress(spenderAddress);
+    const modifierAddress = predictSpenderModAddress(spenderAddress);
 
     const spenderCreationTransaction = populateSpenderCreation({
       owners: [owner1.address, owner2.address],
