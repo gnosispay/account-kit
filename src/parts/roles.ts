@@ -7,7 +7,7 @@ import { TransactionRequest } from "../types";
 
 export function predictRolesAddress(safe: string): string {
   return _predictZodiacModAddress(
-    deployments.rolesMastercopy.address,
+    deployments.rolesModMastercopy.address,
     encodeSetUp(safe)
   );
 }
@@ -19,7 +19,7 @@ export function populateRolesCreation(safe: string): TransactionRequest {
     to: moduleProxyFactory.address,
     value: 0,
     data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-      deployments.rolesMastercopy.address,
+      deployments.rolesModMastercopy.address,
       encodeSetUp(safe),
       ZeroHash,
     ]),
@@ -36,7 +36,7 @@ function encodeSetUp(safe: string) {
     [owner, avatar, target]
   );
 
-  return deployments.rolesMastercopy.iface.encodeFunctionData("setUp", [
+  return deployments.rolesModMastercopy.iface.encodeFunctionData("setUp", [
     initializer,
   ]);
 }

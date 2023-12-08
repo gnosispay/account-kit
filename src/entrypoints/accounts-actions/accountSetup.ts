@@ -139,13 +139,13 @@ function createInnerTransaction(
   receiver = getAddress(receiver);
   token = getAddress(token);
 
-  const delay = {
+  const delayMod = {
     address: predictDelayAddress(account),
-    iface: deployments.delayMastercopy.iface,
+    iface: deployments.delayModMastercopy.iface,
   };
-  const roles = {
+  const rolesMod = {
     address: predictRolesAddress(account),
-    iface: deployments.rolesMastercopy.iface,
+    iface: deployments.rolesModMastercopy.iface,
   };
 
   const { iface } = deployments.safeMastercopy;
@@ -168,13 +168,13 @@ function createInnerTransaction(
     {
       to: account,
       value: 0,
-      data: iface.encodeFunctionData("enableModule", [roles.address]),
+      data: iface.encodeFunctionData("enableModule", [rolesMod.address]),
     },
     // enable delay as module on safe
     {
       to: account,
       value: 0,
-      data: iface.encodeFunctionData("enableModule", [delay.address]),
+      data: iface.encodeFunctionData("enableModule", [delayMod.address]),
     },
     /**
      * DEPLOY AND CONFIG DELAY MODULE
@@ -184,30 +184,30 @@ function createInnerTransaction(
     populateDelayCreation(account),
     // configure cooldown on delay
     {
-      to: delay.address,
+      to: delayMod.address,
       value: 0,
-      data: delay.iface.encodeFunctionData("setTxCooldown", [cooldown]),
+      data: delayMod.iface.encodeFunctionData("setTxCooldown", [cooldown]),
     },
     // configure expiration on delay
     {
-      to: delay.address,
+      to: delayMod.address,
       value: 0,
-      data: delay.iface.encodeFunctionData("setTxExpiration", [expiration]),
+      data: delayMod.iface.encodeFunctionData("setTxExpiration", [expiration]),
     },
     // enable owner on the delay as module
     {
-      to: delay.address,
+      to: delayMod.address,
       value: 0,
-      data: delay.iface.encodeFunctionData("enableModule", [owner]),
+      data: delayMod.iface.encodeFunctionData("enableModule", [owner]),
     },
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
      */
     populateRolesCreation(account),
     {
-      to: roles.address,
+      to: rolesMod.address,
       value: 0,
-      data: roles.iface.encodeFunctionData("setAllowance", [
+      data: rolesMod.iface.encodeFunctionData("setAllowance", [
         SPENDING_ALLOWANCE_KEY,
         // balance
         refill,
@@ -222,26 +222,26 @@ function createInnerTransaction(
       ]),
     },
     {
-      to: roles.address,
+      to: rolesMod.address,
       value: 0,
-      data: roles.iface.encodeFunctionData("assignRoles", [
+      data: rolesMod.iface.encodeFunctionData("assignRoles", [
         spender,
         [SPENDING_ROLE_KEY],
         [true],
       ]),
     },
     {
-      to: roles.address,
+      to: rolesMod.address,
       value: 0,
-      data: roles.iface.encodeFunctionData("scopeTarget", [
+      data: rolesMod.iface.encodeFunctionData("scopeTarget", [
         SPENDING_ROLE_KEY,
         token,
       ]),
     },
     {
-      to: roles.address,
+      to: rolesMod.address,
       value: 0,
-      data: roles.iface.encodeFunctionData("scopeFunction", [
+      data: rolesMod.iface.encodeFunctionData("scopeFunction", [
         SPENDING_ROLE_KEY,
         token,
         IERC20__factory.createInterface().getFunction("transfer").selector,
@@ -272,9 +272,9 @@ function createInnerTransaction(
       ]),
     },
     {
-      to: roles.address,
+      to: rolesMod.address,
       value: 0,
-      data: roles.iface.encodeFunctionData("transferOwnership", [
+      data: rolesMod.iface.encodeFunctionData("transferOwnership", [
         predictBouncerAddress(account),
       ]),
     },

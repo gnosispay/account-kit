@@ -64,15 +64,15 @@ export async function populateExecuteEnqueue(
   account = getAddress(account);
   salt = salt || saltFromTimestamp();
 
-  const delay = {
+  const delayMod = {
     address: predictDelayAddress(account),
-    iface: deployments.delayMastercopy.iface,
+    iface: deployments.delayModMastercopy.iface,
   };
 
   const { to, value, data } = {
-    to: delay.address,
+    to: delayMod.address,
     value: 0,
-    data: delay.iface.encodeFunctionData("execTransactionFromModule", [
+    data: delayMod.iface.encodeFunctionData("execTransactionFromModule", [
       innerTransaction.to,
       innerTransaction.value || 0,
       innerTransaction.data,
@@ -82,7 +82,7 @@ export async function populateExecuteEnqueue(
 
   const { domain, primaryType, types, message } =
     typedDataForModifierTransaction(
-      { modifier: delay.address, chainId },
+      { modifier: delayMod.address, chainId },
       { data, salt }
     );
 
@@ -116,15 +116,15 @@ export function populateExecuteDispatch(
 ): TransactionRequest {
   account = getAddress(account);
 
-  const delay = {
+  const delayMod = {
     address: predictDelayAddress(account),
-    iface: deployments.delayMastercopy.iface,
+    iface: deployments.delayModMastercopy.iface,
   };
 
   return {
-    to: delay.address,
+    to: delayMod.address,
     value: 0,
-    data: delay.iface.encodeFunctionData("executeNextTx", [
+    data: delayMod.iface.encodeFunctionData("executeNextTx", [
       innerTransaction.to,
       innerTransaction.value || 0,
       innerTransaction.data,
