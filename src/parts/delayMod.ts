@@ -5,23 +5,21 @@ import deployments from "../deployments";
 
 import { TransactionRequest } from "../types";
 
-export function predictSpenderModifierAddress(safe: string): string {
+export function predictDelayModAddress(safe: string): string {
   return _predictZodiacModAddress(
-    deployments.spenderModMastercopy.address,
+    deployments.delayModMastercopy.address,
     encodeSetUp(safe)
   );
 }
 
-export function populateSpenderModifierCreation(
-  safe: string
-): TransactionRequest {
+export function populateDelayModCreation(safe: string): TransactionRequest {
   const { moduleProxyFactory } = deployments;
 
   return {
     to: moduleProxyFactory.address,
     value: 0,
     data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-      deployments.spenderModMastercopy.address,
+      deployments.delayModMastercopy.address,
       encodeSetUp(safe),
       ZeroHash,
     ]),
@@ -29,9 +27,12 @@ export function populateSpenderModifierCreation(
 }
 
 function encodeSetUp(safe: string) {
-  const initializer = AbiCoder.defaultAbiCoder().encode(["address"], [safe]);
+  const initializer = AbiCoder.defaultAbiCoder().encode(
+    ["address", "address", "address", "uint256", "uint256"],
+    [safe, safe, safe, 0, 0]
+  );
 
-  return deployments.spenderModMastercopy.iface.encodeFunctionData("setUp", [
+  return deployments.delayModMastercopy.iface.encodeFunctionData("setUp", [
     initializer,
   ]);
 }

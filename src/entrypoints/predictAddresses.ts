@@ -3,8 +3,8 @@ import { ACCOUNT_CREATION_NONCE, SPENDER_CREATION_NONCE } from "../constants";
 import {
   _predictSafeAddress,
   predictBouncerAddress,
-  predictDelayAddress,
-  predictRolesAddress,
+  predictDelayModAddress,
+  predictRolesModAddress,
 } from "../parts";
 
 type AccountCreationParameters = {
@@ -85,7 +85,7 @@ export function predictAddresses({
   return {
     account,
     bouncer: predictBouncerAddress(account),
-    delay: predictDelayAddress(account),
-    roles: predictRolesAddress(account),
+    delay: predictDelayModAddress(account),
+    roles: predictRolesModAddress(account),
   };
 }

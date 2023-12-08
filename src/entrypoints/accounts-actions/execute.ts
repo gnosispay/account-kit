@@ -2,7 +2,7 @@ import { AbiCoder, concat, getAddress } from "ethers";
 
 import deployments from "../../deployments";
 import typedDataForModifierTransaction from "../../eip712";
-import { predictDelayAddress } from "../../parts";
+import { predictDelayModAddress } from "../../parts";
 
 import {
   OperationType,
@@ -65,7 +65,7 @@ export async function populateExecuteEnqueue(
   salt = salt || saltFromTimestamp();
 
   const delayMod = {
-    address: predictDelayAddress(account),
+    address: predictDelayModAddress(account),
     iface: deployments.delayModMastercopy.iface,
   };
 
@@ -117,7 +117,7 @@ export function populateExecuteDispatch(
   account = getAddress(account);
 
   const delayMod = {
-    address: predictDelayAddress(account),
+    address: predictDelayModAddress(account),
     iface: deployments.delayModMastercopy.iface,
   };
 

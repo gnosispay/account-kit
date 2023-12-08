@@ -16,8 +16,8 @@ import {
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import { predictBouncerAddress } from "../src/parts/bouncer";
 
-import { predictDelayAddress } from "../src/parts/delay";
-import { predictRolesAddress } from "../src/parts/roles";
+import { predictDelayModAddress } from "../src/parts/delayMod";
+import { predictRolesModAddress } from "../src/parts/rolesMod";
 import {
   Bouncer__factory,
   IDelayModifier__factory,
@@ -46,8 +46,8 @@ describe("account-setup", () => {
     const transaction = populateAccountCreation({ owner: owner.address });
 
     const account = predictAccountAddress({ owner: owner.address });
-    const rolesAddress = predictRolesAddress(account);
-    const delayAddress = predictDelayAddress(account);
+    const rolesAddress = predictRolesModAddress(account);
+    const delayAddress = predictDelayModAddress(account);
 
     await relayer.sendTransaction(transaction);
 
@@ -59,15 +59,21 @@ describe("account-setup", () => {
       relayer,
       token,
       safe: ISafe__factory.connect(account, hre.ethers.provider),
-      roles: IRolesModifier__factory.connect(rolesAddress, hre.ethers.provider),
-      delay: IDelayModifier__factory.connect(delayAddress, hre.ethers.provider),
+      rolesMod: IRolesModifier__factory.connect(
+        rolesAddress,
+        hre.ethers.provider
+      ),
+      delayMod: IDelayModifier__factory.connect(
+        delayAddress,
+        hre.ethers.provider
+      ),
       rolesAddress,
       delayAddress,
     };
   }
 
   it("deploys bouncer", async () => {
-    const { account, owner, spender, receiver, relayer, token, roles } =
+    const { account, owner, spender, receiver, relayer, token, rolesMod } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
@@ -96,9 +102,9 @@ describe("account-setup", () => {
     expect(await provider.getCode(bouncer)).to.not.equal("0x");
 
     expect(await bouncer.from()).to.equal(account);
-    expect(await bouncer.to()).to.equal(await roles.getAddress());
+    expect(await bouncer.to()).to.equal(await rolesMod.getAddress());
     expect(await bouncer.selector()).to.equal(
-      roles.interface.getFunction("setAllowance").selector
+      rolesMod.interface.getFunction("setAllowance").selector
     );
   });
 
@@ -137,8 +143,8 @@ describe("account-setup", () => {
       receiver: receiver.address,
     });
 
-    const delayAddress = predictDelayAddress(account);
-    const rolesAddress = predictRolesAddress(account);
+    const delayAddress = predictDelayModAddress(account);
+    const rolesAddress = predictRolesModAddress(account);
     expect(delayAddress).to.not.equal(rolesAddress);
 
     const transaction = await populateAccountSetup(
@@ -170,7 +176,7 @@ describe("account-setup", () => {
       relayer,
       token,
       safe,
-      roles,
+      rolesMod,
       rolesAddress,
     } = await loadFixture(createAccount);
 
@@ -202,12 +208,12 @@ describe("account-setup", () => {
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
-    expect(await roles.isModuleEnabled(owner.address)).to.be.false;
-    expect(await roles.isModuleEnabled(spender.address)).to.be.true;
-    expect(await roles.owner()).to.equal(bouncerAddress);
+    expect(await rolesMod.isModuleEnabled(owner.address)).to.be.false;
+    expect(await rolesMod.isModuleEnabled(spender.address)).to.be.true;
+    expect(await rolesMod.owner()).to.equal(bouncerAddress);
 
     const { balance, refill, maxRefill, period, timestamp } =
-      await roles.allowances(SPENDING_ALLOWANCE_KEY);
+      await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
 
     expect(balance).to.equal(AMOUNT);
     expect(refill).to.equal(AMOUNT);
@@ -217,10 +223,18 @@ describe("account-setup", () => {
   });
 
   it("correctly configures Delay", async () => {
-    const { account, owner, spender, receiver, relayer, token, safe, delay } =
-      await loadFixture(createAccount);
+    const {
+      account,
+      owner,
+      spender,
+      receiver,
+      relayer,
+      token,
+      safe,
+      delayMod,
+    } = await loadFixture(createAccount);
 
-    const delayAddress = await delay.getAddress();
+    const delayAddress = await delayMod.getAddress();
     const COOLDOWN = 60 * 3;
     const EXPIRATION = 60 * 30;
 
@@ -244,13 +258,13 @@ describe("account-setup", () => {
     await relayer.sendTransaction(transaction);
 
     expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
-    expect(await delay.isModuleEnabled(owner.address)).to.be.true;
-    expect(await delay.isModuleEnabled(spender.address)).to.be.false;
-    expect(await delay.isModuleEnabled(receiver.address)).to.be.false;
+    expect(await delayMod.isModuleEnabled(owner.address)).to.be.true;
+    expect(await delayMod.isModuleEnabled(spender.address)).to.be.false;
+    expect(await delayMod.isModuleEnabled(receiver.address)).to.be.false;
 
-    expect(await delay.owner()).to.equal(account);
-    expect(await delay.txCooldown()).to.equal(COOLDOWN);
-    expect(await delay.txExpiration()).to.equal(EXPIRATION);
-    expect(await delay.queueNonce()).to.equal(await delay.txNonce());
+    expect(await delayMod.owner()).to.equal(account);
+    expect(await delayMod.txCooldown()).to.equal(COOLDOWN);
+    expect(await delayMod.txExpiration()).to.equal(EXPIRATION);
+    expect(await delayMod.queueNonce()).to.equal(await delayMod.txNonce());
   });
 });

@@ -27,8 +27,8 @@ import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderC
 import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
 import {
   predictBouncerAddress,
-  predictDelayAddress,
-  predictRolesAddress,
+  predictDelayModAddress,
+  predictRolesModAddress,
 } from "../src/parts";
 import { SetupConfig, AccountIntegrityStatus } from "../src/types";
 import {
@@ -75,8 +75,8 @@ describe("account-query", () => {
       expiration: 120 * 1000,
     });
     const account = predictAccountAddress({ owner: owner.address });
-    const delayAddress = predictDelayAddress(account);
-    const rolesAddress = predictRolesAddress(account);
+    const delayAddress = predictDelayModAddress(account);
+    const rolesAddress = predictRolesModAddress(account);
 
     const creationTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
@@ -384,8 +384,8 @@ describe("account-query", () => {
     const { owner, relayer, safe, account, config } =
       await loadFixture(setupAccount);
 
-    const delayAddress = predictDelayAddress(account);
-    const rolesAddress = predictRolesAddress(account);
+    const delayAddress = predictDelayModAddress(account);
+    const rolesAddress = predictRolesModAddress(account);
 
     const reconfig = {
       value: 0,
@@ -415,7 +415,7 @@ describe("account-query", () => {
     const { account, owner, relayer, safe, config } =
       await loadFixture(setupAccount);
 
-    const delayAddress = predictDelayAddress(account);
+    const delayAddress = predictDelayModAddress(account);
 
     const reconfig = {
       value: 0,

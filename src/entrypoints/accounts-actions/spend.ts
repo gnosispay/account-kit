@@ -4,10 +4,7 @@ import { saltFromTimestamp } from "./execute";
 import { SPENDING_ROLE_KEY } from "../../constants";
 import deployments from "../../deployments";
 import typedDataForModifierTransaction from "../../eip712";
-import {
-  predictRolesAddress,
-  predictSpenderModifierAddress,
-} from "../../parts";
+import { predictRolesModAddress, predictSpenderModAddress } from "../../parts";
 
 import {
   TransactionRequest,
@@ -45,12 +42,12 @@ export default async function populateSpend(
   salt = salt || saltFromTimestamp();
 
   const rolesMod = {
-    address: predictRolesAddress(account),
+    address: predictRolesModAddress(account),
     iface: deployments.rolesModMastercopy.iface,
   };
 
   const spenderMod = {
-    address: predictSpenderModifierAddress(spender),
+    address: predictSpenderModAddress(spender),
     iface: deployments.spenderModMastercopy.iface,
   };
 

@@ -17,7 +17,7 @@ import {
   predictAccountAddress,
 } from "../src";
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
-import { predictRolesAddress } from "../src/parts/roles";
+import { predictRolesModAddress } from "../src/parts/rolesMod";
 
 import { IRolesModifier__factory } from "../typechain-types";
 
@@ -50,7 +50,7 @@ describe("limit", () => {
       cooldown: COOLDOWN,
     });
     const account = predictAccountAddress({ owner: owner.address });
-    const rolesAddress = predictRolesAddress(account);
+    const rolesAddress = predictRolesModAddress(account);
 
     const creationTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
