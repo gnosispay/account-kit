@@ -58,7 +58,7 @@ export default function populateAccountCreation({
 }: AccountCreationParameters): TransactionRequest {
   owner = getAddress(owner);
 
-  return _populateSafeCreation(owner, creationNonce);
+  return _populateSafeCreation({ owners: [owner], creationNonce });
 }
 
 export async function populateDirectTransfer(

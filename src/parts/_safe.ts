@@ -11,10 +11,15 @@ import deployments from "../deployments";
 
 import { TransactionRequest } from "../types";
 
-export function _predictSafeAddress(
-  owner: string,
-  creationNonce: bigint
-): string {
+export function _predictSafeAddress({
+  owners,
+  threshold = 1,
+  creationNonce,
+}: {
+  owners: string[];
+  threshold?: number;
+  creationNonce: bigint;
+}): string {
   const { address: factory } = deployments.safeProxyFactory;
   const { address: mastercopy } = deployments.safeMastercopy;
 
@@ -22,7 +27,7 @@ export function _predictSafeAddress(
 
   const salt = keccak256(
     concat([
-      keccak256(safeInitializer(owner)),
+      keccak256(safeInitializer({ owners, threshold })),
       abi.encode(["uint256"], [creationNonce]),
     ])
   );
@@ -35,10 +40,15 @@ export function _predictSafeAddress(
   return getCreate2Address(factory, salt, keccak256(deploymentData));
 }
 
-export function _populateSafeCreation(
-  owner: string,
-  creationNonce: bigint
-): TransactionRequest {
+export function _populateSafeCreation({
+  owners,
+  threshold = 1,
+  creationNonce,
+}: {
+  owners: string[];
+  threshold?: number;
+  creationNonce: bigint;
+}): TransactionRequest {
   const { iface, address: factory } = deployments.safeProxyFactory;
   const mastercopy = deployments.safeMastercopy.address;
 
@@ -51,13 +61,19 @@ export function _populateSafeCreation(
      */
     data: iface.encodeFunctionData("createProxyWithNonce", [
       mastercopy,
-      safeInitializer(owner),
+      safeInitializer({ owners, threshold }),
       creationNonce,
     ]),
   };
 }
 
-export function safeInitializer(owner: string) {
+function safeInitializer({
+  owners,
+  threshold,
+}: {
+  owners: string[];
+  threshold: number;
+}) {
   /*
    * The initializer contains the calldata that invokes the setup
    * function. This is what effectively sets up the proxy's storage
@@ -72,9 +88,9 @@ export function safeInitializer(owner: string) {
 
   const initializer = iface.encodeFunctionData("setup", [
     // owners
-    [owner],
+    owners,
     // threshold
-    1,
+    threshold,
     // to - for setupModules
     ZeroAddress,
     // data - for setupModules

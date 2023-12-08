@@ -2,9 +2,7 @@ import populateAccountCreation, {
   populateDirectTransfer,
 } from "./entrypoints/accounts-actions/accountCreation";
 import accountQuery from "./entrypoints/accounts-actions/accountQuery";
-import populateAccountSetup, {
-  createSetupConfig,
-} from "./entrypoints/accounts-actions/accountSetup";
+import populateAccountSetup from "./entrypoints/accounts-actions/accountSetup";
 import {
   populateExecuteEnqueue,
   populateExecuteDispatch,
@@ -42,7 +40,6 @@ export {
   // integrity status and info query
   accountQuery,
   // helpers
-  createSetupConfig,
   predictAccountAddress,
   predictAddresses,
   createInnerLimitTransaction,

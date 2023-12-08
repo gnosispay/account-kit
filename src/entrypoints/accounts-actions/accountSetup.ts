@@ -1,4 +1,4 @@
-import { AbiCoder, ZeroAddress, getAddress, parseUnits } from "ethers";
+import { AbiCoder, ZeroAddress, getAddress } from "ethers";
 
 import { IERC20__factory } from "../../../typechain-types";
 import { SPENDING_ALLOWANCE_KEY, SPENDING_ROLE_KEY } from "../../constants";
@@ -281,46 +281,4 @@ function createInnerTransaction(
     // Deploy Misc
     populateBouncerCreation(account),
   ]);
-}
-
-/**
- * Creates a config object for account setup. Defaults config values filled in
- */
-export function createSetupConfig({
-  token,
-  chainId,
-}: {
-  token: string;
-  chainId: number;
-}): SetupConfig {
-  if (
-    chainId == 100 &&
-    getAddress(token) ==
-      getAddress("0xcb444e90d8198415266c6a2724b7900fb12fc56e")
-  ) {
-    // TODO: temporary incorrect address, should be populated with the correct gnosis spender safe
-    const TEMPORARY_SPENDER = getAddress(
-      "0xb32fd82d584a8d40ebe8e11dbfe6d6dfbeed344a"
-    );
-
-    // TODO: temporary incorrect address, should be populated with the correct gnosis spender signer
-    const TEMPORARY_RECEIVER = getAddress(
-      "0xca24637dd035a086DA120EE5c07C085eAA1fa37e"
-    );
-    return {
-      spender: TEMPORARY_SPENDER,
-      receiver: TEMPORARY_RECEIVER,
-      token,
-      allowance: {
-        period: 60 * 60 * 24, // one day in seconds
-        refill: parseUnits("1000", 18), // 1000 dollars in 18 decimals (EURe decimals)
-      },
-      delay: {
-        cooldown: 60 * 3, // three minutes in seconds
-        expiration: 60 * 60 * 24 * 7, // one week in seconds
-      },
-    };
-  }
-
-  throw new Error(`Unsupported tokend and chainId combination`);
 }

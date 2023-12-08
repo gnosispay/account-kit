@@ -6,6 +6,10 @@ export const ACCOUNT_CREATION_NONCE = BigInt(
   keccak256(toUtf8Bytes("gnosispay.com"))
 );
 
+export const SPENDER_CREATION_NONCE = BigInt(
+  keccak256(toUtf8Bytes("GNOSIS_SPENDER_SAFE"))
+);
+
 export const SPENDING_ROLE_KEY = keccak256(toUtf8Bytes("SPENDING_ROLE"));
 
 export const SPENDING_ALLOWANCE_KEY = keccak256(

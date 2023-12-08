@@ -42,11 +42,17 @@ describe("spend", () => {
 
     // deploy a new spender safe
     await relayer.sendTransaction(
-      _populateSafeCreation(signer.address, BigInt(1))
+      _populateSafeCreation({
+        owners: [signer.address],
+        creationNonce: BigInt(1),
+      })
     );
 
     const config = createSetupConfig({
-      spender: _predictSafeAddress(signer.address, BigInt(1)),
+      spender: _predictSafeAddress({
+        owners: [signer.address],
+        creationNonce: BigInt(1),
+      }),
       receiver: receiver.address,
       token: await erc20.getAddress(),
       allowance: 1000,
