@@ -12,18 +12,17 @@ import {
   populateLimitDispatch,
   createInnerTransaction as createInnerLimitTransaction,
 } from "./entrypoints/accounts-actions/limit";
-import populateSpend, {
-  createInnerTransaction as createInnerSpendTransaction,
-} from "./entrypoints/accounts-actions/spend";
+import populateSpend from "./entrypoints/accounts-actions/spend";
 
 import {
   predictAccountAddress,
   predictAddresses,
 } from "./entrypoints/predictAddresses";
-
 import profileDelayedTransaction, {
   DelayedTransactionType,
 } from "./entrypoints/profileDelayedTransaction";
+import populateSpenderCreation from "./entrypoints/spender-actions/spenderCreation";
+import populateSpenderSetup from "./entrypoints/spender-actions/spenderSetup";
 
 export * from "./types";
 
@@ -37,13 +36,15 @@ export {
   populateLimitDispatch,
   populateLimitEnqueue,
   populateSpend,
+  // spender actions
+  populateSpenderCreation,
+  populateSpenderSetup,
   // integrity status and info query
   accountQuery,
   // helpers
   predictAccountAddress,
   predictAddresses,
   createInnerLimitTransaction,
-  createInnerSpendTransaction,
   profileDelayedTransaction,
   DelayedTransactionType,
 };

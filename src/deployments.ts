@@ -60,7 +60,7 @@ export default {
     iface: ISafeProxyFactory__factory.createInterface(),
   },
   spenderMastercopy: {
-    address: getAddress("0x734220dD4b8a4E48e65232356fAc63AfA374D719"),
+    address: getAddress("0x70db53617d170A4E407E00DFF718099539134F9A"),
     iface: ISpenderModifier__factory.createInterface(),
   },
   singletonFactory: {

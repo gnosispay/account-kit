@@ -10,14 +10,15 @@ import {
 } from "./test-helpers/index";
 
 import {
-  createInnerSpendTransaction,
   populateAccountCreation,
   populateAccountSetup,
   populateSpend,
   predictAccountAddress,
 } from "../src";
 
-import { _populateSafeCreation, _predictSafeAddress } from "../src/parts";
+import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
+import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
+import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
 
 import {
   IRolesModifier__factory,
@@ -34,24 +35,19 @@ describe("spend", () => {
   });
 
   async function createAccount() {
-    const [owner, signer, receiver, relayer] = await hre.ethers.getSigners();
+    const [owner, signer, receiver, payer, relayer] =
+      await hre.ethers.getSigners();
 
     const erc20 = await (
       await hre.ethers.getContractFactory("TestERC20")
     ).deploy();
 
     // deploy a new spender safe
-    await relayer.sendTransaction(
-      _populateSafeCreation({
-        owners: [signer.address],
-        creationNonce: BigInt(1),
-      })
-    );
 
     const config = createSetupConfig({
-      spender: _predictSafeAddress({
+      spender: predictSpenderAddress({
         owners: [signer.address],
-        creationNonce: BigInt(1),
+        threshold: 1,
       }),
       receiver: receiver.address,
       token: await erc20.getAddress(),
@@ -65,9 +61,26 @@ describe("spend", () => {
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
+    const spenderCreateTx = populateSpenderCreation({
+      owners: [signer.address],
+      threshold: 1,
+    });
+
+    const spenderSetupTx = await populateSpenderSetup(
+      {
+        spender: config.spender,
+        delegate: payer.address,
+        chainId: 31337,
+        nonce: 0,
+      },
+      ({ domain, types, message }) =>
+        signer.signTypedData(domain, types, message)
+    );
 
     await relayer.sendTransaction(createTx);
     await relayer.sendTransaction(setupTx);
+    await relayer.sendTransaction(spenderCreateTx);
+    await relayer.sendTransaction(spenderSetupTx);
 
     return {
       config,
@@ -75,6 +88,7 @@ describe("spend", () => {
       owner,
       signer,
       receiver,
+      payer,
       relayer,
       token: TestERC20__factory.connect(await erc20.getAddress(), relayer),
       roles: IRolesModifier__factory.connect(ZeroAddress),
@@ -82,71 +96,69 @@ describe("spend", () => {
   }
 
   it("enforces configured spender as signer on spend tx", async () => {
-    const { account, signer, receiver, relayer, token, config } =
+    const { account, payer, receiver, relayer, token, config } =
       await loadFixture(createAccount);
 
     await token.mint(account, 10);
 
     const to = receiver.address;
     const amount = 10;
-    const spendInnerTransaction = createInnerSpendTransaction(account, {
+    const transfer = {
       token: await token.getAddress(),
       to,
       amount,
-    });
+    };
 
     const spendSignedByOther = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      spendInnerTransaction,
+      { account, spender: config.spender, chainId: 31337 },
+      transfer,
       ({ domain, types, message }) =>
         relayer.signTypedData(domain, types, message)
     );
-    const spendSignedBySigner = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      spendInnerTransaction,
+    const spendSignedByPayer = await populateSpend(
+      { account, spender: config.spender, chainId: 31337 },
+      transfer,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        payer.signTypedData(domain, types, message)
     );
 
-    await expect(
-      relayer.sendTransaction(spendSignedByOther)
-    ).to.be.revertedWith("GS026");
+    await expect(relayer.sendTransaction(spendSignedByOther)).to.be.reverted;
 
     expect(await token.balanceOf(to)).to.be.equal(0);
-    await relayer.sendTransaction(spendSignedBySigner);
+    await relayer.sendTransaction(spendSignedByPayer);
     expect(await token.balanceOf(to)).to.be.equal(amount);
   });
   it("enforces configured receiver as to on spend tx", async () => {
-    const { account, signer, receiver, relayer, token, config } =
+    const { account, receiver, payer, relayer, token, config } =
       await loadFixture(createAccount);
 
     await token.mint(account, 10);
     const amount = 10;
 
-    const spendTxToOther = createInnerSpendTransaction(account, {
+    const transferToOther = {
       token: await token.getAddress(),
       to: relayer.address,
       amount,
-    });
+    };
 
-    const spendTxToReceiver = createInnerSpendTransaction(account, {
+    const transferToReceiver = {
       token: await token.getAddress(),
       to: receiver.address,
       amount,
-    });
+    };
 
     const txToOther = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      spendTxToOther,
+      { account, spender: config.spender, chainId: 31337 },
+      transferToOther,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        payer.signTypedData(domain, types, message)
     );
 
     const txToReceiver = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      spendTxToReceiver,
+      { account, spender: config.spender, chainId: 31337 },
+      transferToReceiver,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        payer.signTypedData(domain, types, message)
     );
 
     // we could previously assert on a roles mod error. But now swallowed by the safe
@@ -160,42 +172,38 @@ describe("spend", () => {
     expect(await token.balanceOf(receiver.address)).to.be.equal(amount);
   });
   it("spend overusing allowance fails", async () => {
-    const { account, signer, receiver, relayer, token, config } =
+    const { account, receiver, payer, relayer, token, config } =
       await loadFixture(createAccount);
 
     await token.mint(account, 2000);
 
-    const innerTxOverspending = createInnerSpendTransaction(account, {
+    const transferOverspending = {
       token: await token.getAddress(),
       to: receiver.address,
       amount: 2000,
-    });
+    };
 
-    const innerTxUnderspending = createInnerSpendTransaction(account, {
+    const transferUnderspending = {
       token: await token.getAddress(),
       to: receiver.address,
       amount: 10,
-    });
+    };
 
     const txOverspending = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      innerTxOverspending,
+      { account, spender: config.spender, chainId: 31337 },
+      transferOverspending,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        payer.signTypedData(domain, types, message)
     );
     const txUnderspending = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      innerTxUnderspending,
+      { account, spender: config.spender, chainId: 31337 },
+      transferUnderspending,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        payer.signTypedData(domain, types, message)
     );
 
-    // we could previously assert on a roles mod error. But now swallowed by the safe
-    // await expect(relayer.sendTransaction(txOverspending))
-    //   .to.be.revertedWithCustomError(roles, "ConditionViolation")
-    //   .withArgs(RolesConditionStatus.AllowanceExceeded, SPENDING_ALLOWANCE_KEY);
     await expect(relayer.sendTransaction(txOverspending)).to.be.revertedWith(
-      "GS013"
+      "Spend Transaction Failed"
     );
 
     expect(await token.balanceOf(receiver.address)).to.be.equal(0);
