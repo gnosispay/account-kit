@@ -19,13 +19,13 @@ import {
   accountQuery,
   populateExecuteEnqueue,
   populateExecuteDispatch,
-  createInnerSpendTransaction,
 } from "../src";
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
+import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
+import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
+import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
 import {
-  _populateSafeCreation,
-  _predictSafeAddress,
   predictBouncerAddress,
   predictDelayAddress,
   predictRolesAddress,
@@ -50,19 +50,12 @@ describe("account-query", () => {
   });
 
   async function setupAccount() {
-    const [owner, signer, receiver, relayer] = await hre.ethers.getSigners();
+    const [owner, signer, receiver, delegate, relayer] =
+      await hre.ethers.getSigners();
 
     const testERC20 = await (
       await hre.ethers.getContractFactory("TestERC20")
     ).deploy();
-
-    // deploy a new spender safe
-    await relayer.sendTransaction(
-      _populateSafeCreation({
-        owners: [signer.address],
-        creationNonce: BigInt(1),
-      })
-    );
 
     const token = TestERC20__factory.connect(
       await testERC20.getAddress(),
@@ -70,9 +63,9 @@ describe("account-query", () => {
     );
 
     const config = createSetupConfig({
-      spender: _predictSafeAddress({
+      spender: predictSpenderAddress({
         owners: [signer.address],
-        creationNonce: BigInt(1),
+        threshold: 1,
       }),
       receiver: receiver.address,
       period: 60 * 60 * 24, // 86400 seconds one day
@@ -93,8 +86,26 @@ describe("account-query", () => {
         owner.signTypedData(domain, types, message)
     );
 
+    const spenderCreateTx = populateSpenderCreation({
+      owners: [signer.address],
+      threshold: 1,
+    });
+
+    const spenderSetupTx = await populateSpenderSetup(
+      {
+        spender: config.spender,
+        delegate: delegate.address,
+        chainId: 31337,
+        nonce: 0,
+      },
+      ({ domain, types, message }) =>
+        signer.signTypedData(domain, types, message)
+    );
+
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
+    await relayer.sendTransaction(spenderCreateTx);
+    await relayer.sendTransaction(spenderSetupTx);
     await token.mint(account, 2000);
 
     return {
@@ -102,6 +113,7 @@ describe("account-query", () => {
       owner,
       signer,
       receiver,
+      delegate,
       relayer,
       token,
       safe: ISafe__factory.connect(account, relayer),
@@ -123,7 +135,7 @@ describe("account-query", () => {
   });
 
   it("calculates accrued allowance", async () => {
-    const { account, owner, signer, receiver, relayer, config } =
+    const { account, owner, receiver, delegate, relayer, config } =
       await loadFixture(setupAccount);
 
     const oneDay = 60 * 60 * 24;
@@ -153,17 +165,17 @@ describe("account-query", () => {
     let result = await evaluateAccount(account, config);
     expect(result.allowance.balance).to.equal(refill);
 
-    const innerSpendTransaction = createInnerSpendTransaction(account, {
+    const transfer = {
       token: config.token,
       to: receiver.address,
       amount: spent,
-    });
+    };
 
     const spendTx = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      innerSpendTransaction,
+      { account, spender: config.spender, chainId: 31337 },
+      transfer,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(spendTx);
 
@@ -228,7 +240,7 @@ describe("account-query", () => {
     expect(result.allowance.nextRefill).to.equal(startOfDay + oneDay + oneDay);
   });
   it("passes and reflects recent spending on the result", async () => {
-    const { account, signer, receiver, relayer, config } =
+    const { account, receiver, delegate, relayer, config } =
       await loadFixture(setupAccount);
 
     let result = await evaluateAccount(account, config);
@@ -237,17 +249,17 @@ describe("account-query", () => {
     expect(result.allowance.balance).to.equal(config.allowance.refill);
 
     const justSpent = 23;
-    const innerSpendTransaction = createInnerSpendTransaction(account, {
+    const transfer = {
       token: config.token,
       to: receiver.address,
       amount: justSpent,
-    });
+    };
 
     const transaction = await populateSpend(
-      { spender: config.spender, chainId: 31337, nonce: 0 },
-      innerSpendTransaction,
+      { account, spender: config.spender, chainId: 31337 },
+      transfer,
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
     await relayer.sendTransaction(transaction);
 
