@@ -9,7 +9,7 @@ export default async function (signer: SignerWithAddress) {
     signer
   );
 
-  if (address !== deployments.spenderMastercopy.address) {
+  if (address !== deployments.spenderModMastercopy.address) {
     throw new Error("Spender did not match deployment");
   }
 }

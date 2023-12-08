@@ -31,7 +31,7 @@ describe("spend", () => {
   });
 
   after(async () => {
-    await postFixture;
+    await postFixture();
   });
 
   async function createAccount() {
@@ -42,12 +42,11 @@ describe("spend", () => {
       await hre.ethers.getContractFactory("TestERC20")
     ).deploy();
 
-    // deploy a new spender safe
-
     const config = createSetupConfig({
       spender: predictSpenderAddress({
         owners: [signer.address],
         threshold: 1,
+        creationNonce: BigInt(123456),
       }),
       receiver: receiver.address,
       token: await erc20.getAddress(),
@@ -64,6 +63,7 @@ describe("spend", () => {
     const spenderCreateTx = populateSpenderCreation({
       owners: [signer.address],
       threshold: 1,
+      creationNonce: BigInt(123456),
     });
 
     const spenderSetupTx = await populateSpenderSetup(
@@ -94,6 +94,8 @@ describe("spend", () => {
       roles: IRolesModifier__factory.connect(ZeroAddress),
     };
   }
+
+  it("something", async () => {});
 
   it("enforces configured spender as signer on spend tx", async () => {
     const { account, payer, receiver, relayer, token, config } =

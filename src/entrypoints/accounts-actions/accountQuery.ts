@@ -68,13 +68,13 @@ export default async function accountQuery(
 
 function createRequest(account: string): TransactionRequest {
   const { iface } = deployments.safeMastercopy;
-  const delay = {
+  const delayMod = {
     address: predictDelayAddress(account),
-    iface: deployments.delayMastercopy.iface,
+    iface: deployments.delayModMastercopy.iface,
   };
-  const roles = {
+  const rolesMod = {
     address: predictRolesAddress(account),
-    iface: deployments.rolesMastercopy.iface,
+    iface: deployments.rolesModMastercopy.iface,
   };
 
   const multicall = deployments.multicall;
@@ -100,36 +100,36 @@ function createRequest(account: string): TransactionRequest {
         ]),
       },
       {
-        target: roles.address,
+        target: rolesMod.address,
         allowFailure: true,
-        callData: roles.iface.encodeFunctionData("owner"),
+        callData: rolesMod.iface.encodeFunctionData("owner"),
       },
       {
-        target: roles.address,
+        target: rolesMod.address,
         allowFailure: true,
-        callData: roles.iface.encodeFunctionData("allowances", [
+        callData: rolesMod.iface.encodeFunctionData("allowances", [
           SPENDING_ALLOWANCE_KEY,
         ]),
       },
       {
-        target: delay.address,
+        target: delayMod.address,
         allowFailure: true,
-        callData: delay.iface.encodeFunctionData("owner"),
+        callData: delayMod.iface.encodeFunctionData("owner"),
       },
       {
-        target: delay.address,
+        target: delayMod.address,
         allowFailure: true,
-        callData: delay.iface.encodeFunctionData("txCooldown"),
+        callData: delayMod.iface.encodeFunctionData("txCooldown"),
       },
       {
-        target: delay.address,
+        target: delayMod.address,
         allowFailure: true,
-        callData: delay.iface.encodeFunctionData("txNonce"),
+        callData: delayMod.iface.encodeFunctionData("txNonce"),
       },
       {
-        target: delay.address,
+        target: delayMod.address,
         allowFailure: true,
-        callData: delay.iface.encodeFunctionData("queueNonce"),
+        callData: delayMod.iface.encodeFunctionData("queueNonce"),
       },
       {
         target: multicall.address,
@@ -339,7 +339,7 @@ function evaluateAllowance(
   allowanceResult: string,
   blockTimestampResult: string
 ) {
-  const { iface } = deployments.rolesMastercopy;
+  const { iface } = deployments.rolesModMastercopy;
 
   const blockTimestamp = BigInt(blockTimestampResult);
   const { refill, maxRefill, period, balance, timestamp } =

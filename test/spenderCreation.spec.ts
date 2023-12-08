@@ -2,14 +2,14 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { postFixture } from "./test-helpers";
+import { postFixture, preFixture } from "./test-helpers";
 import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
 import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
 import { ISafe__factory, TestERC20__factory } from "../typechain-types";
 
-describe("spender-creation", () => {
+describe("spender creation", () => {
   before(async () => {
-    // await preFixture();
+    await preFixture();
   });
 
   after(async () => {

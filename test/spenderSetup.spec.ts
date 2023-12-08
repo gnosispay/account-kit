@@ -12,7 +12,7 @@ import {
   TestERC20__factory,
 } from "../typechain-types";
 
-describe("spender-setup", () => {
+describe("spender setup", () => {
   before(async () => {
     await preFixture();
   });

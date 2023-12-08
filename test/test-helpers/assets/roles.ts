@@ -11,7 +11,7 @@ export default async function (signer: SignerWithAddress) {
     signer
   );
 
-  if (address !== deployments.rolesMastercopy.address) {
+  if (address !== deployments.rolesModMastercopy.address) {
     throw new Error("RolesMastercopy did not match live mainnet deployment");
   }
 }

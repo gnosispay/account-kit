@@ -27,7 +27,7 @@ export default function profileDelayedTransaction(
   const erc20 = {
     iface: IERC20__factory.createInterface(),
   };
-  const roles = deployments.rolesMastercopy;
+  const rolesMod = deployments.rolesModMastercopy;
 
   if ((!data || data == "0x") && value) {
     return DelayedTransactionType.NativeTransfer;
@@ -40,7 +40,7 @@ export default function profileDelayedTransaction(
   if (
     typeof to == "string" &&
     getAddress(to) == predictBouncerAddress(account) &&
-    data?.slice(0, 10) == roles.iface.getFunction("setAllowance").selector
+    data?.slice(0, 10) == rolesMod.iface.getFunction("setAllowance").selector
   ) {
     return DelayedTransactionType.LimitChange;
   }

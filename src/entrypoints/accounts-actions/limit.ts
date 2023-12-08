@@ -128,7 +128,7 @@ export function createInnerTransaction(
   { refill, period, timestamp = 0 }: AllowanceConfig
 ): TransactionRequest {
   const address = predictBouncerAddress(account);
-  const iface = deployments.rolesMastercopy.iface;
+  const iface = deployments.rolesModMastercopy.iface;
 
   return {
     to: address,

@@ -7,7 +7,7 @@ import { TransactionRequest } from "../types";
 
 export function predictSpenderModifierAddress(safe: string): string {
   return _predictZodiacModAddress(
-    deployments.spenderMastercopy.address,
+    deployments.spenderModMastercopy.address,
     encodeSetUp(safe)
   );
 }
@@ -21,7 +21,7 @@ export function populateSpenderModifierCreation(
     to: moduleProxyFactory.address,
     value: 0,
     data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-      deployments.spenderMastercopy.address,
+      deployments.spenderModMastercopy.address,
       encodeSetUp(safe),
       ZeroHash,
     ]),
@@ -31,7 +31,7 @@ export function populateSpenderModifierCreation(
 function encodeSetUp(safe: string) {
   const initializer = AbiCoder.defaultAbiCoder().encode(["address"], [safe]);
 
-  return deployments.spenderMastercopy.iface.encodeFunctionData("setUp", [
+  return deployments.spenderModMastercopy.iface.encodeFunctionData("setUp", [
     initializer,
   ]);
 }

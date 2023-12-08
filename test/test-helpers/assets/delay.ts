@@ -9,7 +9,7 @@ export default async function (signer: SignerWithAddress) {
     signer
   );
 
-  if (address !== deployments.delayMastercopy.address) {
+  if (address !== deployments.delayModMastercopy.address) {
     throw new Error("Delay did not match mainnet deployment");
   }
 }

@@ -7,7 +7,7 @@ import { TransactionRequest } from "../types";
 
 export function predictDelayAddress(safe: string): string {
   return _predictZodiacModAddress(
-    deployments.delayMastercopy.address,
+    deployments.delayModMastercopy.address,
     encodeSetUp(safe)
   );
 }
@@ -19,7 +19,7 @@ export function populateDelayCreation(safe: string): TransactionRequest {
     to: moduleProxyFactory.address,
     value: 0,
     data: moduleProxyFactory.iface.encodeFunctionData("deployModule", [
-      deployments.delayMastercopy.address,
+      deployments.delayModMastercopy.address,
       encodeSetUp(safe),
       ZeroHash,
     ]),
@@ -32,7 +32,7 @@ function encodeSetUp(safe: string) {
     [safe, safe, safe, 0, 0]
   );
 
-  return deployments.delayMastercopy.iface.encodeFunctionData("setUp", [
+  return deployments.delayModMastercopy.iface.encodeFunctionData("setUp", [
     initializer,
   ]);
 }

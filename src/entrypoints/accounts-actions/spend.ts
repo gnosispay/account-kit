@@ -44,22 +44,22 @@ export default async function populateSpend(
   spender = getAddress(spender);
   salt = salt || saltFromTimestamp();
 
-  const spenderModifier = {
-    address: predictSpenderModifierAddress(spender),
-    iface: deployments.spenderMastercopy.iface,
+  const rolesMod = {
+    address: predictRolesAddress(account),
+    iface: deployments.rolesModMastercopy.iface,
   };
 
-  const roles = {
-    address: predictRolesAddress(account),
-    iface: deployments.rolesMastercopy.iface,
+  const spenderMod = {
+    address: predictSpenderModifierAddress(spender),
+    iface: deployments.spenderModMastercopy.iface,
   };
 
   const { to, value, data } = {
-    to: spenderModifier.address,
+    to: spenderMod.address,
     value: 0,
-    data: spenderModifier.iface.encodeFunctionData("spend", [
+    data: spenderMod.iface.encodeFunctionData("spend", [
       transfer.token,
-      roles.address,
+      rolesMod.address,
       transfer.to,
       transfer.amount,
       SPENDING_ROLE_KEY,
@@ -68,7 +68,7 @@ export default async function populateSpend(
 
   const { domain, primaryType, types, message } =
     typedDataForModifierTransaction(
-      { modifier: spenderModifier.address, chainId },
+      { modifier: spenderMod.address, chainId },
       { data, salt }
     );
 

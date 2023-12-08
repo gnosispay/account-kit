@@ -35,7 +35,7 @@ function creationBytecode(safe: string) {
   const from = safe;
   const to = predictRolesAddress(safe);
   const { selector } =
-    deployments.rolesMastercopy.iface.getFunction("setAllowance");
+    deployments.rolesModMastercopy.iface.getFunction("setAllowance");
 
   // encode the creationBytecode
   return concat([

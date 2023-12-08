@@ -78,9 +78,9 @@ function createInnerTransaction({
   spender: string;
   delegate: string;
 }): SafeTransactionRequest {
-  const spenderModifier = {
+  const spenderMod = {
     address: predictSpenderModifierAddress(spender),
-    iface: deployments.spenderMastercopy.iface,
+    iface: deployments.spenderModMastercopy.iface,
   };
 
   return multisendEncode([
@@ -88,19 +88,17 @@ function createInnerTransaction({
     {
       to: spender,
       value: 0,
-      data: spenderModifier.iface.encodeFunctionData("enableModule", [
-        spenderModifier.address,
+      data: spenderMod.iface.encodeFunctionData("enableModule", [
+        spenderMod.address,
       ]),
     },
     // deploy the spender modifier
     populateSpenderModifierCreation(spender),
     // enable delegate in spenderModifier
     {
-      to: spenderModifier.address,
+      to: spenderMod.address,
       value: 0,
-      data: spenderModifier.iface.encodeFunctionData("enableModule", [
-        delegate,
-      ]),
+      data: spenderMod.iface.encodeFunctionData("enableModule", [delegate]),
     },
   ]);
 }

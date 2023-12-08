@@ -21,10 +21,6 @@ import {
 const VERSION = "v1.3.0";
 
 export default {
-  delayMastercopy: {
-    address: getAddress("0x4A97E65188A950Dd4b0f21F9b5434dAeE0BBF9f5"),
-    iface: IDelayModifier__factory.createInterface(),
-  },
   fallbackHandler: {
     address: getFallbackHandlerDeployment({
       version: VERSION,
@@ -43,10 +39,6 @@ export default {
       ?.defaultAddress as string,
     iface: IMultisend__factory.createInterface(),
   },
-  rolesMastercopy: {
-    address: getAddress("0x9646fDAD06d3e24444381f44362a3B0eB343D337"),
-    iface: IRolesModifier__factory.createInterface(),
-  },
   safeMastercopy: {
     address: getSafeSingletonDeployment({
       version: VERSION,
@@ -59,7 +51,15 @@ export default {
     })?.defaultAddress as string,
     iface: ISafeProxyFactory__factory.createInterface(),
   },
-  spenderMastercopy: {
+  delayModMastercopy: {
+    address: getAddress("0x4A97E65188A950Dd4b0f21F9b5434dAeE0BBF9f5"),
+    iface: IDelayModifier__factory.createInterface(),
+  },
+  rolesModMastercopy: {
+    address: getAddress("0x9646fDAD06d3e24444381f44362a3B0eB343D337"),
+    iface: IRolesModifier__factory.createInterface(),
+  },
+  spenderModMastercopy: {
     address: getAddress("0x70db53617d170A4E407E00DFF718099539134F9A"),
     iface: ISpenderModifier__factory.createInterface(),
   },
