@@ -30,7 +30,7 @@ describe("spend", () => {
   });
 
   async function createAccount() {
-    const [owner, signer, receiver, payer, relayer] =
+    const [gnosis, user, receiver, delegate, relayer] =
       await hre.ethers.getSigners();
 
     const erc20 = await (
@@ -39,12 +39,12 @@ describe("spend", () => {
 
     const spender = {
       address: _predictSafeAddress({
-        owners: [signer.address],
+        owners: [gnosis.address],
         threshold: 1,
         creationNonce: BigInt(123456),
       }),
       creationTx: _populateSafeCreation({
-        owners: [signer.address],
+        owners: [gnosis.address],
         threshold: 1,
         creationNonce: BigInt(123456),
       }),
@@ -57,23 +57,22 @@ describe("spend", () => {
       allowance: 1000,
     });
 
-    const account = predictAccountAddress({ owner: owner.address });
-    const creationTx = populateAccountCreation({ owner: owner.address });
+    const account = predictAccountAddress({ owner: user.address });
+    const creationTx = populateAccountCreation({ owner: user.address });
     const setupTx = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { owner: user.address, account, chainId: 31337, nonce: 0 },
       config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
     const spenderSetupTx = await populateSpenderSetup(
       {
         spender: config.spender,
-        delegate: payer.address,
+        delegate: delegate.address,
         chainId: 31337,
         nonce: 0,
       },
       ({ domain, types, message }) =>
-        signer.signTypedData(domain, types, message)
+        gnosis.signTypedData(domain, types, message)
     );
 
     await relayer.sendTransaction(creationTx);
@@ -83,18 +82,16 @@ describe("spend", () => {
 
     return {
       config,
+      delegate,
       account,
-      owner,
-      signer,
       receiver,
-      payer,
       relayer,
       token: TestERC20__factory.connect(await erc20.getAddress(), relayer),
     };
   }
 
   it("enforces configured spender as signer on spend tx", async () => {
-    const { account, payer, receiver, relayer, token, config } =
+    const { account, delegate, receiver, relayer, token, config } =
       await loadFixture(createAccount);
 
     await token.mint(account, 10);
@@ -113,21 +110,21 @@ describe("spend", () => {
       ({ domain, types, message }) =>
         relayer.signTypedData(domain, types, message)
     );
-    const spendSignedByPayer = await populateSpend(
+    const spendSignedByDelegate = await populateSpend(
       { account, spender: config.spender, chainId: 31337 },
       transfer,
       ({ domain, types, message }) =>
-        payer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
 
     await expect(relayer.sendTransaction(spendSignedByOther)).to.be.reverted;
 
     expect(await token.balanceOf(to)).to.be.equal(0);
-    await relayer.sendTransaction(spendSignedByPayer);
+    await relayer.sendTransaction(spendSignedByDelegate);
     expect(await token.balanceOf(to)).to.be.equal(amount);
   });
   it("enforces configured receiver as to on spend tx", async () => {
-    const { account, receiver, payer, relayer, token, config } =
+    const { account, receiver, delegate, relayer, token, config } =
       await loadFixture(createAccount);
 
     await token.mint(account, 10);
@@ -145,35 +142,29 @@ describe("spend", () => {
       amount,
     };
 
-    const txToOther = await populateSpend(
+    const spendToOther = await populateSpend(
       { account, spender: config.spender, chainId: 31337 },
       transferToOther,
       ({ domain, types, message }) =>
-        payer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
 
-    const txToReceiver = await populateSpend(
+    const spendToReceiver = await populateSpend(
       { account, spender: config.spender, chainId: 31337 },
       transferToReceiver,
       ({ domain, types, message }) =>
-        payer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
 
-    // we could previously assert on a roles mod error. But now swallowed by the safe
-    // await expect(relayer.sendTransaction(txToOther))
-    // .to.be.revertedWithCustomError(roles, "ConditionViolation")
-    // .withArgs(RolesConditionStatus.ParameterNotAllowed, ZeroHash);
-    await expect(relayer.sendTransaction(txToOther)).to.be.reverted;
+    await expect(relayer.sendTransaction(spendToOther)).to.be.reverted;
 
     expect(await token.balanceOf(receiver.address)).to.be.equal(0);
-    await relayer.sendTransaction(txToReceiver);
+    await relayer.sendTransaction(spendToReceiver);
     expect(await token.balanceOf(receiver.address)).to.be.equal(amount);
   });
   it("spend overusing allowance fails", async () => {
-    const { account, receiver, payer, relayer, token, config } =
+    const { account, receiver, delegate, relayer, token, config } =
       await loadFixture(createAccount);
-
-    await token.mint(account, 2000);
 
     const transferOverspending = {
       token: await token.getAddress(),
@@ -187,25 +178,26 @@ describe("spend", () => {
       amount: 10,
     };
 
-    const txOverspending = await populateSpend(
+    const overspendTx = await populateSpend(
       { account, spender: config.spender, chainId: 31337 },
       transferOverspending,
       ({ domain, types, message }) =>
-        payer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
-    const txUnderspending = await populateSpend(
+    const underspendTx = await populateSpend(
       { account, spender: config.spender, chainId: 31337 },
       transferUnderspending,
       ({ domain, types, message }) =>
-        payer.signTypedData(domain, types, message)
+        delegate.signTypedData(domain, types, message)
     );
 
-    await expect(relayer.sendTransaction(txOverspending)).to.be.revertedWith(
+    await token.mint(account, 2000);
+
+    await expect(relayer.sendTransaction(overspendTx)).to.be.revertedWith(
       "Spend Transaction Failed"
     );
-
     expect(await token.balanceOf(receiver.address)).to.be.equal(0);
-    await relayer.sendTransaction(txUnderspending);
+    await relayer.sendTransaction(underspendTx);
     expect(await token.balanceOf(receiver.address)).to.be.equal(10);
   });
 });
