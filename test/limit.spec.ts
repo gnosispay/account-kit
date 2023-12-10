@@ -99,14 +99,16 @@ describe("limit", () => {
     expect(allowance.period).to.equal(12345);
     expect(allowance.refill).to.equal(76543);
 
-    relayer.sendTransaction(enqueueTx);
+    await relayer.sendTransaction(enqueueTx);
 
     allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(12345);
     expect(allowance.balance).to.equal(76543);
 
     // is reverted before cooldown
-    relayer.sendTransaction(executeTx);
+    await expect(relayer.sendTransaction(executeTx)).to.be.revertedWith(
+      "Transaction is still in cooldown"
+    );
     await mine(2, { interval: 120 });
     // works after cooldown
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
