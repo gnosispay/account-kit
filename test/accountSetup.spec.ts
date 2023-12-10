@@ -23,7 +23,6 @@ import {
   IDelayModifier__factory,
   IRolesModifier__factory,
   ISafe__factory,
-  TestERC20__factory,
 } from "../typechain-types";
 
 describe("account-setup", () => {
@@ -36,69 +35,56 @@ describe("account-setup", () => {
   });
 
   async function createAccount() {
-    const [owner, spender, receiver, relayer] = await hre.ethers.getSigners();
+    const [user, spender, receiver, relayer] = await hre.ethers.getSigners();
 
-    const erc20 = await (
-      await hre.ethers.getContractFactory("TestERC20")
-    ).deploy();
-    const token = TestERC20__factory.connect(await erc20.getAddress(), relayer);
+    const account = predictAccountAddress({ owner: user.address });
+    const creationTx = populateAccountCreation({ owner: user.address });
+    const rolesModAddress = predictRolesModAddress(account);
+    const delayModAddress = predictDelayModAddress(account);
 
-    const transaction = populateAccountCreation({ owner: owner.address });
-
-    const account = predictAccountAddress({ owner: owner.address });
-    const rolesAddress = predictRolesModAddress(account);
-    const delayAddress = predictDelayModAddress(account);
-
-    await relayer.sendTransaction(transaction);
+    await relayer.sendTransaction(creationTx);
 
     return {
-      account,
-      owner,
+      user,
       spender,
       receiver,
       relayer,
-      token,
-      safe: ISafe__factory.connect(account, hre.ethers.provider),
+      account,
       rolesMod: IRolesModifier__factory.connect(
-        rolesAddress,
+        rolesModAddress,
         hre.ethers.provider
       ),
       delayMod: IDelayModifier__factory.connect(
-        delayAddress,
+        delayModAddress,
         hre.ethers.provider
       ),
-      rolesAddress,
-      delayAddress,
     };
   }
 
   it("deploys bouncer", async () => {
-    const { account, owner, spender, receiver, relayer, token, rolesMod } =
+    const { account, user, spender, relayer, rolesMod } =
       await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
+
     const config = createSetupConfig({
-      token: await token.getAddress(),
       spender: spender.address,
-      receiver: receiver.address,
     });
 
-    const bouncerAddresss = predictBouncerAddress(account);
+    const bouncerAddress = predictBouncerAddress(account);
     const bouncer = Bouncer__factory.connect(
-      bouncerAddresss,
+      bouncerAddress,
       hre.ethers.provider
     );
-
-    const transaction = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+    const setupTx = await populateAccountSetup(
+      { owner: user.address, account, chainId: 31337, nonce: 0 },
       config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
+
     expect(await provider.getCode(bouncer)).to.equal("0x");
 
-    await relayer.sendTransaction(transaction);
-
+    await relayer.sendTransaction(setupTx);
     expect(await provider.getCode(bouncer)).to.not.equal("0x");
 
     expect(await bouncer.from()).to.equal(account);
@@ -109,23 +95,17 @@ describe("account-setup", () => {
   });
 
   it("renounces account ownership", async () => {
-    const { account, owner, spender, receiver, relayer, token, safe } =
-      await loadFixture(createAccount);
+    const { account, user, relayer } = await loadFixture(createAccount);
 
-    const config = createSetupConfig({
-      token: await token.getAddress(),
-      spender: spender.address,
-      receiver: receiver.address,
-    });
-
-    const transaction = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+    const config = createSetupConfig({});
+    const setupTx = await populateAccountSetup(
+      { owner: user.address, account, chainId: 31337, nonce: 0 },
       config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
+    const safe = ISafe__factory.connect(account, relayer);
 
-    await expect(relayer.sendTransaction(transaction)).to.not.be.reverted;
+    await expect(relayer.sendTransaction(setupTx)).to.not.be.reverted;
 
     expect(await safe.getOwners()).to.deep.equal([
       "0x0000000000000000000000000000000000000002",
@@ -133,82 +113,63 @@ describe("account-setup", () => {
   });
 
   it("deploys and enables two mods", async () => {
-    const { account, owner, spender, receiver, relayer, token, safe } =
-      await loadFixture(createAccount);
+    const { account, user, relayer } = await loadFixture(createAccount);
 
     const provider = hre.ethers.provider;
-    const config = createSetupConfig({
-      token: await token.getAddress(),
-      spender: spender.address,
-      receiver: receiver.address,
-    });
+    const config = createSetupConfig({});
 
-    const delayAddress = predictDelayModAddress(account);
-    const rolesAddress = predictRolesModAddress(account);
-    expect(delayAddress).to.not.equal(rolesAddress);
+    const safe = ISafe__factory.connect(account, relayer);
+    const delayModAddress = predictDelayModAddress(account);
+    const rolesModAddress = predictRolesModAddress(account);
+    expect(delayModAddress).to.not.equal(rolesModAddress);
 
     const transaction = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+      { owner: user.address, account, chainId: 31337, nonce: 0 },
       config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
 
-    expect(await provider.getCode(delayAddress)).to.equal("0x");
-    expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
-    expect(await provider.getCode(rolesAddress)).to.equal("0x");
-    expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
+    expect(await provider.getCode(delayModAddress)).to.equal("0x");
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.false;
+    expect(await provider.getCode(rolesModAddress)).to.equal("0x");
+    expect(await safe.isModuleEnabled(rolesModAddress)).to.be.false;
 
     await relayer.sendTransaction(transaction);
 
-    expect(await provider.getCode(rolesAddress)).to.not.equal("0x");
-    expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
-    expect(await provider.getCode(delayAddress)).to.not.equal("0x");
-    expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
+    expect(await provider.getCode(delayModAddress)).to.not.equal("0x");
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.true;
+    expect(await provider.getCode(rolesModAddress)).to.not.equal("0x");
+    expect(await safe.isModuleEnabled(rolesModAddress)).to.be.true;
   });
 
   it("correctly configures Roles", async () => {
-    const {
-      account,
-      owner,
-      spender,
-      receiver,
-      relayer,
-      token,
-      safe,
-      rolesMod,
-      rolesAddress,
-    } = await loadFixture(createAccount);
+    const { user, account, spender, relayer, rolesMod } =
+      await loadFixture(createAccount);
 
     const PERIOD = 7654;
     const AMOUNT = 123;
 
+    const safe = ISafe__factory.connect(account, relayer);
+    const bouncerAddress = predictBouncerAddress(account);
+    const rolesModAddress = await rolesMod.getAddress();
+
     const config = createSetupConfig({
       spender: spender.address,
-      receiver: receiver.address,
       timestamp: 432,
       period: PERIOD,
-      token: await token.getAddress(),
       allowance: AMOUNT,
     });
-
-    const bouncerAddress = predictBouncerAddress(account);
-
-    expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
-
-    const transaction = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+    const setupTx = await populateAccountSetup(
+      { owner: user.address, account, chainId: 31337, nonce: 0 },
       config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
 
-    expect(await safe.isModuleEnabled(rolesAddress)).to.be.false;
+    expect(await safe.isModuleEnabled(rolesModAddress)).to.be.false;
 
-    await relayer.sendTransaction(transaction);
-
-    expect(await safe.isModuleEnabled(rolesAddress)).to.be.true;
-    expect(await rolesMod.isModuleEnabled(owner.address)).to.be.false;
+    await relayer.sendTransaction(setupTx);
+    expect(await safe.isModuleEnabled(rolesModAddress)).to.be.true;
+    expect(await rolesMod.isModuleEnabled(user.address)).to.be.false;
     expect(await rolesMod.isModuleEnabled(spender.address)).to.be.true;
     expect(await rolesMod.owner()).to.equal(bouncerAddress);
 
@@ -223,42 +184,32 @@ describe("account-setup", () => {
   });
 
   it("correctly configures Delay", async () => {
-    const {
-      account,
-      owner,
-      spender,
-      receiver,
-      relayer,
-      token,
-      safe,
-      delayMod,
-    } = await loadFixture(createAccount);
+    const { user, account, spender, receiver, relayer, delayMod } =
+      await loadFixture(createAccount);
 
-    const delayAddress = await delayMod.getAddress();
+    const delayModAddress = await delayMod.getAddress();
     const COOLDOWN = 60 * 3;
     const EXPIRATION = 60 * 30;
 
+    const safe = ISafe__factory.connect(account, relayer);
     const config = createSetupConfig({
-      token: await token.getAddress(),
       spender: spender.address,
       receiver: receiver.address,
       cooldown: COOLDOWN,
       expiration: EXPIRATION,
     });
 
-    const transaction = await populateAccountSetup(
-      { owner: owner.address, account, chainId: 31337, nonce: 0 },
+    const setupTx = await populateAccountSetup(
+      { owner: user.address, account, chainId: 31337, nonce: 0 },
       config,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
 
-    expect(await safe.isModuleEnabled(delayAddress)).to.be.false;
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.false;
 
-    await relayer.sendTransaction(transaction);
-
-    expect(await safe.isModuleEnabled(delayAddress)).to.be.true;
-    expect(await delayMod.isModuleEnabled(owner.address)).to.be.true;
+    await relayer.sendTransaction(setupTx);
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.true;
+    expect(await delayMod.isModuleEnabled(user.address)).to.be.true;
     expect(await delayMod.isModuleEnabled(spender.address)).to.be.false;
     expect(await delayMod.isModuleEnabled(receiver.address)).to.be.false;
 
