@@ -50,7 +50,6 @@ describe("limit", () => {
       cooldown: COOLDOWN,
     });
     const account = predictAccountAddress({ owner: owner.address });
-    const rolesAddress = predictRolesModAddress(account);
 
     const creationTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
@@ -69,7 +68,10 @@ describe("limit", () => {
       spender,
       receiver,
       relayer,
-      rolesMod: IRolesModifier__factory.connect(rolesAddress, relayer),
+      rolesMod: IRolesModifier__factory.connect(
+        predictRolesModAddress(account),
+        relayer
+      ),
       config,
     };
   }

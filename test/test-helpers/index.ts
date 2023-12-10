@@ -14,20 +14,24 @@ export async function postFixture() {
   await forkReset();
 }
 
+const AddressTwo = "0x0000000000000000000000000000000000000002";
+const AddressThree = "0x0000000000000000000000000000000000000003";
+const AddressFour = "0x0000000000000000000000000000000000000004";
+
 export function createSetupConfig({
   // for allowance
-  spender,
-  receiver,
-  token,
+  spender = AddressTwo,
+  receiver = AddressThree,
+  token = AddressFour,
   allowance = 1000000,
   period = 60 * 60 * 24, // in seconds, 1 day
   cooldown = 60 * 3, // in seconds, 3 minutes
   expiration = 60 * 30, // in seconds, 30 minutes
   timestamp,
 }: {
-  spender: string;
-  receiver: string;
-  token: string;
+  spender?: string;
+  receiver?: string;
+  token?: string;
   allowance?: number | bigint;
   period?: number;
   timestamp?: number;
