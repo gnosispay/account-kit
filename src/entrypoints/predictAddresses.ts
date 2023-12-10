@@ -1,5 +1,5 @@
 import { getAddress } from "ethers";
-import { ACCOUNT_CREATION_NONCE, SPENDER_CREATION_NONCE } from "../constants";
+import { ACCOUNT_CREATION_NONCE } from "../constants";
 import {
   _predictSafeAddress,
   predictBouncerAddress,
@@ -16,21 +16,6 @@ type AccountCreationParameters = {
    * Optional parameter. The nonce used on safe proxy creation. To be left
    * blank as the default value is the expect value for Gnosis Pay accounts
    *
-   */
-  creationNonce?: bigint;
-};
-
-type SpenderCreationParameters = {
-  /**
-   * The address of the owner EOA
-   */
-  owners: string[];
-  /*
-   * ID associated with the current network.
-   */
-  threshold: number;
-  /*
-   * The current nonce value of the Safe that is to be configured
    */
   creationNonce?: bigint;
 };
@@ -65,14 +50,6 @@ export function predictAccountAddress({
   owner = getAddress(owner);
 
   return _predictSafeAddress({ owners: [owner], creationNonce });
-}
-
-export function predictSpenderAddress({
-  owners,
-  threshold,
-  creationNonce = SPENDER_CREATION_NONCE,
-}: SpenderCreationParameters): string {
-  return _predictSafeAddress({ owners, threshold, creationNonce });
 }
 
 export function predictAddresses({
