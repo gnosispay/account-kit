@@ -22,10 +22,10 @@ import {
 } from "../src";
 
 import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
-import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
-import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
 import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
 import {
+  _populateSafeCreation,
+  _predictSafeAddress,
   predictBouncerAddress,
   predictDelayModAddress,
   predictRolesModAddress,
@@ -62,11 +62,21 @@ describe("account-query", () => {
       relayer
     );
 
-    const config = createSetupConfig({
-      spender: predictSpenderAddress({
+    const spender = {
+      address: _predictSafeAddress({
         owners: [signer.address],
         threshold: 1,
+        creationNonce: BigInt(123),
       }),
+      creationTx: _populateSafeCreation({
+        owners: [signer.address],
+        threshold: 1,
+        creationNonce: BigInt(123),
+      }),
+    };
+
+    const config = createSetupConfig({
+      spender: spender.address,
       receiver: receiver.address,
       period: 60 * 60 * 24, // 86400 seconds one day
       token: await token.getAddress(),
@@ -86,11 +96,6 @@ describe("account-query", () => {
         owner.signTypedData(domain, types, message)
     );
 
-    const spenderCreateTx = populateSpenderCreation({
-      owners: [signer.address],
-      threshold: 1,
-    });
-
     const spenderSetupTx = await populateSpenderSetup(
       {
         spender: config.spender,
@@ -104,7 +109,7 @@ describe("account-query", () => {
 
     await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
-    await relayer.sendTransaction(spenderCreateTx);
+    await relayer.sendTransaction(spender.creationTx);
     await relayer.sendTransaction(spenderSetupTx);
     await token.mint(account, 2000);
 

@@ -21,8 +21,6 @@ import {
 import profileDelayedTransaction, {
   DelayedTransactionType,
 } from "./entrypoints/profileDelayedTransaction";
-import populateSpenderCreation from "./entrypoints/spender-actions/spenderCreation";
-import populateSpenderSetup from "./entrypoints/spender-actions/spenderSetup";
 
 export * from "./types";
 
@@ -36,9 +34,6 @@ export {
   populateLimitDispatch,
   populateLimitEnqueue,
   populateSpend,
-  // spender actions
-  populateSpenderCreation,
-  populateSpenderSetup,
   // integrity status and info query
   accountQuery,
   // helpers

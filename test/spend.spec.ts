@@ -15,10 +15,9 @@ import {
   predictAccountAddress,
 } from "../src";
 
-import { predictSpenderAddress } from "../src/entrypoints/predictAddresses";
-import populateSpenderCreation from "../src/entrypoints/spender-actions/spenderCreation";
 import populateSpenderSetup from "../src/entrypoints/spender-actions/spenderSetup";
 
+import { _populateSafeCreation, _predictSafeAddress } from "../src/parts";
 import { TestERC20__factory } from "../typechain-types";
 
 describe("spend", () => {
@@ -38,30 +37,34 @@ describe("spend", () => {
       await hre.ethers.getContractFactory("TestERC20")
     ).deploy();
 
-    const config = createSetupConfig({
-      spender: predictSpenderAddress({
+    const spender = {
+      address: _predictSafeAddress({
         owners: [signer.address],
         threshold: 1,
         creationNonce: BigInt(123456),
       }),
+      creationTx: _populateSafeCreation({
+        owners: [signer.address],
+        threshold: 1,
+        creationNonce: BigInt(123456),
+      }),
+    };
+
+    const config = createSetupConfig({
+      spender: spender.address,
       receiver: receiver.address,
       token: await erc20.getAddress(),
       allowance: 1000,
     });
+
     const account = predictAccountAddress({ owner: owner.address });
-    const createTx = populateAccountCreation({ owner: owner.address });
+    const creationTx = populateAccountCreation({ owner: owner.address });
     const setupTx = await populateAccountSetup(
       { owner: owner.address, account, chainId: 31337, nonce: 0 },
       config,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
-    const spenderCreateTx = populateSpenderCreation({
-      owners: [signer.address],
-      threshold: 1,
-      creationNonce: BigInt(123456),
-    });
-
     const spenderSetupTx = await populateSpenderSetup(
       {
         spender: config.spender,
@@ -73,9 +76,9 @@ describe("spend", () => {
         signer.signTypedData(domain, types, message)
     );
 
-    await relayer.sendTransaction(createTx);
+    await relayer.sendTransaction(creationTx);
     await relayer.sendTransaction(setupTx);
-    await relayer.sendTransaction(spenderCreateTx);
+    await relayer.sendTransaction(spender.creationTx);
     await relayer.sendTransaction(spenderSetupTx);
 
     return {
