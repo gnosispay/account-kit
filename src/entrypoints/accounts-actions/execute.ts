@@ -58,7 +58,7 @@ type DispatchParameters = {
  */
 export async function populateExecuteEnqueue(
   { account, chainId, salt }: EnqueueParameters,
-  innerTransaction: TransactionRequest,
+  transaction: TransactionRequest,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
@@ -73,9 +73,9 @@ export async function populateExecuteEnqueue(
     to: delayMod.address,
     value: 0,
     data: delayMod.iface.encodeFunctionData("execTransactionFromModule", [
-      innerTransaction.to,
-      innerTransaction.value || 0,
-      innerTransaction.data,
+      transaction.to,
+      transaction.value || 0,
+      transaction.data,
       OperationType.Call,
     ]),
   };
