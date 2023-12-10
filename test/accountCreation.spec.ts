@@ -59,47 +59,37 @@ describe("account-creation", () => {
   it("sets up a 1/1 safe", async () => {
     const { owner, relayer } = await loadFixture(setup);
 
-    const predictedSafeAddress = predictAccountAddress({
+    const accountAddress = predictAccountAddress({
       owner: owner.address,
     });
+    const creationTx = populateAccountCreation({
+      owner: owner.address,
+    });
+    const account = ISafe__factory.connect(accountAddress, hre.ethers.provider);
 
     // account not deployed
-    expect(await hre.ethers.provider.getCode(predictedSafeAddress)).to.equal(
-      "0x"
-    );
-
-    const accountCreationTransaction = populateAccountCreation({
-      owner: owner.address,
-    });
-    await relayer.sendTransaction(accountCreationTransaction);
+    expect(await hre.ethers.provider.getCode(accountAddress)).to.equal("0x");
+    await relayer.sendTransaction(creationTx);
 
     // account deployed
-    expect(
-      await hre.ethers.provider.getCode(predictedSafeAddress)
-    ).to.not.equal("0x");
-
-    const safe = ISafe__factory.connect(
-      predictedSafeAddress,
-      hre.ethers.provider
+    expect(await hre.ethers.provider.getCode(accountAddress)).to.not.equal(
+      "0x"
     );
-    expect(await safe.isOwner(owner.address)).to.be.true;
-    expect(await safe.isOwner(relayer.address)).to.be.false;
+    expect(await account.isOwner(owner.address)).to.be.true;
+    expect(await account.isOwner(relayer.address)).to.be.false;
   });
 
   it("correctly transfer an ERC20 from a fresh safe", async () => {
     const { owner, relayer, token } = await loadFixture(setup);
 
-    const safeAddress = predictAccountAddress({ owner: owner.address });
-    await relayer.sendTransaction(
-      populateAccountCreation({ owner: owner.address })
-    );
-
     const AddressThree = "0x0000000000000000000000000000000000000003";
     const balance = 987654;
-    await token.mint(safeAddress, balance);
 
-    const transaction = await populateDirectTransfer(
-      { account: safeAddress, chainId: 31337, nonce: 0 },
+    const accountAddress = predictAccountAddress({ owner: owner.address });
+    const creationTx = populateAccountCreation({ owner: owner.address });
+
+    const transferTx = await populateDirectTransfer(
+      { account: accountAddress, chainId: 31337, nonce: 0 },
       {
         token: await token.getAddress(),
         to: AddressThree,
@@ -109,12 +99,14 @@ describe("account-creation", () => {
         owner.signTypedData(domain, types, message)
     );
 
-    expect(await token.balanceOf(safeAddress)).to.be.equal(balance);
+    await token.mint(accountAddress, balance);
+    expect(await token.balanceOf(accountAddress)).to.be.equal(balance);
     expect(await token.balanceOf(AddressThree)).to.equal(0);
 
-    await relayer.sendTransaction(transaction);
+    await relayer.sendTransaction(creationTx);
+    await relayer.sendTransaction(transferTx);
 
-    expect(await token.balanceOf(safeAddress)).to.equal(0);
+    expect(await token.balanceOf(accountAddress)).to.equal(0);
     expect(await token.balanceOf(AddressThree)).to.be.equal(balance);
   });
 });
