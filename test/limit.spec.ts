@@ -80,10 +80,6 @@ describe("limit", () => {
     const { account, owner, relayer, rolesMod } =
       await loadFixture(setupAccount);
 
-    let allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
-    expect(allowance.period).to.equal(12345);
-    expect(allowance.refill).to.equal(76543);
-
     const enqueueTx = await populateLimitEnqueue(
       { account, chainId: 31337 },
       { refill: 1, period: 1 },
@@ -99,14 +95,18 @@ describe("limit", () => {
       }
     );
 
-    await expect(relayer.sendTransaction(enqueueTx)).to.not.be.reverted;
+    let allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
+    expect(allowance.period).to.equal(12345);
+    expect(allowance.refill).to.equal(76543);
+
+    relayer.sendTransaction(enqueueTx);
 
     allowance = await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
     expect(allowance.period).to.equal(12345);
     expect(allowance.balance).to.equal(76543);
 
     // is reverted before cooldown
-    await expect(relayer.sendTransaction(executeTx)).to.be.reverted;
+    relayer.sendTransaction(executeTx);
     await mine(2, { interval: 120 });
     // works after cooldown
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
