@@ -885,10 +885,10 @@
     picocolors "^1.0.0"
     tslib "^2.6.0"
 
-"@safe-global/safe-deployments@1.28.0":
-  version "1.28.0"
-  resolved "https://registry.yarnpkg.com/@safe-global/safe-deployments/-/safe-deployments-1.28.0.tgz#9984b513999e5a1cd4449ed2c1ba9a66cb5b223c"
-  integrity sha512-zWn55unMucN3i3awjDA0XxH9BzGNHyC/qCbuISBh0GMZP/q+VCxERAOEO4OqwyGaxk6sSAzP4usGdmgz2y2svg==
+"@safe-global/safe-deployments@1.29.0":
+  version "1.29.0"
+  resolved "https://registry.yarnpkg.com/@safe-global/safe-deployments/-/safe-deployments-1.29.0.tgz#72091773dccdea67d4a0066eeaaa816613b43cca"
+  integrity sha512-rXTktZblfklQyPe2JLK7GtXW/jH8htE6oP9MQHpVU5K/98OLkR4ApLAzlJscQEcyCaK+XOQunOk/gQYK1M2IpQ==
   dependencies:
     semver "^7.3.7"
 
