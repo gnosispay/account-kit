@@ -53,12 +53,11 @@ export function predictAccountAddress({
 }
 
 export function predictAddresses(account: string) {
-  const _account = getAddress(account);
+  account = getAddress(account);
 
   return {
-    account: _account,
-    bouncer: predictBouncerAddress(_account),
-    delay: predictDelayModAddress(_account),
-    roles: predictRolesModAddress(_account),
+    bouncer: predictBouncerAddress(account),
+    delay: predictDelayModAddress(account),
+    roles: predictRolesModAddress(account),
   };
 }
