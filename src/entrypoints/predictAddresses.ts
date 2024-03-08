@@ -52,17 +52,13 @@ export function predictAccountAddress({
   return _predictSafeAddress({ owners: [owner], creationNonce });
 }
 
-export function predictAddresses({
-  owner,
-  creationNonce = ACCOUNT_CREATION_NONCE,
-}: AccountCreationParameters) {
-  owner = getAddress(owner);
-  const account = predictAccountAddress({ owner, creationNonce });
+export function predictAddresses(account: string) {
+  const _account = getAddress(account);
 
   return {
-    account,
-    bouncer: predictBouncerAddress(account),
-    delay: predictDelayModAddress(account),
-    roles: predictRolesModAddress(account),
+    account: _account,
+    bouncer: predictBouncerAddress(_account),
+    delay: predictDelayModAddress(_account),
+    roles: predictRolesModAddress(_account),
   };
 }
