@@ -2,12 +2,14 @@ import { TransactionRequest, getAddress } from "ethers";
 
 import { IERC20__factory } from "../../typechain-types";
 import deployments from "../deployments";
-import { predictBouncerAddress } from "../parts";
+import { predictBouncerAddress, predictDelayModAddress } from "../parts";
 
 export enum DelayedTransactionType {
   NativeTransfer,
   ERC20Transfer,
   LimitChange,
+  AddOwner,
+  RemoveOwner,
   Other,
 }
 
@@ -43,6 +45,25 @@ export default function profileDelayedTransaction(
     data?.slice(0, 10) == rolesMod.iface.getFunction("setAllowance").selector
   ) {
     return DelayedTransactionType.LimitChange;
+  }
+
+  const delayMod = deployments.delayModMastercopy;
+  const delayModAddress = predictDelayModAddress(account);
+
+  if (
+    typeof to == "string" &&
+    getAddress(to) == delayModAddress &&
+    data?.slice(0, 10) == delayMod.iface.getFunction("enableModule").selector
+  ) {
+    return DelayedTransactionType.AddOwner;
+  }
+
+  if (
+    typeof to == "string" &&
+    getAddress(to) == delayModAddress &&
+    data?.slice(0, 10) == delayMod.iface.getFunction("disableModule").selector
+  ) {
+    return DelayedTransactionType.RemoveOwner;
   }
 
   return DelayedTransactionType.Other;
