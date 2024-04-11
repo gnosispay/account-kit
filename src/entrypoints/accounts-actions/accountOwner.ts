@@ -6,8 +6,8 @@ import {
   saltFromTimestamp,
 } from "./execute";
 import deployments from "../../deployments";
-import { SignTypedDataCallback, TransactionRequest } from "../../types";
 import { predictDelayModAddress } from "../../parts";
+import { SignTypedDataCallback, TransactionRequest } from "../../types";
 
 export const SENTINEL_ADDRESS = "0x0000000000000000000000000000000000000001";
 const NUMBER_OF_SIGNERS_TO_FETCH = 100;

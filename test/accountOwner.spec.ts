@@ -1,5 +1,6 @@
 import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import { getAddress } from "ethers";
 import hre from "hardhat";
 import { createSetupConfig, postFixture, preFixture } from "./test-helpers";
 import {
@@ -15,7 +16,6 @@ import {
 } from "../src/entrypoints/accounts-actions/accountOwner";
 import { predictDelayModAddress } from "../src/parts";
 import { IDelayModifier__factory } from "../typechain-types";
-import { getAddress } from "ethers";
 
 const PERIOD = 12345;
 const AMOUNT = 76543;
