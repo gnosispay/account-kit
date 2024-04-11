@@ -1,6 +1,5 @@
-import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { getAddress } from "ethers";
 import hre from "hardhat";
 import { createSetupConfig, postFixture, preFixture } from "./test-helpers";
 import {
@@ -9,11 +8,6 @@ import {
   populateAccountSetup,
   predictAccountAddress,
 } from "../src";
-import {
-  SENTINEL_ADDRESS,
-  populateAddOwnerDispatch,
-  populateAddOwnerEnqueue,
-} from "../src/entrypoints/accounts-actions/accountOwner";
 import { predictDelayModAddress } from "../src/parts";
 import { IDelayModifier__factory } from "../typechain-types";
 
@@ -21,7 +15,7 @@ const PERIOD = 12345;
 const AMOUNT = 76543;
 const COOLDOWN = 120;
 
-describe("account-owner", () => {
+describe("getAccountOwner", () => {
   before(async () => {
     await preFixture();
   });
@@ -71,59 +65,6 @@ describe("account-owner", () => {
       config,
     };
   }
-
-  it("adds an account owner", async () => {
-    const { account, owner, relayer, delayMod } =
-      await loadFixture(setupAccount);
-
-    const firstOwner = owner.address;
-    const secondOwner = getAddress(
-      "0x06b2729304C9c15CB1bA2df761455e474080CA19"
-    ) as `0x${string}`;
-    const enqueueTx = await populateAddOwnerEnqueue(
-      { account, chainId: 31337 },
-      secondOwner,
-      ({ domain, types, message }) =>
-        owner.signTypedData(domain, types, message)
-    );
-    const executeTx = populateAddOwnerDispatch({ account }, secondOwner);
-
-    {
-      // starts correctly configured
-      const [owners] = await delayMod.getModulesPaginated(
-        SENTINEL_ADDRESS,
-        100
-      );
-      expect(owners).to.deep.equal([firstOwner]);
-      // the owner of the delay mod is the safe
-      expect(await delayMod.owner()).to.equal(account);
-    }
-
-    // dispatch the enqueue tx
-    await relayer.sendTransaction(enqueueTx);
-
-    {
-      // no changes on owners yet, only enqueued
-      const [owners] = await delayMod.getModulesPaginated(
-        SENTINEL_ADDRESS,
-        100
-      );
-      expect(owners).to.deep.equal([firstOwner]);
-    }
-
-    // we try to send the dispatch tx, but gets reverted before cooldown
-    await expect(relayer.sendTransaction(executeTx)).to.be.revertedWith(
-      "Transaction is still in cooldown"
-    );
-    await mine(2, { interval: 120 });
-
-    // works after cooldown
-    await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
-
-    // second owner is now reflected
-    const [owners] = await delayMod.getModulesPaginated(SENTINEL_ADDRESS, 100);
-    expect(owners).to.deep.equal([secondOwner, owner.address]);
-  });
 
   describe("getAccountOwners", () => {
     it("given the callback to invoke a call on eth network, it provides it the proper encoded call and returns account owners", async () => {
