@@ -1,16 +1,13 @@
 import { loadFixture, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
-import { ZeroAddress, parseEther } from "ethers";
 import hre from "hardhat";
 import { createSetupConfig, postFixture, preFixture } from "./test-helpers";
 import {
-  createInnerAddOwnerTransaction,
   getAccountOwners,
   populateAccountCreation,
   populateAccountSetup,
   predictAccountAddress,
 } from "../src";
-import { SPENDING_ALLOWANCE_KEY } from "../src/constants";
 import {
   SENTINEL_ADDRESS,
   populateAddOwnerDispatch,
@@ -18,6 +15,7 @@ import {
 } from "../src/entrypoints/accounts-actions/accountOwner";
 import { predictDelayModAddress } from "../src/parts";
 import { IDelayModifier__factory } from "../typechain-types";
+import { getAddress } from "ethers";
 
 const PERIOD = 12345;
 const AMOUNT = 76543;
@@ -30,21 +28,6 @@ describe.only("account-owner", () => {
 
   after(async () => {
     await postFixture();
-  });
-
-  describe("createInnerAddOwnerTransaction", () => {
-    it("returns the correct contract for adding a new account owner", () => {
-      expect(
-        createInnerAddOwnerTransaction(
-          ZeroAddress,
-          "0x06b2729304C9c15CB1bA2df761455e474080CA19"
-        )
-      ).to.deep.equal({
-        to: "0x0000000000000000000000000000000000000000",
-        data: "0x610b592500000000000000000000000006b2729304c9c15cb1ba2df761455e474080ca19",
-        value: 0,
-      });
-    });
   });
 
   async function setupAccount() {
@@ -93,50 +76,56 @@ describe.only("account-owner", () => {
     const { account, owner, relayer, delayMod } =
       await loadFixture(setupAccount);
 
+    const firstOwner = owner.address;
+    const secondOwner = getAddress(
+      "0x06b2729304C9c15CB1bA2df761455e474080CA19"
+    ) as `0x${string}`;
     const enqueueTx = await populateAddOwnerEnqueue(
       { account, chainId: 31337 },
-      "0x06b2729304C9c15CB1bA2df761455e474080CA19",
+      secondOwner,
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
-
-    const [delayModOwnersBefore] = await delayMod.getModulesPaginated(
-      SENTINEL_ADDRESS,
-      100
-    );
-    expect(delayModOwnersBefore).to.deep.equal([
-      "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    ]);
-
     const executeTx = populateAddOwnerDispatch(
       { account },
       "0x06b2729304C9c15CB1bA2df761455e474080CA19"
     );
 
-    const delayModOwner = await delayMod.owner();
-    expect(delayModOwner).to.equal(
-      "0xD02D18dEE837Aaf0Fe687aAd520dFFc3cd39E375"
-    );
+    {
+      // starts correctly configured
+      const [owners] = await delayMod.getModulesPaginated(
+        SENTINEL_ADDRESS,
+        100
+      );
+      expect(owners).to.deep.equal([firstOwner]);
+      // the owner of the delay mod is the safe
+      expect(await delayMod.owner()).to.equal(account);
+    }
 
+    // dispatch the enqueue tx
     await relayer.sendTransaction(enqueueTx);
 
-    // is reverted before cooldown
+    {
+      // no changes on owners yet, only enqueued
+      const [owners] = await delayMod.getModulesPaginated(
+        SENTINEL_ADDRESS,
+        100
+      );
+      expect(owners).to.deep.equal([firstOwner]);
+    }
+
+    // we try to send the dispatch tx, but gets reverted before cooldown
     await expect(relayer.sendTransaction(executeTx)).to.be.revertedWith(
       "Transaction is still in cooldown"
     );
     await mine(2, { interval: 120 });
+
     // works after cooldown
     await expect(relayer.sendTransaction(executeTx)).to.not.be.reverted;
 
-    const [delayModOwnersAfter] = await delayMod.getModulesPaginated(
-      SENTINEL_ADDRESS,
-      100
-    );
-
-    expect(delayModOwnersAfter).to.deep.equal([
-      "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-      "0xD02D18dEE837Aaf0Fe687aAd520dFFc3cd39E375",
-    ]);
+    // second owner is now reflected
+    const [owners] = await delayMod.getModulesPaginated(SENTINEL_ADDRESS, 100);
+    expect(owners).to.deep.equal([secondOwner, owner.address]);
   });
 
   describe("getAccountOwners", () => {

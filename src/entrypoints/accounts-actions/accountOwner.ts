@@ -7,11 +7,10 @@ import {
 } from "./execute";
 import deployments from "../../deployments";
 import { SignTypedDataCallback, TransactionRequest } from "../../types";
+import { predictDelayModAddress } from "../../parts";
 
 export const SENTINEL_ADDRESS = "0x0000000000000000000000000000000000000001";
 const NUMBER_OF_SIGNERS_TO_FETCH = 100;
-
-const delayMod = deployments.delayModMastercopy;
 
 type EnqueueParameters = {
   /**
@@ -69,7 +68,7 @@ export async function populateAddOwnerEnqueue(
 
   return populateExecuteEnqueue(
     { account, chainId, salt },
-    createInnerAddOwnerTransaction(account, newOwner),
+    createInnerTransaction(account, newOwner),
     sign
   );
 }
@@ -101,16 +100,21 @@ export function populateAddOwnerDispatch(
 
   return populateExecuteDispatch(
     { account },
-    createInnerAddOwnerTransaction(account, newOwner)
+    createInnerTransaction(account, newOwner)
   );
 }
 
-export function createInnerAddOwnerTransaction(
+export function createInnerTransaction(
   account: string,
   newOwner: `0x${string}`
 ): TransactionRequest {
+  const delayMod = {
+    address: predictDelayModAddress(account),
+    iface: deployments.delayModMastercopy.iface,
+  };
+
   return {
-    to: account,
+    to: delayMod.address,
     data: delayMod.iface.encodeFunctionData("enableModule", [newOwner]),
     value: 0,
   };
@@ -124,6 +128,10 @@ export async function getAccountOwners(doEthCall: EthCallCallback) {
   async function fetchAccountOwners(
     fromAddress: string
   ): Promise<`0x${string}`[]> {
+    const delayMod = {
+      iface: deployments.delayModMastercopy.iface,
+    };
+
     const encodedFunctionCall = delayMod.iface.encodeFunctionData(
       "getModulesPaginated",
       [fromAddress, NUMBER_OF_SIGNERS_TO_FETCH]
