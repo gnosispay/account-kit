@@ -86,10 +86,7 @@ describe.only("account-owner", () => {
       ({ domain, types, message }) =>
         owner.signTypedData(domain, types, message)
     );
-    const executeTx = populateAddOwnerDispatch(
-      { account },
-      "0x06b2729304C9c15CB1bA2df761455e474080CA19"
-    );
+    const executeTx = populateAddOwnerDispatch({ account }, secondOwner);
 
     {
       // starts correctly configured
