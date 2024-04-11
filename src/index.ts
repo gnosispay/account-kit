@@ -1,12 +1,12 @@
 import populateAccountCreation, {
   populateDirectTransfer,
 } from "./entrypoints/accounts-actions/accountCreation";
+import accountQuery from "./entrypoints/accounts-actions/accountQuery";
+import populateAccountSetup from "./entrypoints/accounts-actions/accountSetup";
 import {
   getAccountOwners,
   createInnerTransaction as createInnerAddOwnerTransaction,
-} from "./entrypoints/accounts-actions/accountOwner";
-import accountQuery from "./entrypoints/accounts-actions/accountQuery";
-import populateAccountSetup from "./entrypoints/accounts-actions/accountSetup";
+} from "./entrypoints/accounts-actions/addAccountOwner";
 import {
   populateExecuteEnqueue,
   populateExecuteDispatch,
@@ -16,6 +16,7 @@ import {
   populateLimitDispatch,
   createInnerTransaction as createInnerLimitTransaction,
 } from "./entrypoints/accounts-actions/limit";
+import { createInnerTransaction as createInnerRemoveOwnerTransaction } from "./entrypoints/accounts-actions/removeAccountOwner";
 import populateSpend from "./entrypoints/accounts-actions/spend";
 
 import {
@@ -48,4 +49,5 @@ export {
   DelayedTransactionType,
   getAccountOwners,
   createInnerAddOwnerTransaction,
+  createInnerRemoveOwnerTransaction,
 };

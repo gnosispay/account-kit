@@ -1,5 +1,4 @@
 import { getAddress } from "ethers";
-import { HexString } from "ethers/lib.commonjs/utils/data";
 import {
   populateExecuteDispatch,
   populateExecuteEnqueue,
@@ -34,21 +33,26 @@ type DispatchParameters = {
   account: string;
 };
 
+type RemovalConfig = {
+  prevOwner: string;
+  ownerToRemove: string;
+};
+
 /**
- * This function generates a payload to initiate an addition of the account owner in
+ * This function generates a payload to initiate an removal of existing account owner in
  * Delay Mod's queue. The populated transaction is relay ready, and does not
  * require additional signing.
  *
  * @param parameters - {@link EnqueueParameters}
- * @param config - {@link AllowanceConfig}
+ * @param newOwner - {@link `0x${string}`}
  * @param sign - {@link SignTypedDataCallback}
  * @returns The signed transaction payload {@link TransactionRequest}
  *
  * @example
- * import { populateAddOwnerEnqueue } from "@gnosispay/account-kit";
+ * import { populateRemoveOwnerEnqueue } from "@gnosispay/account-kit";
  *
  * const owner: Signer = {};
- * const enqueueTx = await populateAddOwnerEnqueue(
+ * const enqueueTx = await populateRemoveOwnerEnqueue(
  *  { account: `0x<address>`, chainId: `<number>` },
  *  newOwner: `0x${string}`,
  *  // callback that wraps an eip-712 signature
@@ -57,9 +61,9 @@ type DispatchParameters = {
  * );
  * await relayer.sendTransaction(enqueueTx);
  */
-export async function populateAddOwnerEnqueue(
+export async function populateRemoveOwnerEnqueue(
   { account, chainId, salt }: EnqueueParameters,
-  newOwner: `0x${string}`,
+  config: RemovalConfig,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
@@ -67,7 +71,7 @@ export async function populateAddOwnerEnqueue(
 
   return populateExecuteEnqueue(
     { account, chainId, salt },
-    createInnerTransaction(account, newOwner),
+    createInnerTransaction(account, config),
     sign
   );
 }
@@ -83,30 +87,30 @@ export async function populateAddOwnerEnqueue(
  * @returns The signed transaction payload {@link TransactionRequest}
  *
  * @example
- * import { populateAddOwnerDispatch } from "@gnosispay/account-kit";
+ * import { populateRemoveOwnerDispatch } from "@gnosispay/account-kit";
  *
- * const dispatchTx = await populateAddOwnerDispatch(
+ * const dispatchTx = await populateRemoveOwnerDispatch(
  *  { account: `0x<address>` },
  *  newOwner: `0x${string}`,
  * );
  * await relayer.sendTransaction(enqueueTx);
  */
-export function populateAddOwnerDispatch(
+export function populateRemoveOwnerDispatch(
   { account }: DispatchParameters,
-  newOwner: `0x${string}`
+  config: RemovalConfig
 ): TransactionRequest {
   account = getAddress(account);
 
   return populateExecuteDispatch(
     { account },
-    createInnerTransaction(account, newOwner)
+    createInnerTransaction(account, config)
   );
 }
 
 export function createInnerTransaction(
   account: string,
-  newOwner: `0x${string}`
-): TransactionRequest {
+  { prevOwner, ownerToRemove }: RemovalConfig
+) {
   const delayMod = {
     address: predictDelayModAddress(account),
     iface: deployments.delayModMastercopy.iface,
@@ -114,45 +118,10 @@ export function createInnerTransaction(
 
   return {
     to: delayMod.address,
-    data: delayMod.iface.encodeFunctionData("enableModule", [newOwner]),
+    data: delayMod.iface.encodeFunctionData("disableModule", [
+      prevOwner,
+      ownerToRemove,
+    ]),
     value: 0,
   };
-}
-
-type EthCallCallback = (
-  encodedFunctionCall: `0x${string}`
-) => Promise<{ data: HexString | undefined }>;
-
-export async function getAccountOwners(
-  doEthCall: EthCallCallback,
-  from: `0x${string}` = SENTINEL_ADDRESS
-): Promise<`0x${string}`[]> {
-  const FETCH_COUNT = 100;
-
-  const delayMod = {
-    iface: deployments.delayModMastercopy.iface,
-  };
-
-  const calldata = delayMod.iface.encodeFunctionData("getModulesPaginated", [
-    from,
-    FETCH_COUNT,
-  ]) as `0x${string}`;
-
-  const ethResult = await doEthCall(calldata);
-
-  if (!ethResult.data) {
-    throw new Error("No data returned from eth call");
-  }
-
-  const [addresses] = delayMod.iface.decodeFunctionResult(
-    "getModulesPaginated",
-    ethResult.data
-  );
-
-  return [
-    ...addresses,
-    ...(addresses.length < FETCH_COUNT
-      ? []
-      : await getAccountOwners(doEthCall, addresses[addresses.length - 1])),
-  ];
 }
