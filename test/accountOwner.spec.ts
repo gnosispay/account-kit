@@ -21,7 +21,7 @@ const PERIOD = 12345;
 const AMOUNT = 76543;
 const COOLDOWN = 120;
 
-describe.only("account-owner", () => {
+describe("account-owner", () => {
   before(async () => {
     await preFixture();
   });
@@ -72,7 +72,7 @@ describe.only("account-owner", () => {
     };
   }
 
-  it.only("adds an account owner", async () => {
+  it("adds an account owner", async () => {
     const { account, owner, relayer, delayMod } =
       await loadFixture(setupAccount);
 

@@ -10,7 +10,6 @@ import { predictDelayModAddress } from "../../parts";
 import { SignTypedDataCallback, TransactionRequest } from "../../types";
 
 export const SENTINEL_ADDRESS = "0x0000000000000000000000000000000000000001";
-const NUMBER_OF_SIGNERS_TO_FETCH = 100;
 
 type EnqueueParameters = {
   /**
@@ -124,38 +123,36 @@ type EthCallCallback = (
   encodedFunctionCall: `0x${string}`
 ) => Promise<{ data: HexString | undefined }>;
 
-export async function getAccountOwners(doEthCall: EthCallCallback) {
-  async function fetchAccountOwners(
-    fromAddress: string
-  ): Promise<`0x${string}`[]> {
-    const delayMod = {
-      iface: deployments.delayModMastercopy.iface,
-    };
+export async function getAccountOwners(
+  doEthCall: EthCallCallback,
+  from: `0x${string}` = SENTINEL_ADDRESS
+): Promise<`0x${string}`[]> {
+  const FETCH_COUNT = 100;
 
-    const encodedFunctionCall = delayMod.iface.encodeFunctionData(
-      "getModulesPaginated",
-      [fromAddress, NUMBER_OF_SIGNERS_TO_FETCH]
-    ) as `0x${string}`;
+  const delayMod = {
+    iface: deployments.delayModMastercopy.iface,
+  };
 
-    const ethResult = await doEthCall(encodedFunctionCall);
+  const calldata = delayMod.iface.encodeFunctionData("getModulesPaginated", [
+    from,
+    FETCH_COUNT,
+  ]) as `0x${string}`;
 
-    if (!ethResult.data) {
-      throw new Error("No data returned from eth call");
-    }
+  const ethResult = await doEthCall(calldata);
 
-    const [addresses] = delayMod.iface.decodeFunctionResult(
-      "getModulesPaginated",
-      ethResult.data
-    );
-
-    if (addresses.length === NUMBER_OF_SIGNERS_TO_FETCH) {
-      const lastAddress = addresses[addresses.length - 1];
-      const nextBatchAddresses = await fetchAccountOwners(lastAddress);
-      return addresses.concat(...nextBatchAddresses);
-    }
-
-    return addresses;
+  if (!ethResult.data) {
+    throw new Error("No data returned from eth call");
   }
 
-  return fetchAccountOwners(SENTINEL_ADDRESS);
+  const [addresses] = delayMod.iface.decodeFunctionResult(
+    "getModulesPaginated",
+    ethResult.data
+  );
+
+  return [
+    ...addresses,
+    ...(addresses.length < FETCH_COUNT
+      ? []
+      : await getAccountOwners(doEthCall, addresses[addresses.length - 1])),
+  ];
 }
