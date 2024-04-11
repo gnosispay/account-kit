@@ -2,7 +2,7 @@ import populateAccountCreation, {
   populateDirectTransfer,
 } from "./entrypoints/accounts-actions/accountCreation";
 import {
-  addAccountOwner,
+  createInnerAddOwnerTransaction,
   getAccountOwners,
 } from "./entrypoints/accounts-actions/accountOwner";
 import accountQuery from "./entrypoints/accounts-actions/accountQuery";
@@ -46,6 +46,6 @@ export {
   createInnerLimitTransaction,
   profileDelayedTransaction,
   DelayedTransactionType,
-  addAccountOwner,
+  createInnerAddOwnerTransaction,
   getAccountOwners,
 };
