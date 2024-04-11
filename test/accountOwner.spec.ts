@@ -126,36 +126,13 @@ describe("account-owner", () => {
   });
 
   describe("getAccountOwners", () => {
-    async function createAccount() {
-      const [user, spender, receiver, relayer] = await hre.ethers.getSigners();
-
-      const account = predictAccountAddress({ owner: user.address });
-      const creationTx = populateAccountCreation({ owner: user.address });
-      const delayModAddress = predictDelayModAddress(account);
-
-      await relayer.sendTransaction(creationTx);
-
-      return {
-        user,
-        spender,
-        receiver,
-        relayer,
-        account,
-        delayMod: IDelayModifier__factory.connect(
-          delayModAddress,
-          hre.ethers.provider
-        ),
-      };
-    }
-
     it("given the callback to invoke a call on eth network, it provides it the proper encoded call and returns account owners", async () => {
-      const account = await createAccount();
+      const { delayMod } = await loadFixture(setupAccount);
 
       const doEthCall = async (encodedFunctionCall: `0x${string}`) => {
-        const decodedGetOwnersFunction =
-          account.delayMod.interface.parseTransaction({
-            data: encodedFunctionCall,
-          });
+        const decodedGetOwnersFunction = delayMod.interface.parseTransaction({
+          data: encodedFunctionCall,
+        });
 
         expect(decodedGetOwnersFunction?.name).to.equal("getModulesPaginated");
 
