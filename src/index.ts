@@ -17,6 +17,11 @@ import {
   createInnerTransaction as createInnerLimitTransaction,
 } from "./entrypoints/accounts-actions/limit";
 import { createInnerTransaction as createInnerRemoveOwnerTransaction } from "./entrypoints/accounts-actions/removeAccountOwner";
+import {
+  createInnerTransaction as createInnerSignMessageTransaction,
+  populateSignMessageDispatch,
+  populateSignMessageEnqueue,
+} from "./entrypoints/accounts-actions/signMessage";
 import populateSpend from "./entrypoints/accounts-actions/spend";
 
 import {
@@ -41,6 +46,10 @@ export {
   populateSpend,
   // integrity status and info query
   accountQuery,
+  // message signing
+  createInnerSignMessageTransaction,
+  populateSignMessageEnqueue,
+  populateSignMessageDispatch,
   // helpers
   predictAccountAddress,
   predictAddresses,

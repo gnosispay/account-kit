@@ -10,6 +10,7 @@ export enum DelayedTransactionType {
   LimitChange,
   AddOwner,
   RemoveOwner,
+  SignMessage,
   Other,
 }
 
@@ -29,7 +30,7 @@ export default function profileDelayedTransaction(
   const erc20 = {
     iface: IERC20__factory.createInterface(),
   };
-  const rolesMod = deployments.rolesModMastercopy;
+  const { rolesModMastercopy: rolesMod, signMessageLib } = deployments;
 
   if ((!data || data == "0x") && value) {
     return DelayedTransactionType.NativeTransfer;
@@ -64,6 +65,15 @@ export default function profileDelayedTransaction(
     data?.slice(0, 10) == delayMod.iface.getFunction("disableModule").selector
   ) {
     return DelayedTransactionType.RemoveOwner;
+  }
+
+  if (
+    typeof to == "string" &&
+    getAddress(to) == signMessageLib.address &&
+    data?.slice(0, 10) ==
+      signMessageLib.iface.getFunction("signMessage").selector
+  ) {
+    return DelayedTransactionType.SignMessage;
   }
 
   return DelayedTransactionType.Other;

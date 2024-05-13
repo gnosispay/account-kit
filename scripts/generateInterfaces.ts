@@ -2,6 +2,7 @@ import {
   getMultiSendDeployment,
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
+  getSignMessageLibDeployment,
 } from "@safe-global/safe-deployments";
 import { generateSolidity } from "abi-to-sol";
 import fs from "fs";
@@ -24,6 +25,10 @@ generate("ISafe", getSafeSingletonDeployment({ version: VERSION })?.abi);
 generate(
   "ISafeProxyFactory",
   getProxyFactoryDeployment({ version: VERSION })?.abi
+);
+generate(
+  "ISignMessageLib",
+  getSignMessageLibDeployment({ version: VERSION })?.abi
 );
 
 function generate(name: string, abi: any) {
