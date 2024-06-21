@@ -1,0 +1,19 @@
+{
+  "name": "account-kit-examples",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "create-safe": "ts-node src/create-safe",
+    "setup-safe": "ts-node src/setup-safe",
+    "sign-safe-message": "ts-node src/sign-safe-message"
+  },
+  "dependencies": {
+    "@gnosispay/account-kit": "^4.6.0",
+    "dotenv": "^16.4.5",
+    "viem": "^2.9.29"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  }
+}
