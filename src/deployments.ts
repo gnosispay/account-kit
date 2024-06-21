@@ -3,6 +3,7 @@ import {
   getMultiSendDeployment,
   getProxyFactoryDeployment,
   getSafeSingletonDeployment,
+  getSignMessageLibDeployment,
 } from "@safe-global/safe-deployments/";
 
 import { getSingletonFactoryInfo } from "@safe-global/safe-singleton-factory";
@@ -15,6 +16,7 @@ import {
   IRolesModifier__factory,
   ISafe__factory,
   ISafeProxyFactory__factory,
+  ISignMessageLib__factory,
   ISpenderModifier__factory,
 } from "../typechain-types";
 
@@ -62,6 +64,12 @@ export default {
   spenderModMastercopy: {
     address: getAddress("0x70db53617d170A4E407E00DFF718099539134F9A"),
     iface: ISpenderModifier__factory.createInterface(),
+  },
+  signMessageLib: {
+    address: getSignMessageLibDeployment({
+      version: VERSION,
+    })?.defaultAddress as string,
+    iface: ISignMessageLib__factory.createInterface(),
   },
   singletonFactory: {
     address: getSingletonFactoryInfo(1)?.address as string,

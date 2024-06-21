@@ -2,6 +2,7 @@ export interface TransactionRequest {
   to: string;
   value: bigint | number;
   data: string;
+  operationType?: OperationType;
 }
 
 export interface SafeTransactionRequest {

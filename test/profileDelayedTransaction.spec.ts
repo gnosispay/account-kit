@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ZeroAddress } from "ethers";
+import { ZeroAddress, hashMessage } from "ethers";
 import hre from "hardhat";
 
 import { createInnerLimitTransaction } from "../src";
@@ -144,6 +144,40 @@ describe("profileDelayedTransaction", () => {
       account.address,
       AddressOne,
     ]);
+
+    expect(
+      profileDelayedTransaction(account.address, {
+        to: ZeroAddress,
+        data,
+      })
+    ).to.equal(DelayedTransactionType.Other);
+  });
+
+  it("identifies `SignMessage` transaction if the `to` address is a SigningMessageLib address", async () => {
+    const [account] = await hre.ethers.getSigners();
+
+    const data = deployments.signMessageLib.iface.encodeFunctionData(
+      "signMessage",
+      [hashMessage("Hello World!")]
+    );
+
+    const signMessageLibAddress = deployments.signMessageLib.address;
+
+    expect(
+      profileDelayedTransaction(account.address, {
+        to: signMessageLibAddress,
+        data,
+      })
+    ).to.equal(DelayedTransactionType.SignMessage);
+  });
+
+  it("does not identify `SignMessage` transaction if the `to` address is not a SignMessageLib address", async () => {
+    const [account] = await hre.ethers.getSigners();
+
+    const data = deployments.signMessageLib.iface.encodeFunctionData(
+      "signMessage",
+      [hashMessage("Hello World!")]
+    );
 
     expect(
       profileDelayedTransaction(account.address, {

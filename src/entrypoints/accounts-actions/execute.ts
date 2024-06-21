@@ -76,7 +76,7 @@ export async function populateExecuteEnqueue(
       transaction.to,
       transaction.value || 0,
       transaction.data,
-      OperationType.Call,
+      transaction.operationType ?? OperationType.Call,
     ]),
   };
 
@@ -128,7 +128,7 @@ export function populateExecuteDispatch(
       innerTransaction.to,
       innerTransaction.value || 0,
       innerTransaction.data,
-      OperationType.Call,
+      innerTransaction.operationType ?? OperationType.Call,
     ]),
   };
 }
