@@ -11,6 +11,7 @@
   "dependencies": {
     "@gnosispay/account-kit": "^4.6.0",
     "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
     "viem": "^2.9.29"
   },
   "devDependencies": {
