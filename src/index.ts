@@ -10,6 +10,8 @@ import {
 import {
   populateExecuteEnqueue,
   populateExecuteDispatch,
+  getTransactionRequest,
+  generateTypedData,
 } from "./entrypoints/accounts-actions/execute";
 import {
   populateLimitEnqueue,
@@ -41,6 +43,8 @@ export {
   populateAccountSetup,
   populateExecuteDispatch,
   populateExecuteEnqueue,
+  generateTypedData,
+  getTransactionRequest,
   populateLimitDispatch,
   populateLimitEnqueue,
   populateSpend,
