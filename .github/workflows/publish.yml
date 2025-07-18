@@ -23,7 +23,7 @@ jobs:
         id: package
         uses: codex-team/action-nodejs-package-info@v1.1
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
         with:
           path: "**/node_modules"
