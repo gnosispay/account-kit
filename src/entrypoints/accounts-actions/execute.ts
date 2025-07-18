@@ -83,14 +83,12 @@ export async function populateExecuteEnqueue(
 
   const signature = await sign({ domain, primaryType, types, message });
 
-  const txRequest = getTransactionRequest({
+  return getTransactionRequest({
     account,
     transaction,
     message,
     signature,
   });
-
-  return txRequest;
 }
 
 /**
