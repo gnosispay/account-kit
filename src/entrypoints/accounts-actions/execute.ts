@@ -24,6 +24,10 @@ type EnqueueParameters = {
    * (Should be omitted, and in that case, a random salt will be generated)
    */
   salt?: string;
+  /*
+   * An optional smart contract wallet address for ERC1271 signatures
+   */
+  smartWalletAddress?: string;
 };
 
 type DispatchParameters = {
@@ -92,11 +96,13 @@ function encodeERC1271Signature(
 /**
  * Generates a payload that wraps a transaction, and posts it to the Delay Mod
  * queue. The populated transaction is relay ready, and does not require
- * additional signing.
+ * additional signing. The smartWalletAddress is optional but should be used if
+ * the account is a smart contract wallet that uses ERC1271 signatures.
  *
  * @param parameters - {@link EnqueueParameters}
  * @param transaction - {@link TransactionRequest}
  * @param sign - {@link SignTypedDataCallback}
+ * @param smartWalletAddress - {@link string}
  * @returns The signed transaction payload {@link TransactionRequest}
  *
  * @example
@@ -113,7 +119,7 @@ function encodeERC1271Signature(
  * await relayer.sendTransaction(enqueueTx);
  */
 export async function populateExecuteEnqueue(
-  { account, chainId, salt }: EnqueueParameters,
+  { account, chainId, salt, smartWalletAddress }: EnqueueParameters,
   transaction: TransactionRequest,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
@@ -129,6 +135,7 @@ export async function populateExecuteEnqueue(
     transaction,
     message,
     signature,
+    smartWalletAddress,
   });
 }
 
