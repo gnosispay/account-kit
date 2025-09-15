@@ -1,4 +1,4 @@
-import { AbiCoder, concat, getAddress } from "ethers";
+import { AbiCoder, concat, getAddress, zeroPadValue, toBeHex } from "ethers";
 
 import deployments from "../../deployments";
 import typedDataForModifierTransaction from "../../eip712";
@@ -49,6 +49,47 @@ function encodeDelayModTransaction(transaction: TransactionRequest): string {
 }
 
 /**
+ * Encodes an ERC1271 signature for use with the delay modifier
+ * This implements the SignatureChecker format required by the delay module.
+ * Returns the complete final calldata ready to be sent to the delay module.
+ *
+ * Final structure: [execFromModuleCalldata] + [signature] + [salt] + [r] + [s] + [v]
+ * Where:
+ * - r = padded smart wallet address (32 bytes)
+ * - s = signature offset (32 bytes)
+ * - v = 0x00 (contract signature marker)
+ *
+ * @param signature - The ERC1271 signature to encode
+ * @param smartWalletAddress - The smart contract wallet address that created the signature
+ * @param salt - The salt used in the transaction
+ * @param execFromModuleCalldata - The original execTransactionFromModule calldata
+ * @returns The complete final calldata for the delay module transaction
+ */
+function encodeERC1271Signature(
+  signature: string,
+  smartWalletAddress: string,
+  salt: string,
+  execFromModuleCalldata: string
+): string {
+  // For ERC-1271 contract signatures in SignatureChecker:
+  // Final structure: [execFromModuleCalldata] + [signature] + [salt] + [r] + [s] + [v]
+
+  // r = padded smart wallet address (32 bytes)
+  const r = zeroPadValue(getAddress(smartWalletAddress), 32);
+
+  // s = signature offset - points to where signature starts in the final calldata
+  // This is the length of the original execFromModuleCalldata in bytes
+  const signatureOffset = (execFromModuleCalldata.length - 2) / 2;
+  const s = zeroPadValue(toBeHex(signatureOffset), 32);
+
+  // v = 0x00 (contract signature marker)
+  const v = "0x00";
+
+  // Complete final calldata: execFromModuleCalldata + signature + salt + r + s + v
+  return concat([execFromModuleCalldata, signature, salt, r, s, v]);
+}
+
+/**
  * Generates a payload that wraps a transaction, and posts it to the Delay Mod
  * queue. The populated transaction is relay ready, and does not require
  * additional signing.
@@ -96,28 +137,45 @@ export async function populateExecuteEnqueue(
  * on the Delay Modifier. This function combines the encoded transaction data
  * with the salt and signature to create a relay-ready transaction.
  *
+ * Supports both EOA and ERC1271 signatures:
+ * - If smartWalletAddress is provided: ERC1271 signature encoding
+ * - If smartWalletAddress is not provided: EOA signature (default)
+ *
  * @param parameters - Object containing account, transaction, message, and signature
- * @param parameters.account - The address of the account Safe
+ * @param parameters.account - The address of the account Safe (renamed to gpSafe for clarity)
  * @param parameters.transaction - The original transaction to be executed
  * @param parameters.message - The message object containing salt and data from typed data generation
- * @param parameters.signature - The EIP-712 signature from the account owner
+ * @param parameters.signature - The EIP-712 signature
+ * @param parameters.smartWalletAddress - Optional smart contract wallet address for ERC1271 signatures
  * @returns The complete transaction request ready for relay execution
  *
  * @example
+ * // EOA signature (default)
  * import { getTransactionRequest } from "@gnosispay/account-kit";
  *
  * const txRequest = getTransactionRequest({
- *   account: "0x<address>",
+ *   account: "0x<gp_safe_address>",
  *   transaction: { to: "0x<address>", value: 0n, data: "0x<bytes>" },
  *   message: { salt: "0x<bytes32>", data: "0x<encoded_data>" },
- *   signature: "0x<signature>"
+ *   signature: "0x<eoa_signature>"
+ * });
+ *
+ * @example
+ * // ERC1271 signature
+ * const txRequest = getTransactionRequest({
+ *   account: "0x<gp_safe_address>",
+ *   transaction: { to: "0x<address>", value: 0n, data: "0x<bytes>" },
+ *   message: { salt: "0x<bytes32>", data: "0x<encoded_data>" },
+ *   signature: "0x<erc1271_signature>",
+ *   smartWalletAddress: "0x<smart_wallet_address>"
  * });
  */
 export const getTransactionRequest = ({
-  account,
+  account: gpSafe,
   transaction,
   message,
   signature,
+  smartWalletAddress,
 }: {
   account: string;
   transaction: TransactionRequest;
@@ -126,16 +184,36 @@ export const getTransactionRequest = ({
     data: string;
   };
   signature: string;
+  smartWalletAddress?: string;
 }) => {
-  const checkSumedAccount = getAddress(account);
+  const checkSumedAccount = getAddress(gpSafe);
   const delayModAddress = predictDelayModAddress(checkSumedAccount);
   const encodedData = encodeDelayModTransaction(transaction);
 
-  return {
-    to: delayModAddress,
-    value: 0,
-    data: concat([encodedData, message.salt, signature]),
-  };
+  if (!smartWalletAddress) {
+    // EOA signature - original format
+    return {
+      to: delayModAddress,
+      value: 0,
+      data: concat([encodedData, message.salt, signature]),
+    };
+  } else {
+    // ERC1271 signature - use SignatureChecker format
+    // The encodeERC1271Signature function returns the complete final calldata
+    // Structure: [execFromModuleCalldata] + [signature] + [salt] + [r] + [s] + [v]
+    const finalCalldata = encodeERC1271Signature(
+      signature,
+      smartWalletAddress,
+      message.salt,
+      encodedData
+    );
+
+    return {
+      to: delayModAddress,
+      value: 0,
+      data: finalCalldata,
+    };
+  }
 };
 
 /**
