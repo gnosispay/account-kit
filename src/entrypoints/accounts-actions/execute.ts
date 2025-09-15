@@ -142,7 +142,7 @@ export async function populateExecuteEnqueue(
  * - If smartWalletAddress is not provided: EOA signature (default)
  *
  * @param parameters - Object containing account, transaction, message, and signature
- * @param parameters.account - The address of the account Safe (renamed to gpSafe for clarity)
+ * @param parameters.account - The address of the account Safe
  * @param parameters.transaction - The original transaction to be executed
  * @param parameters.message - The message object containing salt and data from typed data generation
  * @param parameters.signature - The EIP-712 signature
@@ -191,16 +191,14 @@ export const getTransactionRequest = ({
   const encodedData = encodeDelayModTransaction(transaction);
 
   if (!smartWalletAddress) {
-    // EOA signature - original format
+    // EOA signature
     return {
       to: delayModAddress,
       value: 0,
       data: concat([encodedData, message.salt, signature]),
     };
   } else {
-    // ERC1271 signature - use SignatureChecker format
-    // The encodeERC1271Signature function returns the complete final calldata
-    // Structure: [execFromModuleCalldata] + [signature] + [salt] + [r] + [s] + [v]
+    // ERC1271 signature
     const finalCalldata = encodeERC1271Signature(
       signature,
       smartWalletAddress,
