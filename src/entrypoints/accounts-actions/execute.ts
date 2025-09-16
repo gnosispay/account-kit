@@ -76,7 +76,6 @@ function encodeERC1271Signature(
   execFromModuleCalldata: string
 ): string {
   // For ERC-1271 contract signatures in SignatureChecker:
-  // Final structure: [execFromModuleCalldata] + [signature] + [salt] + [r] + [s] + [v]
 
   // r = padded smart wallet address (32 bytes)
   const r = zeroPadValue(getAddress(smartWalletAddress), 32);
