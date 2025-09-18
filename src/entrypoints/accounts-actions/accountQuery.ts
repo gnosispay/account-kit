@@ -173,11 +173,16 @@ function evaluateResult(
       [, blockTimestampResult],
     ] = aggregate3Result;
 
-    const result = allowanceSuccess
-      ? { allowance: evaluateAllowance(allowanceResult, blockTimestampResult) }
-      : {
-          allowance: ZeroAllowance,
-        };
+    const computeAllowance = () => {
+      if (allowanceSuccess === true && allowanceResult !== "0x") {
+        return evaluateAllowance(allowanceResult, blockTimestampResult);
+      }
+      return ZeroAllowance;
+    };
+
+    const result = {
+      allowance: computeAllowance(),
+    };
 
     if (
       ownersSuccess !== true ||
