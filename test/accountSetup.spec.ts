@@ -219,7 +219,7 @@ describe("account-setup", () => {
     expect(await delayMod.queueNonce()).to.equal(await delayMod.txNonce());
   });
 
-  it("correctly configures Delay with beneficiary", async () => {
+  it("correctly configures Safe with beneficiary", async () => {
     const beneficiary = "0x000000000000000000000000000000000000000f";
 
     const { user, account, spender, receiver, relayer, delayMod, rolesMod } =
