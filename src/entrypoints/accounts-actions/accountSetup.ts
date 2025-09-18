@@ -131,7 +131,7 @@ export default async function populateAccountSetup(
 }
 
 function createInnerTransaction(
-  { account, owner, beneficiary }: { account: string; owner: string; beneficiary?: string },
+  { account, owner, beneficiary }: { account: string; owner: string; beneficiary: string },
   {
     spender,
     receiver,
@@ -143,7 +143,6 @@ function createInnerTransaction(
   spender = getAddress(spender);
   receiver = getAddress(receiver);
   token = getAddress(token);
-  beneficiary = getAddress(beneficiary ?? owner);
 
   const delayMod = {
     address: predictDelayModAddress(account),
