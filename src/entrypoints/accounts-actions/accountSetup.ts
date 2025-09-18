@@ -131,7 +131,11 @@ export default async function populateAccountSetup(
 }
 
 function createInnerTransaction(
-  { account, owner, beneficiary }: { account: string; owner: string; beneficiary: string },
+  {
+    account,
+    owner,
+    beneficiary,
+  }: { account: string; owner: string; beneficiary: string },
   {
     spender,
     receiver,
