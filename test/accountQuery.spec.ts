@@ -557,6 +557,30 @@ describe("account-query", () => {
     expect(result.allowance.nextRefill).to.not.equal(BigInt(0));
     expect(result.allowance.nextRefill != null).to.equal(true);
   });
+
+  it("fails when only Safe is deployed (no modules enabled)", async () => {
+    const [owner, , , , relayer] = await hre.ethers.getSigners();
+
+    const uniqueNonce = BigInt(777777); // ensure no CREATE2 collision with other tests
+    const account = predictAccountAddress({
+      owner: owner.address,
+      creationNonce: uniqueNonce,
+    });
+    const creationTx = populateAccountCreation({
+      owner: owner.address,
+      creationNonce: uniqueNonce,
+    });
+    await relayer.sendTransaction(creationTx);
+
+    const config = createSetupConfig({});
+
+    const { status } = await accountQuery(
+      { account, cooldown: config.delay.cooldown },
+      ({ to, data }) => hre.ethers.provider.send("eth_call", [{ to, data }])
+    );
+
+    expect(status).to.equal(AccountIntegrityStatus.SafeMisconfigured);
+  });
 });
 
 async function evaluateAccount(account: string, config: SetupConfig) {
