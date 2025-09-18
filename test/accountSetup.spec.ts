@@ -266,6 +266,17 @@ describe("account-setup", () => {
     expect(await rolesMod.isModuleEnabled(spender.address)).to.be.true;
     expect(await rolesMod.owner()).to.equal(bouncerAddress);
 
+    expect(await hre.ethers.provider.getCode(delayModAddress)).to.not.equal("0x");
+    expect(await hre.ethers.provider.getCode(rolesModAddress)).to.not.equal("0x");
+
+    const { balance, refill, maxRefill, period } =
+      await rolesMod.allowances(SPENDING_ALLOWANCE_KEY);
+
+    expect(balance).to.equal(config.allowance.refill);
+    expect(refill).to.equal(config.allowance.refill);
+    expect(maxRefill).to.equal(config.allowance.refill);
+    expect(period).to.equal(config.allowance.period);
+
     expect(await safe.getOwners()).to.deep.equal([
       "0x0000000000000000000000000000000000000002",
     ]);
