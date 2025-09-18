@@ -250,6 +250,7 @@ describe("account-setup", () => {
 
     await relayer.sendTransaction(setupTx);
     expect(await safe.isModuleEnabled(delayModAddress)).to.be.true;
+    expect(await delayMod.isModuleEnabled(user.address)).to.be.false;
     expect(await delayMod.isModuleEnabled(beneficiary)).to.be.true;
     expect(await delayMod.isModuleEnabled(spender.address)).to.be.false;
     expect(await delayMod.isModuleEnabled(receiver.address)).to.be.false;
@@ -261,7 +262,12 @@ describe("account-setup", () => {
 
     expect(await safe.isModuleEnabled(rolesModAddress)).to.be.true;
     expect(await rolesMod.isModuleEnabled(beneficiary)).to.be.false;
+    expect(await rolesMod.isModuleEnabled(user.address)).to.be.false;
     expect(await rolesMod.isModuleEnabled(spender.address)).to.be.true;
     expect(await rolesMod.owner()).to.equal(bouncerAddress);
+
+    expect(await safe.getOwners()).to.deep.equal([
+      "0x0000000000000000000000000000000000000002",
+    ]);
   });
 });
