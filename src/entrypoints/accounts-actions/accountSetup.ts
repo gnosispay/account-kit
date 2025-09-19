@@ -48,6 +48,10 @@ type AccountSetupParameters = {
    * The current nonce value of the Safe that is to be configured
    */
   nonce: number;
+  /*
+   * (optional) The beneficiary address of the Safe that is to be configured
+   */
+  beneficiary?: string;
 };
 
 /**
@@ -86,17 +90,18 @@ type AccountSetupParameters = {
  * await relayer.sendTransaction(transaction);
  */
 export default async function populateAccountSetup(
-  { account, owner, chainId, nonce }: AccountSetupParameters,
+  { account, owner, chainId, nonce, beneficiary }: AccountSetupParameters,
   config: SetupConfig,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
   owner = getAddress(owner);
+  beneficiary = getAddress(beneficiary ?? owner);
 
   const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = createInnerTransaction(
-    { account, owner },
+    { account, owner, beneficiary },
     config
   );
 
@@ -126,7 +131,11 @@ export default async function populateAccountSetup(
 }
 
 function createInnerTransaction(
-  { account, owner }: { account: string; owner: string },
+  {
+    account,
+    owner,
+    beneficiary,
+  }: { account: string; owner: string; beneficiary: string },
   {
     spender,
     receiver,
@@ -198,7 +207,7 @@ function createInnerTransaction(
     {
       to: delayMod.address,
       value: 0,
-      data: delayMod.iface.encodeFunctionData("enableModule", [owner]),
+      data: delayMod.iface.encodeFunctionData("enableModule", [beneficiary]),
     },
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER

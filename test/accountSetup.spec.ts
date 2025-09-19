@@ -218,4 +218,72 @@ describe("account-setup", () => {
     expect(await delayMod.txExpiration()).to.equal(EXPIRATION);
     expect(await delayMod.queueNonce()).to.equal(await delayMod.txNonce());
   });
+
+  it("correctly configures Safe with beneficiary", async () => {
+    const beneficiary = "0x000000000000000000000000000000000000000f";
+
+    const { user, account, spender, receiver, relayer, delayMod, rolesMod } =
+      await loadFixture(createAccount);
+
+    const delayModAddress = await delayMod.getAddress();
+    const bouncerAddress = predictBouncerAddress(account);
+    const rolesModAddress = await rolesMod.getAddress();
+
+    const COOLDOWN = 60 * 3;
+    const EXPIRATION = 60 * 30;
+
+    const safe = ISafe__factory.connect(account, relayer);
+    const config = createSetupConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+      cooldown: COOLDOWN,
+      expiration: EXPIRATION,
+    });
+
+    const setupTx = await populateAccountSetup(
+      { owner: user.address, account, chainId: 31337, nonce: 0, beneficiary },
+      config,
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
+    );
+
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.false;
+
+    await relayer.sendTransaction(setupTx);
+    expect(await safe.isModuleEnabled(delayModAddress)).to.be.true;
+    expect(await delayMod.isModuleEnabled(user.address)).to.be.false;
+    expect(await delayMod.isModuleEnabled(beneficiary)).to.be.true;
+    expect(await delayMod.isModuleEnabled(spender.address)).to.be.false;
+    expect(await delayMod.isModuleEnabled(receiver.address)).to.be.false;
+
+    expect(await delayMod.owner()).to.equal(account);
+    expect(await delayMod.txCooldown()).to.equal(COOLDOWN);
+    expect(await delayMod.txExpiration()).to.equal(EXPIRATION);
+    expect(await delayMod.queueNonce()).to.equal(await delayMod.txNonce());
+
+    expect(await safe.isModuleEnabled(rolesModAddress)).to.be.true;
+    expect(await rolesMod.isModuleEnabled(beneficiary)).to.be.false;
+    expect(await rolesMod.isModuleEnabled(user.address)).to.be.false;
+    expect(await rolesMod.isModuleEnabled(spender.address)).to.be.true;
+    expect(await rolesMod.owner()).to.equal(bouncerAddress);
+
+    expect(await hre.ethers.provider.getCode(delayModAddress)).to.not.equal(
+      "0x"
+    );
+    expect(await hre.ethers.provider.getCode(rolesModAddress)).to.not.equal(
+      "0x"
+    );
+
+    const { balance, refill, maxRefill, period } = await rolesMod.allowances(
+      SPENDING_ALLOWANCE_KEY
+    );
+
+    expect(balance).to.equal(config.allowance.refill);
+    expect(refill).to.equal(config.allowance.refill);
+    expect(maxRefill).to.equal(config.allowance.refill);
+    expect(period).to.equal(config.allowance.period);
+
+    expect(await safe.getOwners()).to.deep.equal([
+      "0x0000000000000000000000000000000000000002",
+    ]);
+  });
 });
