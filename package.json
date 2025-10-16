@@ -2,6 +2,7 @@
   "name": "@gnosispay/account-kit",
   "version": "4.10.0",
   "author": "cristovao.honorato@gnosis.io",
+  "license": "Apache-2.0",
   "main": "dist/cjs/src/index.js",
   "module": "dist/esm/src/index.js",
   "types": "dist/cjs/src/index.d.ts",
