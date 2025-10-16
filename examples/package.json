@@ -2,7 +2,7 @@
   "name": "account-kit-examples",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "create-safe": "ts-node src/create-safe",
     "setup-safe": "ts-node src/setup-safe",
