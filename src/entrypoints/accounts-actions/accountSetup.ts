@@ -1,4 +1,4 @@
-import { AbiCoder, ZeroAddress, getAddress } from "ethers";
+import { AbiCoder, getAddress, ZeroAddress } from "ethers";
 
 import { IERC20__factory } from "../../../typechain-types";
 import { SPENDING_ALLOWANCE_KEY, SPENDING_ROLE_KEY } from "../../constants";
@@ -49,9 +49,10 @@ type AccountSetupParameters = {
    */
   nonce: number;
   /*
-   * (optional) The beneficiary address of the Safe that is to be configured
+   * (optional) The beneficiary addresses to enable as account owners (enabled
+   * modules) on the Delay Modifier. Defaults to `[owner]`.
    */
-  beneficiary?: string;
+  beneficiaries?: string[];
 };
 
 /**
@@ -90,18 +91,24 @@ type AccountSetupParameters = {
  * await relayer.sendTransaction(transaction);
  */
 export default async function populateAccountSetup(
-  { account, owner, chainId, nonce, beneficiary }: AccountSetupParameters,
+  { account, owner, chainId, nonce, beneficiaries }: AccountSetupParameters,
   config: SetupConfig,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
   account = getAddress(account);
   owner = getAddress(owner);
-  beneficiary = getAddress(beneficiary ?? owner);
+
+  // defaults to the owner when no beneficiaries are provided
+  if (beneficiaries === undefined || beneficiaries.length === 0) {
+    beneficiaries = [owner];
+  }
+
+  const beneficiariesSet = new Set(beneficiaries.map(getAddress));
 
   const { iface } = deployments.safeMastercopy;
 
   const { to, data, value, operation } = createInnerTransaction(
-    { account, owner, beneficiary },
+    { account, owner, beneficiaries: Array.from(beneficiariesSet) },
     config
   );
 
@@ -134,8 +141,8 @@ function createInnerTransaction(
   {
     account,
     owner,
-    beneficiary,
-  }: { account: string; owner: string; beneficiary: string },
+    beneficiaries,
+  }: { account: string; owner: string; beneficiaries: string[] },
   {
     spender,
     receiver,
@@ -203,12 +210,12 @@ function createInnerTransaction(
       value: 0,
       data: delayMod.iface.encodeFunctionData("setTxExpiration", [expiration]),
     },
-    // enable owner on the delay as module
-    {
+    // enable each owner on the delay as a module
+    ...beneficiaries.map((b) => ({
       to: delayMod.address,
       value: 0,
-      data: delayMod.iface.encodeFunctionData("enableModule", [beneficiary]),
-    },
+      data: delayMod.iface.encodeFunctionData("enableModule", [b]),
+    })),
     /**
      * DEPLOY AND CONFIG ROLES MODIFIER
      */
