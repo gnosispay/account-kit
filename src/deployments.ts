@@ -54,15 +54,15 @@ export default {
     iface: ISafeProxyFactory__factory.createInterface(),
   },
   delayModMastercopy: {
-    address: getAddress("0x4A97E65188A950Dd4b0f21F9b5434dAeE0BBF9f5"),
+    address: getAddress("0x22d903fd45F441F51bcad198D14eBa8a75EA1ef0"),
     iface: IDelayModifier__factory.createInterface(),
   },
   rolesModMastercopy: {
-    address: getAddress("0x9646fDAD06d3e24444381f44362a3B0eB343D337"),
+    address: getAddress("0x732B9E9f259fbA6f65A1a012DC89c20872ffBd2f"),
     iface: IRolesModifier__factory.createInterface(),
   },
   spenderModMastercopy: {
-    address: getAddress("0x70db53617d170A4E407E00DFF718099539134F9A"),
+    address: getAddress("0x7a592bae57b8cd45688f9eb81ce4a622e7e37cb7"),
     iface: ISpenderModifier__factory.createInterface(),
   },
   signMessageLib: {
