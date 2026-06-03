@@ -241,7 +241,13 @@ describe("account-setup", () => {
     });
 
     const setupTx = await populateAccountSetup(
-      { owner: user.address, account, chainId: 31337, nonce: 0, beneficiary },
+      {
+        owner: user.address,
+        account,
+        chainId: 31337,
+        nonce: 0,
+        beneficiaries: [beneficiary],
+      },
       config,
       ({ domain, types, message }) => user.signTypedData(domain, types, message)
     );
@@ -285,5 +291,132 @@ describe("account-setup", () => {
     expect(await safe.getOwners()).to.deep.equal([
       "0x0000000000000000000000000000000000000002",
     ]);
+  });
+
+  it("correctly enables multiple beneficiaries on the Delay", async () => {
+    const beneficiaryA = "0x000000000000000000000000000000000000000A";
+    const beneficiaryB = "0x000000000000000000000000000000000000000B";
+
+    const { user, account, spender, receiver, relayer, delayMod } =
+      await loadFixture(createAccount);
+
+    const COOLDOWN = 60 * 3;
+    const EXPIRATION = 60 * 30;
+
+    const config = createSetupConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+      cooldown: COOLDOWN,
+      expiration: EXPIRATION,
+    });
+
+    const setupTx = await populateAccountSetup(
+      {
+        owner: user.address,
+        account,
+        chainId: 31337,
+        nonce: 0,
+        beneficiaries: [beneficiaryA, beneficiaryB],
+      },
+      config,
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
+    );
+
+    await relayer.sendTransaction(setupTx);
+
+    expect(await delayMod.isModuleEnabled(beneficiaryA)).to.be.true;
+    expect(await delayMod.isModuleEnabled(beneficiaryB)).to.be.true;
+    // when an explicit list is provided the owner account is not enabled
+    expect(await delayMod.isModuleEnabled(user.address)).to.be.false;
+    expect(await delayMod.isModuleEnabled(spender.address)).to.be.false;
+
+    expect(await delayMod.owner()).to.equal(account);
+  });
+
+  it("deduplicates repeated beneficiaries (case-insensitive)", async () => {
+    const beneficiary = "0x000000000000000000000000000000000000000A";
+
+    const { user, account, spender, receiver, relayer, delayMod } =
+      await loadFixture(createAccount);
+
+    const config = createSetupConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+      cooldown: 60 * 3,
+      expiration: 60 * 30,
+    });
+
+    const setupTx = await populateAccountSetup(
+      {
+        owner: user.address,
+        account,
+        chainId: 31337,
+        nonce: 0,
+        beneficiaries: [beneficiary, beneficiary.toLowerCase()],
+      },
+      config,
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
+    );
+
+    await relayer.sendTransaction(setupTx);
+
+    expect(await delayMod.isModuleEnabled(beneficiary)).to.be.true;
+    expect(await delayMod.owner()).to.equal(account);
+  });
+
+  it("defaults to the owner when beneficiaries is empty", async () => {
+    const { user, account, spender, receiver, relayer, delayMod } =
+      await loadFixture(createAccount);
+
+    const config = createSetupConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+      cooldown: 60 * 3,
+      expiration: 60 * 30,
+    });
+
+    const setupTx = await populateAccountSetup(
+      {
+        owner: user.address,
+        account,
+        chainId: 31337,
+        nonce: 0,
+        beneficiaries: [],
+      },
+      config,
+      ({ domain, types, message }) => user.signTypedData(domain, types, message)
+    );
+
+    await relayer.sendTransaction(setupTx);
+
+    expect(await delayMod.isModuleEnabled(user.address)).to.be.true;
+    expect(await delayMod.owner()).to.equal(account);
+  });
+
+  it("rejects an invalid beneficiary address", async () => {
+    const { user, account, spender, receiver } =
+      await loadFixture(createAccount);
+
+    const config = createSetupConfig({
+      spender: spender.address,
+      receiver: receiver.address,
+      cooldown: 60 * 3,
+      expiration: 60 * 30,
+    });
+
+    await expect(
+      populateAccountSetup(
+        {
+          owner: user.address,
+          account,
+          chainId: 31337,
+          nonce: 0,
+          beneficiaries: ["0xnot-an-address"],
+        },
+        config,
+        ({ domain, types, message }) =>
+          user.signTypedData(domain, types, message)
+      )
+    ).to.be.rejected;
   });
 });
