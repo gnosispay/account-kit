@@ -35,7 +35,7 @@ jobs:
 
       - name: Create Release
         if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
