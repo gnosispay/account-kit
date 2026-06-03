@@ -1,6 +1,6 @@
 {
   "name": "@gnosispay/account-kit",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "author": "cristovao.honorato@gnosis.io",
   "license": "Apache-2.0",
   "main": "dist/cjs/src/index.js",
