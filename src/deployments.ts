@@ -62,7 +62,7 @@ export default {
     iface: IRolesModifier__factory.createInterface(),
   },
   spenderModMastercopy: {
-    address: getAddress("0x7a592bae57b8cd45688f9eb81ce4a622e7e37cb7"),
+    address: getAddress("0x70db53617d170A4E407E00DFF718099539134F9A"),
     iface: ISpenderModifier__factory.createInterface(),
   },
   signMessageLib: {
