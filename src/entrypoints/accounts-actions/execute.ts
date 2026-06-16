@@ -1,4 +1,11 @@
-import { AbiCoder, concat, getAddress, zeroPadValue, toBeHex } from "ethers";
+import {
+  AbiCoder,
+  concat,
+  getAddress,
+  zeroPadValue,
+  toBeHex,
+  TypedDataEncoder,
+} from "ethers";
 
 import deployments from "../../deployments";
 import typedDataForModifierTransaction from "../../eip712";
@@ -28,6 +35,10 @@ type EnqueueParameters = {
    * An optional smart contract wallet address for ERC1271 signatures
    */
   smartWalletAddress?: string;
+  /*
+   * An optional flag to use ERC-7739 signature encoding instead of ERC-1271
+   */
+  isERC7739?: boolean;
 };
 
 type DispatchParameters = {
@@ -93,6 +104,77 @@ function encodeERC1271Signature(
 }
 
 /**
+ * Encodes an ERC-7739 signature for use with the delay modifier
+ * This implements ERC-7739's TypedDataSign workflow for defensive rehashing
+ *
+ * The signature format follows ERC-7739 specification:
+ * originalSignature ‖ APP_DOMAIN_SEPARATOR ‖ contents ‖ contentsDescription ‖ uint16(contentsDescription.length)
+ *
+ * @param signature - The original EIP-712 signature
+ * @param smartWalletAddress - The smart contract wallet address
+ * @param delayModAddress - The delay modifier address (verifying contract)
+ * @param chainId - The chain ID
+ * @param message - The message object containing salt and data
+ * @param salt - The salt used in the transaction
+ * @param execFromModuleCalldata - The original execTransactionFromModule calldata
+ * @returns The complete final calldata for the delay module transaction
+ */
+function encodeERC7739Signature(
+  signature: string,
+  smartWalletAddress: string,
+  delayModAddress: string,
+  chainId: number,
+  message: { salt: string; data: string },
+  salt: string,
+  execFromModuleCalldata: string
+): string {
+  // Compute the app domain separator (from the original EIP-712 domain)
+  const domain = { verifyingContract: delayModAddress, chainId };
+  const appDomainSeparator = TypedDataEncoder.hashDomain(domain);
+
+  // The contents is the struct hash of the ModuleTx
+  const { types } = typedDataForModifierTransaction(
+    { modifier: delayModAddress, chainId },
+    { data: message.data, salt: message.salt }
+  );
+  const contentsHash = TypedDataEncoder.hashStruct("ModuleTx", types, {
+    data: message.data,
+    salt: message.salt,
+  });
+
+  // ERC-7739 contentsDescription
+  const contentsType = "ModuleTx(bytes data,bytes32 salt)";
+  const contentsTypeBytes = new TextEncoder().encode(contentsType);
+  const contentsDescriptionLength = zeroPadValue(
+    toBeHex(contentsTypeBytes.length),
+    2
+  );
+
+  // Create the ERC-7739 signature format
+  const erc7739Signature = concat([
+    signature, // originalSignature
+    appDomainSeparator, // APP_DOMAIN_SEPARATOR (32 bytes)
+    contentsHash, // contents (32 bytes - hash of ModuleTx struct)
+    contentsType, // contentsDescription
+    contentsDescriptionLength, // uint16(contentsDescription.length)
+  ]);
+
+  // Encode for SignatureChecker (same format as ERC-1271)
+  // r = padded smart wallet address (32 bytes)
+  const r = zeroPadValue(getAddress(smartWalletAddress), 32);
+
+  // s = signature offset - points to where the ERC-7739 signature starts
+  const signatureOffset = (execFromModuleCalldata.length - 2) / 2;
+  const s = zeroPadValue(toBeHex(signatureOffset), 32);
+
+  // v = 0x00 (contract signature marker - same as ERC-1271)
+  const v = "0x00";
+
+  // Complete final calldata: execFromModuleCalldata + erc7739Signature + salt + r + s + v
+  return concat([execFromModuleCalldata, erc7739Signature, salt, r, s, v]);
+}
+
+/**
  * Generates a payload that wraps a transaction, and posts it to the Delay Mod
  * queue. The populated transaction is relay ready, and does not require
  * additional signing. The smartWalletAddress is optional but should be used if
@@ -109,7 +191,12 @@ function encodeERC1271Signature(
  *
  * const owner: Signer = {};
  * const enqueueTx = await populateExecuteEnqueue(
- *  { account: `0x<address>`, chainId: `<number>` },
+ *  {
+ *    account: `0x<address>`,
+ *    chainId: `<number>`,
+ *    smartWalletAddress: `0x<smart_wallet>`, // optional
+ *    isERC7739: true // optional, enables ERC-7739 encoding
+ *  },
  *  { to: `0x<address>`, value: `<bigint>`, data: `0x<bytes>` },
  *  // callback that wraps an eip-712 signature
  *  ({ domain, primaryType, types, message }) =>
@@ -118,7 +205,7 @@ function encodeERC1271Signature(
  * await relayer.sendTransaction(enqueueTx);
  */
 export async function populateExecuteEnqueue(
-  { account, chainId, salt, smartWalletAddress }: EnqueueParameters,
+  { account, chainId, salt, smartWalletAddress, isERC7739 }: EnqueueParameters,
   transaction: TransactionRequest,
   sign: SignTypedDataCallback
 ): Promise<TransactionRequest> {
@@ -135,6 +222,8 @@ export async function populateExecuteEnqueue(
     message,
     signature,
     smartWalletAddress,
+    isERC7739,
+    chainId,
   });
 }
 
@@ -143,16 +232,19 @@ export async function populateExecuteEnqueue(
  * on the Delay Modifier. This function combines the encoded transaction data
  * with the salt and signature to create a relay-ready transaction.
  *
- * Supports both EOA and ERC1271 signatures:
- * - If smartWalletAddress is provided: ERC1271 signature encoding
+ * Supports EOA, ERC-1271, and ERC-7739 signatures:
  * - If smartWalletAddress is not provided: EOA signature (default)
+ * - If smartWalletAddress is provided and isERC7739=true: ERC-7739 signature encoding
+ * - If smartWalletAddress is provided and isERC7739=false: ERC-1271 signature encoding (default)
  *
  * @param parameters - Object containing account, transaction, message, and signature
  * @param parameters.account - The address of the account Safe
  * @param parameters.transaction - The original transaction to be executed
  * @param parameters.message - The message object containing salt and data from typed data generation
  * @param parameters.signature - The EIP-712 signature
- * @param parameters.smartWalletAddress - Optional smart contract wallet address for ERC1271 signatures
+ * @param parameters.smartWalletAddress - Optional smart contract wallet address for ERC-1271/ERC-7739 signatures
+ * @param parameters.isERC7739 - Optional flag to use ERC-7739 encoding (requires chainId)
+ * @param parameters.chainId - Required when isERC7739=true for ERC-7739 encoding
  * @returns The complete transaction request ready for relay execution
  *
  * @example
@@ -167,13 +259,25 @@ export async function populateExecuteEnqueue(
  * });
  *
  * @example
- * // ERC1271 signature
+ * // ERC-1271 signature
  * const txRequest = getTransactionRequest({
  *   account: "0x<gp_safe_address>",
  *   transaction: { to: "0x<address>", value: 0n, data: "0x<bytes>" },
  *   message: { salt: "0x<bytes32>", data: "0x<encoded_data>" },
  *   signature: "0x<erc1271_signature>",
  *   smartWalletAddress: "0x<smart_wallet_address>"
+ * });
+ *
+ * @example
+ * // ERC-7739 signature
+ * const txRequest = getTransactionRequest({
+ *   account: "0x<gp_safe_address>",
+ *   transaction: { to: "0x<address>", value: 0n, data: "0x<bytes>" },
+ *   message: { salt: "0x<bytes32>", data: "0x<encoded_data>" },
+ *   signature: "0x<erc7739_signature>",
+ *   smartWalletAddress: "0x<smart_wallet_address>",
+ *   isERC7739: true,
+ *   chainId: 100
  * });
  */
 export const getTransactionRequest = ({
@@ -182,6 +286,8 @@ export const getTransactionRequest = ({
   message,
   signature,
   smartWalletAddress,
+  isERC7739 = false,
+  chainId,
 }: {
   account: string;
   transaction: TransactionRequest;
@@ -191,6 +297,8 @@ export const getTransactionRequest = ({
   };
   signature: string;
   smartWalletAddress?: string;
+  isERC7739?: boolean;
+  chainId?: number;
 }) => {
   const checkSumedAccount = getAddress(gpSafe);
   const delayModAddress = predictDelayModAddress(checkSumedAccount);
@@ -203,8 +311,25 @@ export const getTransactionRequest = ({
       value: 0,
       data: concat([encodedData, message.salt, signature]),
     };
+  } else if (isERC7739 && chainId) {
+    // ERC-7739 signature
+    const finalCalldata = encodeERC7739Signature(
+      signature,
+      smartWalletAddress,
+      delayModAddress,
+      chainId,
+      message,
+      message.salt,
+      encodedData
+    );
+
+    return {
+      to: delayModAddress,
+      value: 0,
+      data: finalCalldata,
+    };
   } else {
-    // ERC1271 signature
+    // Standard ERC-1271 signature
     const finalCalldata = encodeERC1271Signature(
       signature,
       smartWalletAddress,
