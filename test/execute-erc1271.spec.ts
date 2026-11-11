@@ -87,13 +87,13 @@ describe("execute with ERC1271 signatures", () => {
         data: "0x",
       };
 
-      const { message } = generateTypedData(
+      const { domain, types, message } = generateTypedData(
         { account, chainId: 31337 },
         transaction
       );
 
       // Mock EOA signature (132 characters)
-      const eoaSignature = "0x" + "a".repeat(130);
+      const eoaSignature = await owner.signTypedData(domain, types, message);
 
       const txRequest = getTransactionRequest({
         account,
@@ -355,7 +355,7 @@ describe("execute with ERC1271 signatures", () => {
 
   describe("error handling", () => {
     it("should handle empty smartWalletAddress as EOA", async () => {
-      const { account } = await loadFixture(setupAccountWithERC1271);
+      const { account, owner } = await loadFixture(setupAccountWithERC1271);
 
       const transaction = {
         to: "0x1234567890123456789012345678901234567890",
@@ -363,12 +363,12 @@ describe("execute with ERC1271 signatures", () => {
         data: "0x",
       };
 
-      const { message } = generateTypedData(
+      const { domain, types, message } = generateTypedData(
         { account, chainId: 31337 },
         transaction
       );
 
-      const signature = "0x" + "f".repeat(130);
+      const signature = await owner.signTypedData(domain, types, message);
 
       // Empty string should be treated as EOA
       const txRequest1 = getTransactionRequest({

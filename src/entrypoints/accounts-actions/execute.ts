@@ -1,4 +1,11 @@
-import { AbiCoder, concat, getAddress, zeroPadValue, toBeHex } from "ethers";
+import {
+  AbiCoder,
+  Signature,
+  concat,
+  getAddress,
+  zeroPadValue,
+  toBeHex,
+} from "ethers";
 
 import deployments from "../../deployments";
 import typedDataForModifierTransaction from "../../eip712";
@@ -145,7 +152,8 @@ export async function populateExecuteEnqueue(
  *
  * Supports both EOA and ERC1271 signatures:
  * - If smartWalletAddress is provided: ERC1271 signature encoding
- * - If smartWalletAddress is not provided: EOA signature (default)
+ * - If smartWalletAddress is not provided: EOA signature normalized to v = 27/28
+ *   (malformed EOA signatures are rejected)
  *
  * @param parameters - Object containing account, transaction, message, and signature
  * @param parameters.account - The address of the account Safe
@@ -201,7 +209,11 @@ export const getTransactionRequest = ({
     return {
       to: delayModAddress,
       value: 0,
-      data: concat([encodedData, message.salt, signature]),
+      data: concat([
+        encodedData,
+        message.salt,
+        Signature.from(signature).serialized,
+      ]),
     };
   } else {
     // ERC1271 signature
