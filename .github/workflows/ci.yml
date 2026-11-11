@@ -13,11 +13,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "22"
+          check-latest: true
       - uses: actions/cache@v3
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-node22-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn install --frozen-lockfile
 
   build:
@@ -27,11 +28,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "22"
+          check-latest: true
       - uses: actions/cache@v3
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-node22-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn build
 
   lint:
@@ -41,11 +43,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "22"
+          check-latest: true
       - uses: actions/cache@v3
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-node22-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn build
       - run: yarn lint:check
       - run: yarn format:check
@@ -57,11 +60,12 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "22"
+          check-latest: true
       - uses: actions/cache@v3
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-node22-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn test
         env:
           GATEWAY_RPC_URL: ${{vars.GATEWAY_RPC_URL}}
