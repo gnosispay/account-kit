@@ -17,8 +17,13 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: "22"
+          check-latest: true
           registry-url: "https://registry.npmjs.org"
+
+      - name: Install npm with trusted publishing support
+        # Node 22 bundles npm 10; OIDC trusted publishing requires npm >=11.5.1.
+        run: npm install --global npm@11
 
       - name: Get package info
         id: package
@@ -28,9 +33,9 @@ jobs:
         if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
         with:
           path: "**/node_modules"
-          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-node22-modules-${{ hashFiles('**/yarn.lock') }}
       - run: yarn --frozen-lockfile
-      - run: yarn publish --access public
+      - run: npm publish --access public
 
       - name: Create Release
         if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
