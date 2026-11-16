@@ -27,7 +27,7 @@ jobs:
 
       - name: Get package info
         id: package
-        uses: codex-team/action-nodejs-package-info@v1.1
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v3
         if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
