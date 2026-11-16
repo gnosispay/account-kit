@@ -13,9 +13,9 @@ jobs:
       pull-requests: write
       id-token: write  # Required for npm OIDC
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: "22"
           check-latest: true
@@ -29,7 +29,7 @@ jobs:
         id: package
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: "contains(github.ref, steps.package.outputs.version)" # only works if tag contains correct package.version
         with:
           path: "**/node_modules"
